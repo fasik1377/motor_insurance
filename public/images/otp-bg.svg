@@ -1,0 +1,31 @@
+<svg width="1200" height="1600" viewBox="0 0 1200 1600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(900 300) rotate(90) scale(500 500)">
+      <stop stop-color="rgba(255,255,255,0.35)" />
+      <stop offset="1" stop-color="rgba(255,255,255,0)" />
+    </radialGradient>
+    <radialGradient id="glow2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(250 450) rotate(90) scale(320 320)">
+      <stop stop-color="rgba(255,255,255,0.18)" />
+      <stop offset="1" stop-color="rgba(255,255,255,0)" />
+    </radialGradient>
+    <linearGradient id="carGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.96" />
+      <stop offset="100%" stop-color="#c3d1ff" stop-opacity="0.85" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="1600" rx="40" fill="#412484" />
+  <circle cx="900" cy="300" r="240" fill="url(#glow)" />
+  <circle cx="240" cy="450" r="180" fill="url(#glow2)" />
+  <path d="M300 1040C320 1100 370 1180 430 1180H770C830 1180 880 1100 900 1040L960 780H240L300 1040Z" fill="url(#carGrad)" opacity="0.95"/>
+  <path d="M360 900H840L825 980H375L360 900Z" fill="rgba(255,255,255,0.55)" />
+  <path d="M410 980C415 1005 435 1025 465 1025H735C765 1025 785 1005 790 980H410Z" fill="rgba(255,255,255,0.35)" />
+  <path d="M420 1100C420 1130 440 1150 470 1150H730C760 1150 780 1130 780 1100H420Z" fill="rgba(255,255,255,0.22)" />
+  <circle cx="420" cy="1120" r="18" fill="rgba(255,255,255,0.9)" />
+  <circle cx="780" cy="1120" r="18" fill="rgba(255,255,255,0.9)" />
+  <path d="M360 760C360 740 380 720 405 720H795C820 720 840 740 840 760V820H360V760Z" fill="rgba(255,255,255,0.42)" />
+  <circle cx="500" cy="240" r="70" stroke="rgba(255,255,255,0.6)" stroke-width="20" />
+  <circle cx="520" cy="268" r="90" stroke="rgba(255,255,255,0.25)" stroke-width="18" />
+  <circle cx="540" cy="300" r="120" stroke="rgba(255,255,255,0.15)" stroke-width="16" />
+  <path d="M440 345C480 340 520 325 560 320C600 315 640 320 680 345" stroke="rgba(255,255,255,0.4)" stroke-width="14" stroke-linecap="round" />
+  <path d="M330 480C380 450 450 420 520 410C610 395 710 430 770 500" stroke="rgba(255,255,255,0.34)" stroke-width="12" stroke-linecap="round" />
+</svg>
