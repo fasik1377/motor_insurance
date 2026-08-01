@@ -110,6 +110,91 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      <section className="bg-white text-slate-950">
+        <div className="mx-auto max-w-[1400px] px-4 py-20 sm:px-6 lg:px-8">
+          <div className="grid gap-12 lg:grid-cols-[0.95fr_1fr] lg:items-start">
+            <div className="space-y-8">
+              <h2 className="max-w-2xl text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
+                WHY CHOOSE THE NEW INDIA ASSURANCE?
+              </h2>
+              <p className="max-w-xl text-base leading-8 text-slate-600 sm:text-lg">
+                The right insurance partner delivers safety, reputation, and a strong network of products to protect your journey.
+              </p>
+
+              <div className="relative h-[560px] overflow-hidden rounded-none">
+                <div className="absolute inset-y-0 left-0 w-[40%] space-y-4 pr-3">
+                  <div className="h-[260px] overflow-hidden border border-slate-200 bg-slate-100 rounded-none">
+                    <img src="https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=800&q=80" alt="Umbrellas" className="h-full w-full object-cover" />
+                  </div>
+                  <div className="h-[260px] overflow-hidden border border-slate-200 bg-slate-100 rounded-none">
+                    <img src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80" alt="Car" className="h-full w-full object-cover" />
+                  </div>
+                </div>
+                <div className="absolute right-0 top-1/2 w-[62%] -translate-y-1/2">
+                  <div className="overflow-hidden border border-slate-200 bg-slate-100 shadow-xl shadow-slate-300/10 rounded-none">
+                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80" alt="Insurance detail" className="h-full w-full object-cover" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="grid gap-6">
+                <div className="flex gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-6">
+                  <div className="mt-1 flex h-12 w-12 items-center justify-center text-[#35126d]">
+                    <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true"><path d="M12 2l7 4v5c0 5.25-3.75 9.88-7 11-3.25-1.12-7-5.75-7-11V6l7-4z" /></svg>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-950">Safety</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">Electric cars are extremely reliable and secure. After all, electricity is not flammable!</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-6">
+                  <div className="mt-1 flex h-12 w-12 items-center justify-center text-[#35126d]">
+                    <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true"><path d="M12 17.27L18.18 21 16.54 13.97 22 9.24l-7.19-.62L12 2 9.19 8.62 2 9.24l5.46 4.73L5.82 21z" /></svg>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-950">Reputation</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">Electricity is known for its relatively cheap cost and, as a result, will be much more affordable.</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-6">
+                  <div className="mt-1 flex h-12 w-12 items-center justify-center text-[#35126d]">
+                    <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true"><path d="M4 6h16v2H4V6zm0 4h16v2H4v-2zm0 4h16v2H4v-2z" /></svg>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-950">Range of Products</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">Less noise means living in large cities with electric cars is much more comfortable.</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-6">
+                  <div className="mt-1 flex h-12 w-12 items-center justify-center text-[#35126d]">
+                    <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true"><path d="M4 4h16v14H4V4zm2 2v10h12V6H6zm2 2h8v2H8V8z" /></svg>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-950">Network of Offices</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">Simplified design – repairs are less expensive and take less time.</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-6">
+                  <div className="mt-1 flex h-12 w-12 items-center justify-center text-[#35126d]">
+                    <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 3.75 3 6.85 7 11 4-4.15 7-7.25 7-11 0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z" /></svg>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-950">Trustworthiness</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">Drivers of electric or hybrid vehicles have a much lower cost to run. Fuel cost to run an EV is roughly one third the cost of a gasoline powered car.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
