@@ -10,8 +10,27 @@ const slides = [
   "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1600&q=80",
 ];
 
+const serviceSlides = [
+  {
+    title: "TWO WHEELER",
+    description: "Fast, reliable coverage for your bike and rider.",
+    image: "https://images.unsplash.com/photo-1518655048521-f130df041f66?auto=format&fit=crop&w=1200&q=80",
+  },
+  {
+    title: "PRIVATE VEHICLE",
+    description: "Comprehensive plans for cars, SUVs, and personal transport.",
+    image: "https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=1200&q=80",
+  },
+  {
+    title: "COMMERCIAL VEHICLE",
+    description: "Protect your fleet with flexible business insurance options.",
+    image: "https://images.unsplash.com/photo-1517142089942-ba376ce32a2e?auto=format&fit=crop&w=1200&q=80",
+  },
+];
+
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [serviceSlide, setServiceSlide] = useState(0);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -190,6 +209,51 @@ export default function Home() {
                     <p className="mt-2 text-sm leading-6 text-slate-600">Drivers of electric or hybrid vehicles have a much lower cost to run. Fuel cost to run an EV is roughly one third the cost of a gasoline powered car.</p>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-[#35126d] text-white">
+        <div className="mx-auto max-w-[1400px] px-4 py-20 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center gap-10">
+            <div className="space-y-4 text-center">
+              <p className="text-sm uppercase tracking-[0.4em] text-violet-200">Motor Insurance Services</p>
+              <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">Motor Insurance Services</h2>
+            </div>
+
+            <div className="relative w-full overflow-hidden rounded-[1.5rem] border border-white/10 bg-slate-950/10 px-4 py-8 shadow-2xl shadow-black/20 sm:px-6">
+              <div className="grid gap-6 sm:grid-cols-3">
+                {serviceSlides.map((slide, index) => (
+                  <div key={slide.title} className={`relative overflow-hidden ${index === serviceSlide ? "scale-100" : "scale-95 opacity-70"} transition-all duration-300`}>
+                    <div className="aspect-[4/3] overflow-hidden bg-slate-900">
+                      <img src={slide.image} alt={slide.title} className="h-full w-full object-cover" />
+                    </div>
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/95 via-slate-950/40 to-transparent px-5 py-6">
+                      <p className="text-xs uppercase tracking-[0.35em] text-violet-200">{slide.title}</p>
+                      <p className="mt-3 text-sm leading-6 text-slate-100">{slide.description}</p>
+                      <button className="mt-5 rounded-full border border-white/25 bg-white/10 px-5 py-2 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-white/15">
+                        Details
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pointer-events-none absolute inset-x-0 top-1/2 hidden justify-between px-4 sm:flex">
+                <button type="button" onClick={() => setServiceSlide((prev) => (prev - 1 + serviceSlides.length) % serviceSlides.length)} className="pointer-events-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white transition hover:bg-black/60">
+                  <span className="text-2xl">‹</span>
+                </button>
+                <button type="button" onClick={() => setServiceSlide((prev) => (prev + 1) % serviceSlides.length)} className="pointer-events-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white transition hover:bg-black/60">
+                  <span className="text-2xl">›</span>
+                </button>
+              </div>
+
+              <div className="mt-8 flex items-center justify-center gap-3">
+                {serviceSlides.map((_, index) => (
+                  <button key={index} type="button" onClick={() => setServiceSlide(index)} className={`h-2.5 w-2.5 rounded-full transition ${index === serviceSlide ? "bg-white" : "bg-white/40"}`} />
+                ))}
               </div>
             </div>
           </div>
