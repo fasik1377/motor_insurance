@@ -83,24 +83,24 @@ export default function Home() {
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                     <div className="flex flex-col items-center justify-center gap-2 px-3 py-3 text-center text-white">
-                      <div className="text-white"><svg viewBox="0 0 24 24" className="h-7 w-7 fill-current" aria-hidden="true"><path d="M12 1.5l3.09 6.26L22 8.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 13.14 2 8.27l6.91-0.51L12 1.5z" /></svg></div>
+                      <div className="text-white"><svg viewBox="0 0 24 24" className="h-7 w-7 fill-current" aria-hidden="true"><path d="M12 2l5 3v4a6 6 0 0 1-10 0V5l5-3zm0 13a4 4 0 0 0 4-4V7.1l-4-2.4-4 2.4V11a4 4 0 0 0 4 4z" /></svg></div>
                       <div className="font-semibold">Health</div>
                       <div className="text-xs text-slate-300">Insurance</div>
                     </div>
                     <div className="flex flex-col items-center justify-center gap-2 px-3 py-3 text-center text-white">
-                      <div className="text-white"><svg viewBox="0 0 24 24" className="h-7 w-7 fill-current" aria-hidden="true"><path d="M2 17l4-9h12l4 9-3 3H5l-3-3zm10-3l2-2-2-2-2 2 2 2z" /></svg></div>
+                      <div className="text-white"><svg viewBox="0 0 24 24" className="h-7 w-7 fill-current" aria-hidden="true"><path d="M21 16v-2l-3-1-3 1-3-5V5h2V3H9v2h2v4l-3 5-3-1v2l4 1 1 4h2l1-4 4-1z" /></svg></div>
                       <div className="font-semibold">Travel</div>
                     </div>
                     <div className="flex flex-col items-center justify-center gap-2 px-3 py-3 text-center text-white">
-                      <div className="text-white"><svg viewBox="0 0 24 24" className="h-7 w-7 fill-current" aria-hidden="true"><path d="M3 12v6h2v-1h14v1h2v-6l-1-5H4l-1 5zm2-3h14l.5 2H4.5L5 9zm1 3h12v3H6v-3z" /></svg></div>
+                      <div className="text-white"><svg viewBox="0 0 24 24" className="h-7 w-7 fill-current" aria-hidden="true"><path d="M5.5 15c-.83 0-1.5.67-1.5 1.5S4.67 18 5.5 18 7 17.33 7 16.5 6.33 15 5.5 15zm13 0c-.83 0-1.5.67-1.5 1.5S17.67 18 18.5 18 20 17.33 20 16.5 19.33 15 18.5 15zM4 10V7a2 2 0 0 1 2-2h1.5L9 4h6l1.5 1H18a2 2 0 0 1 2 2v3l-1.5 2H5.5L4 10z" /></svg></div>
                       <div className="font-semibold">Motor</div>
                     </div>
                     <div className="flex flex-col items-center justify-center gap-2 px-3 py-3 text-center text-white">
-                      <div className="text-white"><svg viewBox="0 0 24 24" className="h-7 w-7 fill-current" aria-hidden="true"><path d="M4 4h16v16H4V4zm3 3h4v2H7V7zm0 4h10v2H7v-2zm0 4h10v2H7v-2z" /></svg></div>
+                      <div className="text-white"><svg viewBox="0 0 24 24" className="h-7 w-7 fill-current" aria-hidden="true"><path d="M4 7h16v2H4V7zm0 4h16v2H4v-2zm0 4h16v2H4v-2z" /></svg></div>
                       <div className="font-semibold">Miscellaneous</div>
                     </div>
                     <div className="flex flex-col items-center justify-center gap-2 px-3 py-3 text-center text-white">
-                      <div className="text-white"><svg viewBox="0 0 24 24" className="h-7 w-7 fill-current" aria-hidden="true"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z" /></svg></div>
+                      <div className="text-white"><svg viewBox="0 0 24 24" className="h-7 w-7 fill-current" aria-hidden="true"><path d="M20 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2zm-1 6H5V9h14v3z" /></svg></div>
                       <div className="font-semibold">All Products</div>
                     </div>
                   </div>
