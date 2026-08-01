@@ -28,6 +28,41 @@ const serviceSlides = [
   },
 ];
 
+const inventoryItems = [
+  {
+    title: "TWO WHEELER",
+    image: "https://images.unsplash.com/photo-1518655048521-f130df041f66?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    title: "INSURANCE DOCUMENTS",
+    image: "https://images.unsplash.com/photo-1483721310020-03333e577078?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    title: "FAMILY COVER",
+    image: "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    title: "PRIVATE VEHICLE",
+    image: "https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    title: "COMMERCIAL VEHICLE",
+    image: "https://images.unsplash.com/photo-1517142089942-ba376ce32a2e?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    title: "BIKE COVERAGE",
+    image: "https://images.unsplash.com/photo-1518655048521-f130df041f66?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    title: "HEAVY VEHICLE",
+    image: "https://images.unsplash.com/photo-1563729784474-da1c0fc03062?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    title: "TRAVEL INSURANCE",
+    image: "https://images.unsplash.com/photo-1516834474-48f2b7ab97f0?auto=format&fit=crop&w=800&q=80",
+  },
+];
+
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [serviceSlide, setServiceSlide] = useState(0);
@@ -51,6 +86,15 @@ export default function Home() {
             <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-2 shadow-lg shadow-black/20">
               <Image src="/images/logo.png" alt="New India Assurance logo" width={180} height={64} className="h-auto w-auto object-contain" />
             </div>
+            <nav className="hidden items-center gap-8 text-sm font-semibold text-slate-100 md:flex lg:gap-10">
+              <Link href="#" className="transition hover:text-white">Home</Link>
+              <Link href="#" className="transition hover:text-white">About</Link>
+              <Link href="#" className="transition hover:text-white">Products</Link>
+              <Link href="#" className="transition hover:text-white">Our Office</Link>
+              <Link href="#" className="transition hover:text-white">Blog</Link>
+              <Link href="#" className="transition hover:text-white">Help</Link>
+              <Link href="#" className="transition hover:text-white">Contact</Link>
+            </nav>
             <button type="button" onClick={() => setMobileMenuOpen((open) => !open)} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/20 md:hidden">
               <span className="text-xl">{mobileMenuOpen ? "✕" : "☰"}</span>
             </button>
@@ -274,6 +318,37 @@ export default function Home() {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white text-slate-950">
+        <div className="mx-auto max-w-[1400px] px-4 py-20 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.35em] text-violet-600">What’s New?</p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Latest updates from our insurance inventory</h2>
+            </div>
+            <button className="inline-flex items-center justify-center rounded-full border border-violet-600 bg-transparent px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-violet-600 transition hover:bg-violet-600 hover:text-white">
+              View all inventory
+            </button>
+          </div>
+
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {inventoryItems.map((item) => (
+              <div key={item.title} className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white shadow-sm">
+                <div className="h-32 overflow-hidden bg-slate-100 sm:h-36">
+                  <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
+                </div>
+                <div className="p-5">
+                  <p className="text-xs uppercase tracking-[0.08em] text-violet-600">Launching India’s most comprehensive broker insurance</p>
+                  <h3 className="mt-4 text-base font-semibold text-slate-950">{item.title}</h3>
+                  <button className="mt-6 inline-flex items-center rounded-full border border-violet-600 bg-transparent px-4 py-2 text-sm font-semibold uppercase tracking-[0.1em] text-violet-600 transition hover:bg-violet-600 hover:text-white">
+                    Download
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
