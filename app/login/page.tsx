@@ -7,9 +7,12 @@ import { useState } from "react";
 export default function LoginPage() {
   const router = useRouter();
   const [contact, setContact] = useState("");
+  const [robotChecked, setRobotChecked] = useState(false);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!robotChecked) return;
+
     const trimmedContact = contact.trim();
     if (!trimmedContact) return;
 
@@ -72,9 +75,24 @@ export default function LoginPage() {
                   className="mt-3 w-full rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#412484] focus:ring-2 focus:ring-[#412484]/20"
                 />
               </label>
+
+              <label className="flex cursor-pointer items-center gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700 transition hover:border-[#412484]">
+                <input
+                  type="checkbox"
+                  checked={robotChecked}
+                  onChange={(event) => setRobotChecked(event.target.checked)}
+                  className="h-5 w-5 rounded border-slate-300 text-[#412484] focus:ring-[#412484]"
+                />
+                <div>
+                  <p className="font-semibold text-slate-900">I am not a robot</p>
+                  <p className="text-xs text-slate-500">Confirm that you are human before continuing.</p>
+                </div>
+              </label>
+
               <button
                 type="submit"
-                className="w-full rounded-full bg-[#35126d] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2d1765]"
+                disabled={!robotChecked}
+                className="w-full rounded-full bg-[#35126d] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2d1765] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
               >
                 Sign in or Sign up
               </button>
