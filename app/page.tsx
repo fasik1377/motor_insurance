@@ -352,6 +352,167 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <section className="bg-[#35126d] text-white">
+        <div className="mx-auto max-w-[1400px] px-4 py-20 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-sm uppercase tracking-[0.4em] text-violet-200">Trusted by drivers across India</p>
+            <h2 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">Over 10 years motor insurance service</h2>
+          </div>
+
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { value: "1,800+", label: "Offices" },
+              { value: "3.75Cr", label: "Happy Clients" },
+              { value: "25", label: "Countries" },
+              { value: "32.35K Cr", label: "Visitors Per Day" },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-[1.5rem] border border-white/10 bg-white/5 px-5 py-8 text-center shadow-xl shadow-black/10 backdrop-blur-xl">
+                <p className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">{stat.value}</p>
+                <p className="mt-3 text-xs uppercase tracking-[0.24em] text-violet-200">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden bg-slate-950 text-white">
+        <div className="absolute inset-0">
+          <img src="/images/insurance_car.png" alt="Background section" className="h-full w-full object-cover opacity-80" />
+          <div className="absolute inset-0 bg-slate-950/75" />
+        </div>
+
+        <div className="relative mx-auto max-w-[1400px] px-4 py-16 sm:px-6 lg:px-8">
+          <div className="grid gap-8 md:grid-cols-3">
+            {[
+              {
+                title: "FINANCING MADE EASY",
+                description: "Distinctly recontextualize top-line users. Shabby chic ramps gentrify picks, exactly and literally.",
+              },
+              {
+                title: "TRUSTED BY THOUSANDS",
+                description: "Distinctly recontextualize top-line users. Shabby chic ramps gentrify picks, exactly and literally.",
+              },
+              {
+                title: "WIDE RANGE OF BRANDS",
+                description: "Distinctly recontextualize top-line users. Shabby chic ramps gentrify picks, exactly and literally.",
+              },
+            ].map((item) => (
+              <div key={item.title} className="rounded-[2rem] border border-white/10 bg-white/5 p-8 text-center backdrop-blur-xl shadow-xl shadow-black/20">
+                <h3 className="text-base font-semibold uppercase tracking-[0.3em] text-white/90">{item.title}</h3>
+                <p className="mt-4 text-sm leading-7 text-slate-200">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white text-slate-950">
+        <div className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">OUR CSR INITIATIVE</h2>
+            <button className="rounded-full border border-violet-600 px-4 py-2 text-xs text-violet-600">ONLINE SHOP</button>
+          </div>
+
+          <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
+            {[
+              { img: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80', title: 'Wallbox type 17.4 kW' },
+              { img: 'https://images.unsplash.com/photo-1506806732259-39c2d0268443?auto=format&fit=crop&w=800&q=80', title: 'Zeta Type XL Racing Seat' },
+              { img: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80', title: 'Wallbox eMH3' },
+            ].map((it) => (
+              <div key={it.title} className="space-y-3 text-center">
+                <div className="overflow-hidden border border-slate-200">
+                  <img src={it.img} alt={it.title} className="w-full h-48 object-cover" />
+                </div>
+                <p className="text-sm font-semibold">{it.title}</p>
+                <a href="#" className="text-xs text-violet-600 font-semibold">Click Here</a>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden text-white">
+        <div className="absolute inset-0">
+          <img src="/images/insurance_car.png" alt="Blue car footer background" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-slate-950/70" />
+        </div>
+
+        <div className="relative mx-auto max-w-[1400px] px-4 py-16 sm:px-6 lg:px-8">
+          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="relative overflow-hidden border border-white/10 bg-violet-950/80 p-6 shadow-2xl shadow-black/40 sm:p-8">
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-950/90 via-slate-950/20 to-transparent" />
+              <div className="relative w-full max-w-lg">
+                <p className="text-sm uppercase tracking-[0.35em] text-violet-200">Need a special deal?</p>
+                <h2 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">Contact Us</h2>
+
+                <form className="mt-6 space-y-3">
+                  <input type="text" placeholder="Your name" className="w-full border-b border-white/20 bg-transparent px-4 py-2 text-sm text-white outline-none placeholder:text-slate-300" />
+                  <input type="email" placeholder="Your email" className="w-full border-b border-white/20 bg-transparent px-4 py-2 text-sm text-white outline-none placeholder:text-slate-300" />
+                  <input type="text" placeholder="Subject" className="w-full border-b border-white/20 bg-transparent px-4 py-2 text-sm text-white outline-none placeholder:text-slate-300" />
+                  <textarea placeholder="Your message (optional)" rows={4} className="w-full border-b border-white/20 bg-transparent px-4 py-2 text-sm text-white outline-none placeholder:text-slate-300" />
+                  <button type="submit" className="mt-4 inline-flex rounded-full bg-white px-8 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-200">
+                    Submit
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <div className="grid gap-6">
+              <div className="overflow-hidden border border-white/10 bg-white/10 shadow-2xl shadow-black/30">
+                <iframe
+                  title="Map"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d241317.116043197!2d-74.24441924087764!3d40.69714941965724!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzPCsDQxJzUyLjAiTiA3NMKwMTQnMTQuNiJX!5e0!3m2!1sen!2sus!4v1691249374000!5m2!1sen!2sus"
+                  className="h-80 w-full border-0"
+                  allowFullScreen
+                  loading="lazy"
+                />
+              </div>
+
+              <div className="border border-white/10 bg-[#35126d] p-6 shadow-2xl shadow-black/30">
+                <div className="space-y-5">
+                  <div className="flex items-start gap-3">
+                    <span className="mt-1 inline-flex h-10 w-10 items-center justify-center border border-white/15 bg-white/5 text-white">
+                      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z" /></svg>
+                    </span>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.3em] text-violet-200">Address</p>
+                      <p className="mt-3 text-sm leading-6 text-white">1010 Avenue of the Moon<br />New York, NY 10018 U.S.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <span className="mt-1 inline-flex h-10 w-10 items-center justify-center border border-white/15 bg-white/5 text-white">
+                      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.21 11.72 11.72 0 003.68.59 1 1 0 011 1v3.5a1 1 0 01-1 1A17 17 0 013 6a1 1 0 011-1h3.5a1 1 0 011 1 11.72 11.72 0 00.59 3.68 1 1 0 01-.21 1.11l-2.2 2.2z" /></svg>
+                    </span>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.3em] text-violet-200">Phone</p>
+                      <p className="mt-3 text-sm leading-6 text-white">+1 628 123 4000</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <span className="mt-1 inline-flex h-10 w-10 items-center justify-center border border-white/15 bg-white/5 text-white">
+                      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z" /></svg>
+                    </span>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.3em] text-violet-200">Email</p>
+                      <p className="mt-3 text-sm leading-6 text-white">info@newindiaassurance.com</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-white/10 bg-[#35126d] px-4 py-6 text-center text-slate-300 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl space-y-2">
+            <p className="text-sm font-medium text-white">© 2026 Motors - Electric Vehicle Dealer WordPress Theme</p>
+            <p className="text-xs uppercase tracking-[0.25em] text-slate-300">Trademarks and brands are the property of their respective owners.</p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

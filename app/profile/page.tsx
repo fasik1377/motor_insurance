@@ -89,7 +89,7 @@ export default function ProfilePage() {
 
                   <div className="mt-6 flex justify-end">
                     <Link
-                      href="/"
+                      href="/dashboard"
                       className="inline-flex h-12 items-center justify-center rounded-3xl bg-[#412484] px-8 text-sm font-semibold text-white transition hover:bg-[#2f1b75]"
                     >
                       Next
