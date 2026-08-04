@@ -8,10 +8,12 @@ function MobileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mobile, setMobile] = useState("");
+  const [robotChecked, setRobotChecked] = useState(false);
   const contact = searchParams.get("contact") ?? "your email";
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!robotChecked) return;
     if (!mobile.trim()) return;
     router.push(`/profile?contact=${encodeURIComponent(contact)}`);
   };
@@ -72,9 +74,22 @@ function MobileContent() {
                   className="mt-3 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#412484] focus:ring-2 focus:ring-[#412484]/20"
                 />
               </label>
+              <label className="flex cursor-pointer items-center gap-3 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700 transition hover:border-[#412484]">
+                <input
+                  type="checkbox"
+                  checked={robotChecked}
+                  onChange={(event) => setRobotChecked(event.target.checked)}
+                  className="h-5 w-5 rounded border-slate-300 text-[#412484] focus:ring-[#412484]"
+                />
+                <div>
+                  <p className="font-semibold text-slate-900">I am not a robot</p>
+                  <p className="text-xs text-slate-500">Confirm your identity before continuing.</p>
+                </div>
+              </label>
               <button
                 type="submit"
-                className="w-full rounded-3xl bg-[#412484] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#2f1b75]"
+                disabled={!robotChecked}
+                className="w-full rounded-3xl bg-[#412484] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#2f1b75] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
               >
                 Continue
               </button>
