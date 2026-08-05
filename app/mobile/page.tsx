@@ -9,19 +9,7 @@ function MobileContent() {
   const searchParams = useSearchParams();
   const [mobile, setMobile] = useState("");
   const [robotChecked, setRobotChecked] = useState(false);
-  const [selectedPuzzle, setSelectedPuzzle] = useState<string | null>(null);
   const contact = searchParams.get("contact") ?? "your email";
-
-  const puzzleOptions = [
-    { id: "red", icon: "🔴", label: "Red light", description: "Stop signal" },
-    { id: "yellow", icon: "🟡", label: "Yellow light", description: "Caution signal" },
-    { id: "green", icon: "🟢", label: "Green light", description: "Go signal" },
-  ];
-
-  const handlePuzzleSelect = (id: string) => {
-    setSelectedPuzzle(id);
-    setRobotChecked(id === "green");
-  };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -32,100 +20,105 @@ function MobileContent() {
 
   return (
     <div className="min-h-screen bg-[#eef0ff]">
-      <main className="mx-auto grid min-h-screen max-w-[350px] grid-cols-1 items-start gap-10 px-4 py-10 lg:grid-cols-[0.95fr_0.65fr] lg:px-8">
-        <section className="relative overflow-hidden rounded-4xl bg-[#412484] shadow-2xl">
-          <div className="relative flex h-full min-h-130 items-center justify-center overflow-hidden rounded-4xl px-6 py-8 md:px-12">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.24),rgba(255,255,255,0)_35%)]" />
-            <div className="relative z-10 flex w-full max-w-3xl flex-col gap-10 text-white">
-              <div className="rounded-4xl bg-white/10 p-8 shadow-[0_40px_120px_rgba(0,0,0,0.14)] ring-1 ring-white/20 sm:p-10">
-                <p className="text-sm font-semibold uppercase tracking-[0.28em] text-white/80">
-                  Motor Insurance Service
-                </p>
-                <h1 className="mt-6 text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                  Continue with your mobile number in a clean verification flow.
-                </h1>
-                <p className="mt-6 max-w-2xl text-base leading-8 text-white/75 sm:text-lg">
-                  This final screen previews the mobile sign-up or log-in step following the email and OTP experience.
+      <main className="mx-auto grid min-h-screen max-w-[1200px] grid-cols-1 items-start gap-10 px-4 py-10 lg:grid-cols-[1.05fr_0.95fr] lg:px-8">
+        <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#412484] via-[#3a2394] to-[#1d1051] shadow-2xl">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.16),transparent_45%)]" />
+          <div className="relative z-10 flex min-h-[620px] flex-col justify-between gap-8 p-8 md:p-10">
+            <div className="rounded-[2rem] bg-white/10 p-8 shadow-[0_40px_120px_rgba(0,0,0,0.18)] ring-1 ring-white/10 sm:p-10">
+              <p className="text-sm font-semibold uppercase tracking-[0.28em] text-white/80">
+                New India Assurance
+              </p>
+              <h1 className="mt-6 text-4xl font-semibold leading-tight text-white sm:text-5xl">
+                Secure mobile verification for your policy.
+              </h1>
+              <p className="mt-6 max-w-2xl text-base leading-8 text-white/75 sm:text-lg">
+                A consistent and polished mobile sign-in experience, designed to align with the email login flow and keep every step clear.
+              </p>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-[0.9fr_1fr]">
+              <div className="rounded-[2rem] border border-white/15 bg-white/10 p-6 shadow-inner shadow-white/10">
+                <span className="inline-flex rounded-full bg-white/10 px-3 py-2 text-xs uppercase tracking-[0.3em] text-white/70">
+                  Step 3 • Mobile
+                </span>
+                <p className="mt-4 text-xl font-semibold text-white">Ready to confirm your number</p>
+                <p className="mt-3 text-sm leading-6 text-white/75">
+                  Enter your phone number and verify your identity with a single checkbox before continuing to profile setup.
                 </p>
               </div>
-              <div className="rounded-4xl bg-white/10 p-6 text-white shadow-inner shadow-white/10">
-                <p className="text-xl font-semibold">Step 3 preview</p>
-                <p className="mt-3 text-sm leading-6 text-white/75">
-                  The form is intentionally visual only and does not submit any real data.
+              <div className="rounded-[2rem] bg-[#5d47bf] p-6 text-white shadow-lg shadow-[#1b0f4d]/30 ring-1 ring-white/10">
+                <p className="text-sm font-semibold uppercase tracking-[0.28em] text-violet-100/90">
+                  Brand promise
                 </p>
+                <h2 className="mt-4 text-3xl font-semibold">Trusted for every journey</h2>
+                <p className="mt-4 text-sm leading-6 text-violet-100/85">
+                  We keep your mobile sign-in flow seamless, secure, and consistent with the same trusted professionalism as our core services.
+                </p>
+                <ul className="mt-6 space-y-3 text-sm text-violet-100/90">
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-white">✓</span>
+                    Secure step-by-step verification
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-white">✓</span>
+                    Clean mobile card layout
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-white">✓</span>
+                    Fast continuation to profile setup
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="flex items-start justify-start">
-          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-10 shadow-xl shadow-slate-200/60">
+        <section className="flex items-start justify-center">
+          <div className="w-full max-w-3xl rounded-[2rem] bg-white p-10 shadow-[0_40px_120px_rgba(15,23,42,0.12)]">
             <div className="mb-8 flex justify-center">
-              <div className="w-full max-w-70">
+              <div className="w-full max-w-72">
                 <Image src="/images/logo.png" alt="New India Assurance logo" width={280} height={120} className="object-contain" />
               </div>
             </div>
-            <div className="mb-8 rounded-4xl border border-slate-200 bg-slate-50 p-5 text-center">
-              <p className="text-sm font-semibold uppercase tracking-[0.28em] text-[#412484]">Step 3</p>
-              <h2 className="mt-4 text-3xl font-semibold text-slate-900">Sign up or log in with mobile</h2>
+            <div className="mb-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-7 text-center">
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#412484]">Step 3</p>
+              <h2 className="mt-4 text-3xl font-semibold text-slate-900">Mobile sign-in</h2>
               <p className="mt-3 text-sm leading-6 text-slate-500">
-                You have completed the email and OTP part. This is the mobile step for your front-end experience.
+                Continue your authentication flow with a wide, modern mobile entry card and trusted brand styling.
               </p>
               <p className="mt-4 text-sm text-slate-500">
                 Previous contact: <span className="font-semibold text-slate-700">{contact}</span>
               </p>
             </div>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <label className="block text-sm font-medium text-slate-700">
-                Mobile number
-                <input
-                  type="tel"
-                  value={mobile}
-                  onChange={(event) => setMobile(event.target.value)}
-                  placeholder="+601234765890"
-                  className="mt-3 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#412484] focus:ring-2 focus:ring-[#412484]/20"
-                />
-              </label>
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                <div className="flex items-center justify-between gap-4">
+              <div className="space-y-4 rounded-[2rem] border border-slate-200 bg-slate-50 p-6 shadow-sm">
+                <label className="block text-sm font-medium text-slate-700">
+                  Mobile number
+                  <input
+                    type="tel"
+                    value={mobile}
+                    onChange={(event) => setMobile(event.target.value)}
+                    placeholder="+601234765890"
+                    className="mt-3 w-full rounded-[1.75rem] border border-slate-200 bg-white px-4 py-4 text-sm text-slate-900 outline-none transition focus:border-[#412484] focus:ring-2 focus:ring-[#412484]/20"
+                  />
+                </label>
+                <label className="flex cursor-pointer items-center gap-3 rounded-[1.75rem] border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700 transition hover:border-[#412484]">
+                  <input
+                    type="checkbox"
+                    checked={robotChecked}
+                    onChange={(event) => setRobotChecked(event.target.checked)}
+                    className="h-5 w-5 rounded border-slate-300 text-[#412484] focus:ring-[#412484]"
+                  />
                   <div>
                     <p className="font-semibold text-slate-900">I am not a robot</p>
-                    <p className="text-xs text-slate-500">Choose the green traffic light to proceed.</p>
+                    <p className="text-xs text-slate-500">Check this box to confirm your identity.</p>
                   </div>
-                  <span className={`inline-flex h-9 items-center rounded-full px-3 text-xs font-semibold ${robotChecked ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-                    {robotChecked ? "Passed" : "Select green"}
-                  </span>
-                </div>
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  {puzzleOptions.map((option) => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => handlePuzzleSelect(option.id)}
-                      className={`rounded-3xl border px-4 py-5 text-center transition ${selectedPuzzle === option.id ? "border-violet-600 bg-violet-50 shadow-sm" : "border-slate-200 bg-white hover:border-violet-500"}`}
-                    >
-                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-3xl bg-slate-100 text-2xl">
-                        {option.icon}
-                      </div>
-                      <p className="text-sm font-semibold text-slate-900">{option.label}</p>
-                      <p className="mt-1 text-xs text-slate-500">{option.description}</p>
-                    </button>
-                  ))}
-                </div>
-
-                <p className={`mt-4 text-sm ${robotChecked ? "text-emerald-700" : selectedPuzzle ? "text-rose-600" : "text-slate-500"}`}>
-                  {robotChecked
-                    ? "Correct! Your mobile step is ready."
-                    : selectedPuzzle
-                    ? "Try again — one shape completes the pattern."
-                    : "Choose the shape that best matches the missing tile."}
-                </p>
+                </label>
               </div>
               <button
                 type="submit"
                 disabled={!robotChecked}
-                className="w-full rounded-3xl bg-[#412484] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#2f1b75] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
+                className="w-full rounded-full bg-[#412484] px-4 py-4 text-sm font-semibold text-white transition hover:bg-[#2f1b75] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
               >
                 Continue
               </button>

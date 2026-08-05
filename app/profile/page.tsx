@@ -28,7 +28,16 @@ export default function ProfilePage() {
                     </div>
                     <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Logo</p>
                   </div>
-                  <div className="grid gap-6 lg:grid-cols-2">
+                  <div className="grid gap-6 lg:grid-cols-3">
+                    <label className="block text-sm font-medium text-slate-700">
+                      Title
+                      <select className="mt-3 h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-[#412484] focus:ring-2 focus:ring-[#412484]/20">
+                        <option>Mr.</option>
+                        <option>Mrs.</option>
+                        <option>Miss</option>
+                        <option>Dr.</option>
+                      </select>
+                    </label>
                     <label className="block text-sm font-medium text-slate-700">
                       First Name
                       <input
@@ -38,22 +47,14 @@ export default function ProfilePage() {
                       />
                     </label>
                     <label className="block text-sm font-medium text-slate-700">
-                      Middle Name
+                      Surname
                       <input
                         type="text"
-                        placeholder="Your Middle Name"
+                        placeholder="Your Surname"
                         className="mt-3 h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-[#412484] focus:ring-2 focus:ring-[#412484]/20"
                       />
                     </label>
-                    <label className="block text-sm font-medium text-slate-700">
-                      Last Name
-                      <input
-                        type="text"
-                        placeholder="Your Last Name"
-                        className="mt-3 h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-[#412484] focus:ring-2 focus:ring-[#412484]/20"
-                      />
-                    </label>
-                    <label className="block text-sm font-medium text-slate-700">
+                    <label className="block text-sm font-medium text-slate-700 lg:col-span-3">
                       Gender
                       <select className="mt-3 h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-[#412484] focus:ring-2 focus:ring-[#412484]/20">
                         <option>Male</option>
@@ -61,7 +62,7 @@ export default function ProfilePage() {
                         <option>Other</option>
                       </select>
                     </label>
-                    <label className="block text-sm font-medium text-slate-700 lg:col-span-2">
+                    <label className="block text-sm font-medium text-slate-700 lg:col-span-3">
                       Date of Birth
                       <input
                         type="date"
@@ -92,7 +93,7 @@ export default function ProfilePage() {
                       href="/dashboard"
                       className="inline-flex h-12 items-center justify-center rounded-3xl bg-[#412484] px-8 text-sm font-semibold text-white transition hover:bg-[#2f1b75]"
                     >
-                      Next
+                      Sign Up
                     </Link>
                   </div>
                 </div>

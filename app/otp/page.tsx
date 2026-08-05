@@ -117,13 +117,7 @@ function OTPContent() {
                 Verify and continue
               </button>
             </form>
-            <button
-              type="button"
-              onClick={() => router.push(`/mobile?contact=${encodeURIComponent(contact)}`)}
-              className="mt-4 w-full rounded-3xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-[#412484] hover:text-[#412484]"
-            >
-              Skip to mobile step
-            </button>
+          
           </div>
         </section>
       </main>
