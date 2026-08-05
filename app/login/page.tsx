@@ -8,6 +8,18 @@ export default function LoginPage() {
   const router = useRouter();
   const [contact, setContact] = useState("");
   const [robotChecked, setRobotChecked] = useState(false);
+  const [selectedPuzzle, setSelectedPuzzle] = useState<string | null>(null);
+
+  const puzzleOptions = [
+    { id: "red", icon: "🔴", label: "Red light", description: "Stop signal" },
+    { id: "yellow", icon: "🟡", label: "Yellow light", description: "Caution signal" },
+    { id: "green", icon: "🟢", label: "Green light", description: "Go signal" },
+  ];
+
+  const handlePuzzleSelect = (id: string) => {
+    setSelectedPuzzle(id);
+    setRobotChecked(id === "green");
+  };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -76,18 +88,42 @@ export default function LoginPage() {
                 />
               </label>
 
-              <label className="flex cursor-pointer items-center gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700 transition hover:border-[#412484]">
-                <input
-                  type="checkbox"
-                  checked={robotChecked}
-                  onChange={(event) => setRobotChecked(event.target.checked)}
-                  className="h-5 w-5 rounded border-slate-300 text-[#412484] focus:ring-[#412484]"
-                />
-                <div>
-                  <p className="font-semibold text-slate-900">I am not a robot</p>
-                  <p className="text-xs text-slate-500">Confirm that you are human before continuing.</p>
+              <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="font-semibold text-slate-900">I am not a robot</p>
+                    <p className="text-xs text-slate-500">Select the green traffic light to continue.</p>
+                  </div>
+                  <span className={`inline-flex h-9 items-center rounded-full px-3 text-xs font-semibold ${robotChecked ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                    {robotChecked ? "Verified" : "Select green"}
+                  </span>
                 </div>
-              </label>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                  {puzzleOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => handlePuzzleSelect(option.id)}
+                      className={`rounded-3xl border px-4 py-5 text-center transition ${selectedPuzzle === option.id ? "border-violet-600 bg-violet-50 shadow-sm" : "border-slate-200 bg-white hover:border-violet-500"}`}
+                    >
+                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-3xl bg-slate-100 text-2xl">
+                        {option.icon}
+                      </div>
+                      <p className="text-sm font-semibold text-slate-900">{option.label}</p>
+                      <p className="mt-1 text-xs text-slate-500">{option.description}</p>
+                    </button>
+                  ))}
+                </div>
+
+                <p className={`mt-4 text-sm ${robotChecked ? "text-emerald-700" : selectedPuzzle ? "text-rose-600" : "text-slate-500"}`}>
+                  {robotChecked
+                    ? "Great! You selected the correct piece. Tap continue to proceed."
+                    : selectedPuzzle
+                    ? "Not quite. Try the other shape to complete the pattern."
+                    : "Select the puzzle piece that completes the pattern."}
+                </p>
+              </div>
 
               <button
                 type="submit"

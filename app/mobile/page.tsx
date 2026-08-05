@@ -9,7 +9,19 @@ function MobileContent() {
   const searchParams = useSearchParams();
   const [mobile, setMobile] = useState("");
   const [robotChecked, setRobotChecked] = useState(false);
+  const [selectedPuzzle, setSelectedPuzzle] = useState<string | null>(null);
   const contact = searchParams.get("contact") ?? "your email";
+
+  const puzzleOptions = [
+    { id: "red", icon: "🔴", label: "Red light", description: "Stop signal" },
+    { id: "yellow", icon: "🟡", label: "Yellow light", description: "Caution signal" },
+    { id: "green", icon: "🟢", label: "Green light", description: "Go signal" },
+  ];
+
+  const handlePuzzleSelect = (id: string) => {
+    setSelectedPuzzle(id);
+    setRobotChecked(id === "green");
+  };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -20,7 +32,7 @@ function MobileContent() {
 
   return (
     <div className="min-h-screen bg-[#eef0ff]">
-      <main className="mx-auto grid min-h-screen max-w-350 grid-cols-1 items-start gap-10 px-4 py-10 lg:grid-cols-[0.95fr_0.65fr] lg:px-8">
+      <main className="mx-auto grid min-h-screen max-w-[350px] grid-cols-1 items-start gap-10 px-4 py-10 lg:grid-cols-[0.95fr_0.65fr] lg:px-8">
         <section className="relative overflow-hidden rounded-4xl bg-[#412484] shadow-2xl">
           <div className="relative flex h-full min-h-130 items-center justify-center overflow-hidden rounded-4xl px-6 py-8 md:px-12">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.24),rgba(255,255,255,0)_35%)]" />
@@ -74,18 +86,42 @@ function MobileContent() {
                   className="mt-3 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#412484] focus:ring-2 focus:ring-[#412484]/20"
                 />
               </label>
-              <label className="flex cursor-pointer items-center gap-3 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700 transition hover:border-[#412484]">
-                <input
-                  type="checkbox"
-                  checked={robotChecked}
-                  onChange={(event) => setRobotChecked(event.target.checked)}
-                  className="h-5 w-5 rounded border-slate-300 text-[#412484] focus:ring-[#412484]"
-                />
-                <div>
-                  <p className="font-semibold text-slate-900">I am not a robot</p>
-                  <p className="text-xs text-slate-500">Confirm your identity before continuing.</p>
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="font-semibold text-slate-900">I am not a robot</p>
+                    <p className="text-xs text-slate-500">Choose the green traffic light to proceed.</p>
+                  </div>
+                  <span className={`inline-flex h-9 items-center rounded-full px-3 text-xs font-semibold ${robotChecked ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                    {robotChecked ? "Passed" : "Select green"}
+                  </span>
                 </div>
-              </label>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  {puzzleOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => handlePuzzleSelect(option.id)}
+                      className={`rounded-3xl border px-4 py-5 text-center transition ${selectedPuzzle === option.id ? "border-violet-600 bg-violet-50 shadow-sm" : "border-slate-200 bg-white hover:border-violet-500"}`}
+                    >
+                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-3xl bg-slate-100 text-2xl">
+                        {option.icon}
+                      </div>
+                      <p className="text-sm font-semibold text-slate-900">{option.label}</p>
+                      <p className="mt-1 text-xs text-slate-500">{option.description}</p>
+                    </button>
+                  ))}
+                </div>
+
+                <p className={`mt-4 text-sm ${robotChecked ? "text-emerald-700" : selectedPuzzle ? "text-rose-600" : "text-slate-500"}`}>
+                  {robotChecked
+                    ? "Correct! Your mobile step is ready."
+                    : selectedPuzzle
+                    ? "Try again — one shape completes the pattern."
+                    : "Choose the shape that best matches the missing tile."}
+                </p>
+              </div>
               <button
                 type="submit"
                 disabled={!robotChecked}
