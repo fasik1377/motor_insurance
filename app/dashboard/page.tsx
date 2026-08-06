@@ -70,8 +70,8 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm">
-                    <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=80&q=80" alt="Profile" className="h-8 w-8 rounded-full object-cover" />
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm overflow-hidden">
+                    <img src="/images/car_white.jpg" alt="Profile avatar" className="h-10 w-10 object-cover" />
                   </span>
                 </div>
               </div>
@@ -100,7 +100,7 @@ export default function DashboardPage() {
                     <div className="relative overflow-hidden rounded-[2rem] bg-slate-100 p-6">
                       <div className="absolute inset-x-6 bottom-6 h-24 rounded-full bg-violet-100/80 blur-3xl" />
                       <img
-                        src="https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?auto=format&fit=crop&w=1280&q=80"
+                        src="/images/car_white.jpg"
                         alt="Blue car"
                         className="relative mx-auto h-72 w-full rounded-[1.75rem] object-cover"
                       />

@@ -5,61 +5,61 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const slides = [
-  "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1600&q=80",
-  "https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=1600&q=80",
-  "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1600&q=80",
+  "/images/car1.jpg",
+  "/images/car2.jpg",
+  "/images/car3.jpg",
 ];
 
 const serviceSlides = [
   {
     title: "TWO WHEELER",
     description: "Fast, reliable coverage for your bike and rider.",
-    image: "https://images.unsplash.com/photo-1518655048521-f130df041f66?auto=format&fit=crop&w=1200&q=80",
+    image: "/images/two_wheeler.jpg",
   },
   {
     title: "PRIVATE VEHICLE",
     description: "Comprehensive plans for cars, SUVs, and personal transport.",
-    image: "https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=1200&q=80",
+    image: "/images/car4.jpg",
   },
   {
     title: "COMMERCIAL VEHICLE",
     description: "Protect your fleet with flexible business insurance options.",
-    image: "https://images.unsplash.com/photo-1517142089942-ba376ce32a2e?auto=format&fit=crop&w=1200&q=80",
+    image: "/images/commercial_car.jpg",
   },
 ];
 
 const inventoryItems = [
   {
     title: "TWO WHEELER",
-    image: "https://images.unsplash.com/photo-1518655048521-f130df041f66?auto=format&fit=crop&w=800&q=80",
+    image: "/images/two_wheeler2.jpg",
   },
   {
     title: "INSURANCE DOCUMENTS",
-    image: "https://images.unsplash.com/photo-1483721310020-03333e577078?auto=format&fit=crop&w=800&q=80",
+    image: "/images/insurance_car.png",
   },
   {
     title: "FAMILY COVER",
-    image: "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=800&q=80",
+    image: "/images/commercial_car2.jpg",
   },
   {
     title: "PRIVATE VEHICLE",
-    image: "https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=800&q=80",
+    image: "/images/car4.jpg",
   },
   {
     title: "COMMERCIAL VEHICLE",
-    image: "https://images.unsplash.com/photo-1517142089942-ba376ce32a2e?auto=format&fit=crop&w=800&q=80",
+    image: "/images/commercial_car3.jpg",
   },
   {
     title: "BIKE COVERAGE",
-    image: "https://images.unsplash.com/photo-1518655048521-f130df041f66?auto=format&fit=crop&w=800&q=80",
+    image: "/images/three_wheeler.jpg",
   },
   {
     title: "HEAVY VEHICLE",
-    image: "https://images.unsplash.com/photo-1563729784474-da1c0fc03062?auto=format&fit=crop&w=800&q=80",
+    image: "/images/car3.jpg",
   },
   {
     title: "TRAVEL INSURANCE",
-    image: "https://images.unsplash.com/photo-1516834474-48f2b7ab97f0?auto=format&fit=crop&w=800&q=80",
+    image: "/images/three_wheeler2.jpg",
   },
 ];
 
@@ -139,61 +139,89 @@ export default function Home() {
         <div className="absolute inset-0 bg-cover bg-center transition-all duration-1000" style={{ backgroundImage: `url(${slides[currentSlide]})` }} />
         <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/10 to-slate-950/90" />
 
-        <div className="relative mx-auto flex min-h-[calc(100vh-88px)] max-w-[1600px] items-center px-4 py-10 sm:px-6 lg:px-10">
+        <div className="relative mx-auto flex min-h-[calc(100vh-80px)] max-w-[1600px] items-center px-4 py-20 sm:px-6 lg:px-10">
           <div className="w-full">
-            <div className="relative flex h-[calc(100vh-170px)] overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/40">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.14),transparent_35%),linear-gradient(180deg,_rgba(0,0,0,0.08),rgba(0,0,0,0.42))]" />
-              <div className="absolute left-6 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center rounded-[18px] border border-white/20 bg-white/10 px-4 py-3 text-white backdrop-blur-sm">
+            <div className="relative flex min-h-[calc(100vh-100px)] overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/40">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.14),transparent_35%),linear-gradient(180deg,rgba(0,0,0,0.08),rgba(0,0,0,0.42))]" />
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute left-10 top-14 h-40 w-40 rounded-full bg-violet-500/15 blur-3xl" />
+                <div className="absolute right-16 top-24 h-28 w-28 rounded-full bg-cyan-400/20 blur-3xl" />
+              </div>
+              <button type="button" onClick={goPrev} className="absolute left-6 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center rounded-[18px] border border-white/20 bg-white/10 px-4 py-3 text-white backdrop-blur-sm transition hover:bg-white/20">
                 <span className="text-2xl">&#8249;</span>
-              </div>
-              <div className="absolute right-6 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center rounded-[18px] border border-white/20 bg-white/10 px-4 py-3 text-white backdrop-blur-sm">
+              </button>
+              <button type="button" onClick={goNext} className="absolute right-6 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center rounded-[18px] border border-white/20 bg-white/10 px-4 py-3 text-white backdrop-blur-sm transition hover:bg-white/20">
                 <span className="text-2xl">&#8250;</span>
-              </div>
+              </button>
 
-              <div className="absolute inset-x-0 top-1/4 px-6 sm:px-10 lg:px-16">
-                <div className="inline-flex h-2 w-20 rounded-full bg-violet-400" />
-                <h1 className="mt-6 max-w-3xl text-3xl font-bold uppercase tracking-[0.2em] text-white sm:text-4xl">
-                  NEW INDIA ASSURANCE
-                </h1>
-                <p className="mt-4 max-w-3xl text-base leading-7 text-slate-200 sm:text-lg">
-                  Professional insurance coverage for your health, vehicle, travel, home, and all your everyday journeys.
-                </p>
-              </div>
+              <div className="relative z-10 mx-auto grid h-full max-w-6xl grid-rows-[auto_1fr] gap-[70px] px-6 py-12 sm:px-10 lg:px-16">
+                <div className="max-w-3xl">
+                  <div className="inline-flex h-2 w-20 rounded-full bg-violet-400" />
+                  <h1 className="mt-6 text-3xl font-bold uppercase tracking-[0.2em] text-white sm:text-4xl">
+                    NEW INDIA ASSURANCE
+                  </h1>
+                  <p className="mt-6 text-base leading-9 text-slate-200 sm:text-lg">
+                    Professional insurance coverage for your health, vehicle, travel, home, and all your everyday journeys.
+                  </p>
+                </div>
 
-              <div className="absolute inset-x-10 bottom-0 mb-6 bg-[#35126d] px-6 py-5 shadow-2xl shadow-black/40 sm:inset-x-14 lg:inset-x-20 lg:px-8">
-                <div className="grid gap-4 md:grid-cols-[240px_1fr] lg:gap-6">
-                  <div className="flex items-center justify-center rounded-3xl bg-white/10 px-6 py-4 text-center text-sm uppercase tracking-[0.24em] text-slate-200 shadow-inner shadow-white/10">
-                    Coverage built for every lifestyle
-                  </div>
-                  <div className="grid gap-3 grid-cols-2 md:grid-cols-5 items-center">
-                    <div className="flex flex-col items-center justify-center gap-2 rounded-3xl border border-white/10 bg-white/5 px-4 py-4 text-center text-white">
-                      <div className="text-white">
-                        <svg viewBox="0 0 24 24" className="mx-auto h-7 w-7 fill-current" aria-hidden="true"><path d="M12 2l5 3v4a6 6 0 0 1-10 0V5l5-3zm0 13a4 4 0 0 0 4-4V7.1l-4-2.4-4 2.4V11a4 4 0 0 0 4 4z" /></svg>
+                <div style={{ perspective: "1400px" }}>
+                  <div className="transform-gpu border border-white/10 bg-[#35126d]/95 px-6 py-5 shadow-2xl shadow-black/50 backdrop-blur-xl transition duration-500 hover:-translate-y-2 hover:shadow-[0_40px_90px_rgba(0,0,0,0.35)]" style={{ transformStyle: "preserve-3d" }}>
+                    <div className="grid gap-4 md:grid-cols-[260px_1fr] lg:gap-6">
+                      <div className="flex items-center justify-center rounded-[2rem] bg-white/10 px-6 py-6 text-center text-sm uppercase tracking-[0.24em] text-slate-200 shadow-inner shadow-white/10 ring-1 ring-white/10 backdrop-blur-xl">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.32em] text-violet-200">Coverage built for every lifestyle</p>
+                          
+                        </div>
                       </div>
-                      <div className="font-semibold text-sm">Health</div>
-                    </div>
-                    <div className="flex flex-col items-center justify-center gap-2 rounded-3xl border border-white/10 bg-white/5 px-4 py-4 text-center text-white">
-                      <div className="text-white">
-                        <svg viewBox="0 0 24 24" className="mx-auto h-7 w-7 fill-current" aria-hidden="true"><path d="M21 16v-2l-3-1-3 1-3-5V5h2V3H9v2h2v4l-3 5-3-1v2l4 1 1 4h2l1-4 4-1z" /></svg>
+                      <div className="grid gap-3 grid-cols-2 md:grid-cols-5 items-center">
+                        <div className="group flex flex-col items-center justify-center gap-3 rounded-[2rem] border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
+                            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M12 2 6 5v5a6 6 0 0 0 12 0V5l-6-3Z" />
+                              <path d="M9 12h6m-3-3v6" />
+                            </svg>
+                          </div>
+                          <div className="font-semibold text-sm">Health</div>
+                        </div>
+                        <div className="group flex flex-col items-center justify-center gap-3 rounded-[2rem] border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
+                            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <circle cx="12" cy="12" r="5" />
+                              <path d="M12 7v-2m0 12v2m5-5h2m-12 0H5" />
+                            </svg>
+                          </div>
+                          <div className="font-semibold text-sm">Motor</div>
+                        </div>
+                        <div className="group flex flex-col items-center justify-center gap-3 rounded-[2rem] border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
+                            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="m2 12 8 3 3-3-3-3-8 3Z" />
+                              <path d="M10 15V8l7 4-7 3Z" />
+                            </svg>
+                          </div>
+                          <div className="font-semibold text-sm">Travel</div>
+                        </div>
+                        <div className="group flex flex-col items-center justify-center gap-3 rounded-[2rem] border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
+                            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M3 12 12 4l9 8v8a1 1 0 0 1-1 1h-5V14H9v7H4a1 1 0 0 1-1-1v-7Z" />
+                            </svg>
+                          </div>
+                          <div className="font-semibold text-sm">Home</div>
+                        </div>
+                        <div className="group flex flex-col items-center justify-center gap-3 rounded-[2rem] border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
+                            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <rect x="4" y="4" width="6" height="6" rx="1.2" />
+                              <rect x="14" y="4" width="6" height="6" rx="1.2" />
+                              <rect x="4" y="14" width="6" height="6" rx="1.2" />
+                              <rect x="14" y="14" width="6" height="6" rx="1.2" />
+                            </svg>
+                          </div>
+                          <div className="font-semibold text-sm">All Products</div>
+                        </div>
                       </div>
-                      <div className="font-semibold text-sm">Motor</div>
-                    </div>
-                    <div className="flex flex-col items-center justify-center gap-2 rounded-3xl border border-white/10 bg-white/5 px-4 py-4 text-center text-white">
-                      <div className="text-white">
-                        <svg viewBox="0 0 24 24" className="mx-auto h-7 w-7 fill-current" aria-hidden="true"><path d="M4 10V7a2 2 0 0 1 2-2h1.5L9 4h6l1.5 1H18a2 2 0 0 1 2 2v3l-1.5 2H5.5L4 10z" /></svg>
-                      </div>
-                      <div className="font-semibold text-sm">Travel</div>
-                    </div>
-                    <div className="flex flex-col items-center justify-center gap-2 rounded-3xl border border-white/10 bg-white/5 px-4 py-4 text-center text-white">
-                      <div className="text-white">
-                        <svg viewBox="0 0 24 24" className="mx-auto h-7 w-7 fill-current" aria-hidden="true"><path d="M4 7h16v2H4V7zm0 4h16v2H4v-2zm0 4h16v2H4v-2z" /></svg></div>
-                      <div className="font-semibold text-sm">Home</div>
-                    </div>
-                    <div className="flex flex-col items-center justify-center gap-2 rounded-3xl border border-white/10 bg-white/5 px-4 py-4 text-center text-white">
-                      <div className="text-white">
-                        <svg viewBox="0 0 24 24" className="mx-auto h-7 w-7 fill-current" aria-hidden="true"><path d="M20 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2zm-1 6H5V9h14v3z" /></svg>
-                      </div>
-                      <div className="font-semibold text-sm">All Products</div>
                     </div>
                   </div>
                 </div>
@@ -216,16 +244,16 @@ export default function Home() {
 
               <div className="grid gap-4 sm:grid-cols-[0.95fr_1.05fr]">
                 <div className="space-y-4">
-                  <div className="h-[220px] overflow-hidden border border-slate-200 bg-slate-100 rounded-none sm:h-[260px]">
-                    <img src="https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=800&q=80" alt="Umbrellas" className="h-full w-full object-cover" />
+                  <div className="h-[220px] overflow-hidden border border-slate-200 bg-slate-100 rounded-[1.75rem] transition duration-500 hover:-translate-y-2 hover:shadow-xl sm:h-[260px]">
+                    <img src="/images/insurance_car.png" alt="Insurance umbrella" className="h-full w-full object-cover" />
                   </div>
-                  <div className="h-[220px] overflow-hidden border border-slate-200 bg-slate-100 rounded-none sm:h-[260px]">
-                    <img src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80" alt="Car" className="h-full w-full object-cover" />
+                  <div className="h-[220px] overflow-hidden border border-slate-200 bg-slate-100 rounded-[1.75rem] transition duration-500 hover:-translate-y-2 hover:shadow-xl sm:h-[260px]">
+                    <img src="/images/car4.jpg" alt="Car" className="h-full w-full object-cover" />
                   </div>
                 </div>
                 <div className="relative">
                   <div className="overflow-hidden border border-slate-200 bg-slate-100 shadow-xl shadow-slate-300/10 rounded-none sm:-ml-8 xl:-ml-12">
-                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80" alt="Insurance detail" className="h-full w-full object-cover" />
+                    <img src="/images/car_white.jpg" alt="Insurance detail" className="h-full w-full object-cover" />
                   </div>
                 </div>
               </div>
@@ -427,9 +455,9 @@ export default function Home() {
 
           <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
             {[
-              { img: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80', title: 'Wallbox type 17.4 kW' },
-              { img: 'https://images.unsplash.com/photo-1506806732259-39c2d0268443?auto=format&fit=crop&w=800&q=80', title: 'Zeta Type XL Racing Seat' },
-              { img: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80', title: 'Wallbox eMH3' },
+              { img: '/images/car4.jpg', title: 'Wallbox type 17.4 kW' },
+              { img: '/images/commercial_car2.jpg', title: 'Zeta Type XL Racing Seat' },
+              { img: '/images/insurance_car.png', title: 'Wallbox eMH3' },
             ].map((it) => (
               <div key={it.title} className="space-y-3 text-center">
                 <div className="overflow-hidden border border-slate-200">
@@ -445,7 +473,7 @@ export default function Home() {
 
       <section className="relative overflow-hidden text-white">
         <div className="absolute inset-0">
-          <img src="/images/insurance_car.png" alt="Blue car footer background" className="h-full w-full object-cover" />
+          <img src="/images/car_white.jpg" alt="Footer background car" className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-slate-950/70" />
         </div>
 

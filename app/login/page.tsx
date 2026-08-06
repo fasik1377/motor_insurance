@@ -26,6 +26,10 @@ export default function LoginPage() {
         <section className="relative bg-[#3b2d92] px-6 py-12 text-white sm:px-10 lg:px-16">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.15),transparent_45%)]" />
           <div className="absolute -right-24 top-10 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute inset-y-0 right-0 hidden w-1/2 overflow-hidden rounded-[2rem] lg:block">
+            <div className="absolute inset-0 bg-slate-950/30" />
+            <Image src="/images/login_car.jpg" alt="Login hero car" fill className="object-cover opacity-90" />
+          </div>
           <div className="relative mx-auto flex h-full max-w-4xl flex-col justify-between gap-10">
             <div className="mt-6 max-w-xl rounded-[2rem] bg-white/10 p-8 shadow-2xl shadow-black/20 backdrop-blur-sm">
               <p className="text-sm font-semibold uppercase tracking-[0.35em] text-[#cdb8ff]">Motor Insurance Service</p>
