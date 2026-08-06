@@ -8,8 +8,8 @@ export const metadata = {
 export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#eef0ff] font-sans text-slate-900">
-      <main className="w-full mx-auto flex min-h-screen max-w-[1440px] gap-0 px-4 py-4 sm:px-6 lg:px-8">
-        <aside className="hidden w-[260px] shrink-0 lg:block">
+      <main className="w-full mx-auto flex min-h-screen max-w-[1440px] items-start gap-6 px-4 py-4 sm:px-6 lg:px-8">
+        <aside className="hidden w-[260px] shrink-0 md:block">
           <div className="rounded-[2rem] border border-slate-200 bg-white p-3 shadow-[0_30px_80px_rgba(15,23,42,0.08)]">
             <div className="mb-4 rounded-[1.75rem] bg-slate-50 p-3">
               <div className="flex h-16 w-full items-center justify-center rounded-[1.5rem] bg-white py-3">
@@ -46,7 +46,7 @@ export default function DashboardPage() {
           </div>
         </aside>
 
-        <section className="flex-1">
+        <section className="flex-1 min-w-0">
           <div className="space-y-6">
             <header className="rounded-[2rem] bg-white px-5 py-5 shadow-sm shadow-slate-200/50">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -94,15 +94,15 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="grid gap-5 lg:grid-cols-[2.2fr_0.8fr]">
-                <div className="rounded-[2rem] bg-slate-50 p-6 shadow-sm shadow-slate-200/40">
+              <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] xl:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">
+                <div className="min-w-0 rounded-[2rem] bg-slate-50 p-6 shadow-sm shadow-slate-200/40">
                   <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/40">
                     <div className="relative overflow-hidden rounded-[2rem] bg-slate-100 p-6">
                       <div className="absolute inset-x-6 bottom-6 h-24 rounded-full bg-violet-100/80 blur-3xl" />
                       <img
                         src="/images/car_white.jpg"
                         alt="Blue car"
-                        className="relative mx-auto h-72 w-full rounded-[1.75rem] object-cover"
+                        className="relative mx-auto h-40 w-full max-w-full rounded-[1.75rem] object-cover sm:h-48 lg:h-40 xl:h-36"
                       />
                     </div>
 
@@ -129,11 +129,11 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-5">
+                <div className="min-w-0 grid gap-5">
                   <div className="rounded-[2rem] bg-white p-6 shadow-sm shadow-slate-200/40">
                     <p className="text-sm uppercase tracking-[0.35em] text-slate-500">History</p>
                     <div className="mt-5 rounded-[1.75rem] bg-slate-50 p-5">
-                      <div className="grid grid-cols-7 gap-2 items-end">
+                      <div className="grid grid-cols-7 gap-1 items-end">
                         {[
                           { day: "Mon", height: 40 },
                           { day: "Tue", height: 56 },
@@ -144,7 +144,7 @@ export default function DashboardPage() {
                           { day: "Sun", height: 56 },
                         ].map((item) => (
                           <div key={item.day} className="flex flex-col items-center gap-3">
-                            <div className="flex h-44 items-end justify-center w-full">
+                            <div className="flex h-36 items-end justify-center w-full">
                               <div
                                 className={`w-full rounded-t-3xl ${item.active ? "bg-violet-600" : "bg-violet-200"}`}
                                 style={{ height: `${item.height}%` }}

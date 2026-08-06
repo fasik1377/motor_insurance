@@ -123,13 +123,6 @@ function MobileContent() {
                 Continue
               </button>
             </form>
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="mt-4 w-full rounded-3xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-[#412484] hover:text-[#412484]"
-            >
-              Back to OTP
-            </button>
           </div>
         </section>
       </main>
