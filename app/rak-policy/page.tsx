@@ -20,6 +20,27 @@ const steps = [
   { label: "Payment", icon: "payment" },
 ];
 
+const newVehicleSections = [
+  { title: "Client Details", pending: "7 mandatory fields pending", alert: true, rows: [
+    ["Registration No.", "Vehicle registration number"], ["Make", "Vehicle manufacturer"], ["Model", "Vehicle model"], ["Engine No.", "Engine identification number"], ["Chassis No.", "Chassis identification number"], ["Colour", "Vehicle colour"], ["Year Mfg. & Date of Reg.", "Manufacturing year and registration date"], ["Seating", "Full count for seats and students"], ["CC / kW", "Engine capacity or power"], ["Gross Vehicle Weight", "Registered gross vehicle weight"], ["Trailer Ft.", "Trailer measurement, if applicable"], ["Remarks", "Additional vehicle remarks"],
+  ] },
+  { title: "Motor Proposal", pending: "3 mandatory fields pending", alert: true, rows: [
+    ["Cover Required", "Selected motor cover"], ["Sum Insured", "Declared sum insured"], ["Voluntary Excess Amount", "Selected voluntary excess"], ["Young Driver Excess", "Applicable young driver excess"], ["Compulsory Excess", "Mandatory policy excess"], ["TPF Excess", "Third-party fire excess"], ["TPPD Excess", "Third-party property damage excess"], ["Additional Excess", "Any additional excess amount"], ["Theft Excess", "Applicable theft excess"], ["Total Loss Excess", "Applicable total-loss excess"], ["Approved Discount Request", "Approved discount reference, if available"],
+  ] },
+  { title: "Policy Period", rows: [
+    ["Country", "Mauritius"], ["Vehicle Type", "Selected vehicle type"], ["Fuel Type", "Vehicle fuel type"], ["Class", "Motor policy class"], ["Vehicle Status", "New or existing vehicle"], ["Issue Date", "Policy issue date and time"], ["From", "Policy commencement date"], ["To", "Policy expiry date"], ["Agent", "Issuing agent details"], ["Client", "Client master record"], ["Lien", "Lienholder details, if applicable"], ["Policy Risk", "Standard or selected risk"],
+  ] },
+  { title: "Get Protection for Accessories", rows: [
+    ["Radio", "Electrical selection, make/model, rate, amount and premium"], ["Cassette Player", "Electrical selection, make/model and value"], ["Sunvisor", "Accessory selection and value"], ["Roof Rack", "Accessory selection and value"], ["Aerial", "Accessory selection and value"], ["Special Petrol Cap", "Accessory selection and value"], ["Spot and/or Foglights", "Electrical selection, make/model and value"], ["Cushion Cover & Mats", "Accessory selection and value"], ["Back Sensor", "Electrical selection, make/model and value"], ["Body Kit", "Front/rear body-kit protection"], ["Cassette and CD Player", "Electrical selection, make/model and value"], ["CD Player", "Electrical selection, make/model and value"], ["Ceramic Coating", "Accidental damage protection"], ["DVD Player", "Electrical selection, make/model and value"], ["Electrical Central Door Locking", "Electrical selection, make/model and value"], ["Exhaust Pipe", "Accessory selection and value"], ["Fender", "Accessory selection and value"],
+  ] },
+  { title: "Additional Discounts", rows: [
+    ["No Claim Bonus", "Rate percentage and discount amount"], ["Fleet Discount", "Rate percentage and discount amount"], ["Special Discount", "Rate percentage and discount amount"], ["Claim Loading", "Rate percentage and loading amount"], ["Get Discount %", "Calculate and apply eligible discount"], ["Policy Remarks for Agent", "Agent discount remarks"], ["Remarks for Other Loading", "Additional loading remarks"],
+  ] },
+  { title: "Additional Covers (Optional)", rows: [
+    ["Passenger Risk", "Optional passenger-risk cover"], ["Personal Accident", "Personal accident protection"], ["PA (Conductor)", "Personal accident cover for conductor"], ["PA (Employee)", "Personal accident cover for employee"], ["PA (Family Members)", "Personal accident cover for family members"], ["Auto Plus", "Optional Auto Plus cover"], ["Driver Only", "Named-driver protection"], ["Loss of Use", "Loss-of-use benefit"], ["Towing", "Towing expense cover"], ["Strike, Riot and Civil Commotion", "Additional peril protection"], ["Earthquake", "Earthquake protection"], ["Cyclone", "Cyclone protection"], ["Windscreen Extension", "Extended windscreen cover"], ["Waiver of Excess", "Optional excess waiver"], ["Loss of Car Keys", "Replacement car-key cover"], ["Airfreight Expenses", "Airfreight expense protection"], ["Personal Belongings", "Personal belongings in vehicle"], ["Damage by Rodents", "Rodent-damage protection"], ["Accidental Misfuelling", "Misfuelling expense cover"], ["Enhanced Personal Accidental", "Enhanced personal accident benefit"], ["Funeral Expenses", "Funeral expense benefit"],
+  ] },
+];
+
 function StepIcon({ type }: { type: string }) {
   if (type === "payment") {
     return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="6" width="18" height="12" rx="1" /><path d="M3 10h18M7 15h4" /></svg>;
@@ -44,11 +65,104 @@ function VehicleIcon({ renewal }: { renewal?: boolean }) {
   );
 }
 
+function ClientDetailsForm() {
+  const inputClass = "w-full border border-violet-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
+  const labelClass = "text-xs font-semibold text-slate-600";
+
+  return (
+    <div className="border border-violet-200 bg-[#f7f5fb]">
+      <div className="grid grid-cols-3 border-b border-violet-200 text-center text-xs font-semibold text-[#35126d]">
+        <button type="button" className="border-r border-violet-200 bg-white px-3 py-3 shadow-[inset_0_-3px_0_#35126d]">Client Info (KYC)</button>
+        <button type="button" className="border-r border-violet-200 px-3 py-3 hover:bg-white">AML Approval Authority</button>
+        <button type="button" className="px-3 py-3 hover:bg-white">Documents</button>
+      </div>
+
+      <div className="space-y-3 p-4 sm:p-6">
+        <div className="grid gap-3 sm:grid-cols-[130px_minmax(0,1fr)_100px_minmax(0,0.45fr)] sm:items-center">
+          <label className={labelClass}>Client Code</label><div className="flex gap-2"><input className={inputClass} /><button type="button" className="border border-violet-300 bg-white px-3 text-[#35126d]">Search</button></div>
+          <label className={`${labelClass} flex items-center gap-2`}><input type="checkbox" className="accent-[#35126d]" /> OLD</label><input className={inputClass} placeholder="Agent" />
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-[130px_minmax(0,1fr)] sm:items-center">
+          <label className={labelClass}>Category</label>
+          <div className="flex flex-wrap gap-5 text-sm"><label className="flex items-center gap-2"><input type="radio" name="category" className="accent-[#35126d]" /> Company</label><label className="flex items-center gap-2"><input type="radio" name="category" defaultChecked className="accent-[#35126d]" /> Individual</label></div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-[130px_minmax(0,1fr)] sm:items-center"><label className={labelClass}>Name</label><div className="grid grid-cols-[110px_1fr] gap-2"><select className={inputClass}><option>Title</option><option>Mr</option><option>Mrs</option><option>Ms</option></select><input className={inputClass} /></div></div>
+        <div className="grid gap-3 sm:grid-cols-[130px_minmax(0,1fr)] sm:items-center"><label className={labelClass}>Surname</label><input className={inputClass} /></div>
+        <div className="grid gap-3 sm:grid-cols-[130px_minmax(0,1fr)]"><label className={labelClass}>UBO (Ultimate beneficial owner)</label><textarea rows={2} className={inputClass} /></div>
+        <div className="grid gap-3 sm:grid-cols-[130px_minmax(0,1fr)]"><label className={labelClass}>Address</label><textarea rows={2} className={inputClass} /></div>
+        <div className="grid gap-3 sm:grid-cols-[130px_minmax(0,1fr)] sm:items-center"><label className={labelClass}>City</label><input className={inputClass} /></div>
+
+        {[
+          ["VAT", "Tel Res / Abroad"], ["Tel Off", "Fax"], ["Mobile", "Qualification"],
+        ].map(([left, right]) => (
+          <div key={left} className="grid gap-3 sm:grid-cols-[130px_1fr_145px_1fr] sm:items-center"><label className={labelClass}>{left}</label><input className={inputClass} /><label className={labelClass}>{right}</label><input className={inputClass} /></div>
+        ))}
+        <div className="grid gap-3 sm:grid-cols-[130px_minmax(0,1fr)] sm:items-center"><label className={labelClass}>E-Mail</label><input type="email" className={inputClass} /></div>
+
+        <div className="grid gap-3 sm:grid-cols-[130px_1fr_145px_1fr] sm:items-center"><label className={labelClass}>Occupation</label><select className={inputClass}><option>Select occupation</option></select><div className="col-span-2 flex flex-wrap gap-4 text-sm"><label className="flex items-center gap-2"><input type="radio" name="residence" defaultChecked className="accent-[#35126d]" /> Resident</label><label className="flex items-center gap-2"><input type="radio" name="residence" className="accent-[#35126d]" /> Non Resident</label></div></div>
+        <div className="grid gap-3 sm:grid-cols-[130px_1fr_145px_1fr] sm:items-center"><label className={labelClass}>Nationality</label><select className={inputClass}><option>Select nationality</option></select><label className={labelClass}>Country Code</label><select className={inputClass}><option>MUS — Mauritius</option></select></div>
+        <div className="grid gap-3 sm:grid-cols-[130px_1fr_145px_1fr] sm:items-center"><label className={labelClass}>Passport No.</label><input className={inputClass} /><label className={labelClass}>NID</label><input className={inputClass} /></div>
+        <div className="grid gap-3 sm:grid-cols-[130px_1fr_145px_1fr] sm:items-center"><label className={labelClass}>BRN</label><input className={inputClass} /><label className={labelClass}>Gender</label><select className={inputClass}><option>Select gender</option><option>Female</option><option>Male</option></select></div>
+        <div className="grid gap-3 sm:grid-cols-[130px_1fr_145px_1fr] sm:items-center"><label className={labelClass}>DOB</label><input type="date" className={inputClass} /><label className={labelClass}>Credit Limit</label><input type="number" className={inputClass} /></div>
+        <div className="grid gap-3 sm:grid-cols-[130px_minmax(0,1fr)]"><label className={labelClass}>Other Remarks</label><textarea rows={3} className={inputClass} /></div>
+
+        <div className="grid gap-3 sm:grid-cols-2"><label className="flex items-center gap-2 text-sm"><input type="checkbox" className="accent-[#35126d]" /> Decline</label><label className="text-sm">Decline Remarks<input className={`mt-1 ${inputClass}`} /></label><label className="flex items-center gap-2 text-sm"><input type="checkbox" className="accent-[#35126d]" /> Special Client</label><label className="text-sm">Decline Date<input type="date" className={`mt-1 ${inputClass}`} /></label></div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 border-y border-violet-200 bg-white p-3 sm:grid-cols-5">
+        {["Save", "Print", "Print All", "CDD", "Exit"].map((action) => <button key={action} type="button" className="border border-violet-200 bg-violet-50 px-3 py-3 text-sm font-semibold text-[#35126d] transition hover:bg-violet-100">{action}</button>)}
+      </div>
+      <div className="grid gap-4 p-4 sm:grid-cols-[1fr_1.3fr] sm:items-end">
+        <p className="text-xs leading-5 text-slate-600">Enter Name / National ID / Passport No / BRN to verify the prospective client is in ICAC/ARD/UNSC list.</p>
+        <div><textarea rows={3} className={inputClass} /><button type="button" className="mt-2 w-full bg-[#35126d] px-4 py-3 text-sm font-bold text-white transition hover:bg-violet-800">CLICK HERE TO VERIFY</button></div>
+      </div>
+    </div>
+  );
+}
+
+function MotorProposalForm() {
+  const inputClass = "w-full border border-violet-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
+  const labelClass = "text-xs font-semibold text-slate-600";
+  const documents = ["Certificate", "Vignette", "Sch", "Inv", "Premium", "Com", "PSSA", "Acc. Gen", "ICAC", "MIE", "AML", "AMCCU", "MRA", "PSEA", "BOM", "EWF", "Pro Note", "Summary", "Policy-wording", "KYC", "Scarcity", "Proposal"];
+  const actions = ["Insert & Save", "Edit & Save", "View", "Print", "Not approved", "Approve", "Insert 2 NTA", "Reports in PDF", "Exit"];
+
+  return (
+    <div className="border border-violet-200 bg-[#f7f5fb]">
+      <div className="flex overflow-x-auto border-b border-violet-200 bg-violet-50 text-xs font-semibold text-[#35126d]">
+        {["Policy", "Vehicle", "Trailers & Others", "Accessory", "Gen. Info", "Comm Det", "Premium", "Attach Documents"].map((tab, index) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${index === 0 ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
+      </div>
+      <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+        <div className="space-y-3 p-4 sm:p-6 lg:border-r lg:border-violet-200">
+          <div className="grid gap-3 sm:grid-cols-[130px_1fr_130px_1fr] sm:items-center"><label className={labelClass}>Policy No.</label><input className={inputClass} /><span /><span /></div>
+          <div className="grid gap-3 sm:grid-cols-[130px_1fr_130px_1fr] sm:items-center"><label className={labelClass}>Country</label><select defaultValue="mauritius" className={inputClass}><option value="mauritius">Mauritius</option></select><label className={labelClass}>Certificate No.</label><input className={inputClass} /></div>
+          <div className="grid gap-3 sm:grid-cols-[130px_1fr_130px_1fr] sm:items-center"><label className={labelClass}>Vehicle Type</label><select className={inputClass}><option>Select vehicle type</option><option>Private Car</option><option>Commercial Vehicle</option><option>Two Wheeler</option></select><label className={labelClass}>Fuel Type</label><select className={inputClass}><option>Select fuel</option><option>Petrol</option><option>Diesel</option><option>Electric</option><option>Hybrid</option></select></div>
+          <div className="grid gap-3 sm:grid-cols-[130px_1fr] sm:items-center"><label className={labelClass}>Class</label><select className={inputClass}><option>Select policy class</option></select></div>
+          <div className="grid gap-3 sm:grid-cols-[130px_1fr_130px_1fr] sm:items-center"><label className={labelClass}>Vehicle Status</label><select className={inputClass}><option>Select status</option><option>New</option><option>Used</option></select><label className={labelClass}>Issue Date</label><input type="datetime-local" className={inputClass} /></div>
+          <div className="grid gap-3 sm:grid-cols-[130px_1fr_130px_1fr] sm:items-center"><label className={labelClass}>From</label><input type="datetime-local" className={inputClass} /><label className={labelClass}>To</label><input type="datetime-local" className={inputClass} /></div>
+          <div className="grid gap-3 pt-3 sm:grid-cols-[130px_1fr] sm:items-start"><label className={labelClass}>Agent</label><div><div className="flex"><input className={inputClass} /><button type="button" className="border border-l-0 border-violet-200 bg-white px-3 text-[#35126d]">Search</button></div><textarea rows={3} className={`mt-2 ${inputClass}`} /></div></div>
+          <div className="grid gap-3 sm:grid-cols-[130px_1fr] sm:items-start"><label className={labelClass}>Client</label><div><div className="flex"><input className={inputClass} /><button type="button" className="border border-l-0 border-violet-200 bg-white px-3 text-[#35126d]">Search</button></div><button type="button" className="mt-1 border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-semibold text-[#35126d]">Client Master</button><textarea rows={3} className={`mt-2 ${inputClass}`} /></div></div>
+          <div className="grid gap-3 sm:grid-cols-[130px_1fr] sm:items-start"><label className={`${labelClass} flex items-center gap-2`}><input type="checkbox" className="accent-[#35126d]" /> Lien</label><div><div className="grid grid-cols-2 gap-2"><select className={inputClass}><option>Select lien type</option></select><select className={inputClass}><option>Select lienholder</option></select></div><textarea rows={3} className={`mt-2 ${inputClass}`} /></div></div>
+          <div className="grid gap-3 sm:grid-cols-[130px_1fr] sm:items-center"><label className={labelClass}>Policy Risk</label><select defaultValue="standard" className={inputClass}><option value="standard">Standard</option><option value="high">High Risk</option></select></div>
+        </div>
+        <aside className="bg-white p-4 sm:p-6">
+          <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
+          <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
+          <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] transition hover:bg-violet-100">{action}</button>)}</div>
+          <label className="mt-5 block text-xs font-bold uppercase tracking-wider text-red-600">Remarks<textarea rows={4} className={`mt-2 ${inputClass}`} /></label>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
 export default function RakPolicyPage() {
   const [choice, setChoice] = useState<"new" | "renew" | "">("");
   const [currentStep, setCurrentStep] = useState(0);
   const [registration, setRegistration] = useState("");
   const [fullName, setFullName] = useState("");
+  const [openSection, setOpenSection] = useState<string | null>(null);
   const detailsComplete = Boolean(registration.trim() && fullName.trim());
 
   const advanceStep = () => {
@@ -93,6 +207,7 @@ export default function RakPolicyPage() {
             </div>
 
             {currentStep === 0 ? (
+              <div>
               <div className="grid min-h-[260px] grid-cols-2">
                 <label className={`group flex cursor-pointer flex-col items-center justify-center gap-4 border-r border-violet-100 px-3 py-8 text-center transition sm:flex-row sm:gap-6 sm:px-5 ${choice === "new" ? "bg-violet-50 ring-2 ring-inset ring-[#35126d]" : "hover:bg-violet-50/50"}`}>
                   <input type="radio" name="policy-choice" value="new" checked={choice === "new"} onChange={() => setChoice("new")} className="h-6 w-6 shrink-0 accent-[#35126d]" />
@@ -104,6 +219,40 @@ export default function RakPolicyPage() {
                   <VehicleIcon renewal />
                   <span className="text-sm font-semibold text-[#35126d] sm:text-lg">Renew existing policy from any insurer</span>
                 </label>
+              </div>
+
+              {choice === "new" ? (
+                <div className="space-y-1 border-t border-violet-200 bg-[#f7f5fb] p-2 sm:p-4">
+                  {newVehicleSections.map((section) => {
+                    const isOpen = openSection === section.title;
+                    return (
+                      <div key={section.title} className="overflow-hidden border border-violet-200 bg-white">
+                        <button type="button" onClick={() => setOpenSection(isOpen ? null : section.title)} aria-expanded={isOpen} className={`flex w-full items-center gap-3 px-4 py-3 text-left text-white transition ${isOpen ? "bg-[#35126d]" : "bg-[#4b5f96] hover:bg-[#3f5185]"}`}>
+                          <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold ${section.alert ? "text-red-600" : "text-emerald-600"}`}>{section.alert ? "!" : "✓"}</span>
+                          <span className="min-w-0 flex-1 text-sm font-semibold sm:text-base">{section.title}</span>
+                          {section.pending ? <span className="hidden rounded-full bg-red-700 px-3 py-1 text-xs font-bold text-white sm:inline-flex">{section.pending}</span> : null}
+                          <span className={`text-2xl font-semibold leading-none transition-transform ${isOpen ? "rotate-45" : ""}`}>+</span>
+                        </button>
+                        <div className={`grid transition-all duration-300 ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+                          <div className="overflow-hidden">
+                            <div className="overflow-x-auto p-4">
+                              {section.pending ? <p className="mb-3 text-xs font-semibold text-red-700 sm:hidden">{section.pending}</p> : null}
+                              {section.title === "Client Details" ? <ClientDetailsForm /> : section.title === "Motor Proposal" ? <MotorProposalForm /> : <table className="w-full min-w-[520px] border-collapse text-left text-sm">
+                                <thead><tr className="bg-violet-50 text-[#35126d]"><th className="border border-violet-200 px-4 py-3">Field</th><th className="border border-violet-200 px-4 py-3">Information required</th><th className="border border-violet-200 px-4 py-3">Status</th></tr></thead>
+                                <tbody>
+                                  {section.rows.map(([field, information]) => (
+                                    <tr key={field} className="transition hover:bg-violet-50/50"><td className="border border-violet-100 px-4 py-3 font-semibold text-slate-800">{field}</td><td className="border border-violet-100 px-4 py-3 text-slate-600">{information}</td><td className="border border-violet-100 px-4 py-3"><span className="inline-flex bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">To be completed</span></td></tr>
+                                  ))}
+                                </tbody>
+                              </table>}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
               </div>
             ) : null}
 
