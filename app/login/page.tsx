@@ -23,13 +23,10 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-white">
       <main className="grid min-h-screen grid-cols-1 lg:grid-cols-[1.3fr_1fr]">
-        <section className="relative bg-[#3b2d92] px-6 py-12 text-white sm:px-10 lg:px-16">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.15),transparent_45%)]" />
-          <div className="absolute -right-24 top-10 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
-          <div className="absolute inset-y-0 right-0 hidden w-1/2 overflow-hidden rounded-[2rem] lg:block">
-            <div className="absolute inset-0 bg-slate-950/30" />
-            <Image src="/images/login_car.jpg" alt="Login hero car" fill className="object-cover opacity-90" />
-          </div>
+        <section className="relative overflow-hidden bg-[#3b2d92] px-6 py-12 text-white sm:px-10 lg:px-16">
+          <Image src="/images/login_car.jpg" alt="Insured car on the road" fill priority className="auth-hero-image object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#241052]/95 via-[#35126d]/75 to-slate-950/25" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.18),transparent_42%)]" />
           <div className="relative mx-auto flex h-full max-w-4xl flex-col justify-between gap-10">
             <div className="mt-6 max-w-xl rounded-[2rem] bg-white/10 p-8 shadow-2xl shadow-black/20 backdrop-blur-sm">
               <p className="text-sm font-semibold uppercase tracking-[0.35em] text-[#cdb8ff]">Motor Insurance Service</p>

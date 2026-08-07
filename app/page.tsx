@@ -10,6 +10,12 @@ const slides = [
   "/images/car3.jpg",
 ];
 
+const whyChooseImages = [
+  { src: "/images/car_white.jpg", alt: "Private car insurance", label: "Private cars" },
+  { src: "/images/two_wheeler.jpg", alt: "Two-wheeler insurance", label: "Two wheelers" },
+  { src: "/images/commercial_car.jpg", alt: "Commercial vehicle insurance", label: "Commercial vehicles" },
+];
+
 const serviceSlides = [
   {
     title: "TWO WHEELER",
@@ -66,6 +72,7 @@ const inventoryItems = [
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [serviceSlide, setServiceSlide] = useState(0);
+  const [whyImageIndex, setWhyImageIndex] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -75,43 +82,67 @@ export default function Home() {
     return () => window.clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setWhyImageIndex((prev) => (prev + 1) % whyChooseImages.length);
+    }, 3500);
+    return () => window.clearInterval(interval);
+  }, []);
+
   const goPrev = () => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
   const goNext = () => setCurrentSlide((prev) => (prev + 1) % slides.length);
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <header className="border-b border-slate-900 bg-[#35126d] shadow-sm shadow-slate-950/20">
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
-          <div className="flex flex-1 items-center justify-between gap-4">
-            <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-2 shadow-lg shadow-black/20">
+        <div className="mx-auto grid max-w-[1600px] grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-8 lg:px-10 xl:gap-12">
+            <div className="flex items-center rounded-2xl border border-white/15 bg-white/10 px-4 py-2 shadow-lg shadow-black/20">
               <Image src="/images/logo.png" alt="New India Assurance logo" width={180} height={64} className="h-auto w-auto object-contain" />
             </div>
-            <nav className="hidden items-center gap-8 text-sm font-semibold text-slate-100 md:flex lg:gap-10">
-              <Link href="#" className="transition hover:text-white">Home</Link>
-              <Link href="#" className="transition hover:text-white">About</Link>
-              <Link href="#" className="transition hover:text-white">Products</Link>
-              <Link href="#" className="transition hover:text-white">Our Office</Link>
-              <Link href="#" className="transition hover:text-white">Blog</Link>
-              <Link href="#" className="transition hover:text-white">Help</Link>
-              <Link href="#" className="transition hover:text-white">Contact</Link>
+            <nav className="hidden h-full items-center justify-center gap-1 text-sm font-semibold text-slate-100 lg:flex xl:gap-2">
+              <Link href="#" className="bg-white px-3 py-3 text-[#35126d] transition hover:bg-violet-50 xl:px-4">Home</Link>
+              {["About", "Products", "Our Office"].map((item) => (
+                <Link key={item} href="#" className="whitespace-nowrap px-3 py-3 transition hover:bg-white/10 hover:text-white xl:px-4">
+                  {item}
+                </Link>
+              ))}
+              {["Blog", "Help", "Contact"].map((item) => (
+                <Link key={item} href="#" className="hidden whitespace-nowrap px-3 py-3 transition hover:bg-white/10 hover:text-white xl:inline-flex xl:px-4">
+                  {item}
+                </Link>
+              ))}
+              <details className="group relative xl:hidden">
+                <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 transition hover:bg-white/10 [&::-webkit-details-marker]:hidden">
+                  More
+                  <svg viewBox="0 0 20 20" className="h-4 w-4 transition group-open:rotate-180" fill="currentColor" aria-hidden="true">
+                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.1 1.02l-4.25 4.5a.75.75 0 0 1-1.1 0l-4.25-4.5a.75.75 0 0 1 .02-1.04Z" clipRule="evenodd" />
+                  </svg>
+                </summary>
+                <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50 min-w-48 overflow-hidden border border-white/15 bg-[#2b0d5a] p-2 shadow-2xl shadow-black/40">
+                  {["Blog", "Help", "Contact"].map((item) => (
+                    <Link key={item} href="#" className="block px-4 py-3 text-sm text-white transition hover:bg-white/10">
+                      {item}
+                    </Link>
+                  ))}
+                </div>
+              </details>
+              <a href="tel:+23052554455" className="ml-1 inline-flex whitespace-nowrap border border-white/15 bg-white/10 px-3 py-3 text-xs font-semibold text-white transition hover:bg-white/20 2xl:px-4 2xl:text-sm">
+                +230 5255 4455
+              </a>
             </nav>
-            <button type="button" onClick={() => setMobileMenuOpen((open) => !open)} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/20 md:hidden">
-              <span className="text-xl">{mobileMenuOpen ? "✕" : "☰"}</span>
-            </button>
-          </div>
 
-          <div className="flex items-center gap-3 text-sm md:text-base">
-            <div className="hidden rounded-full border border-white/15 bg-white/10 px-5 py-3 text-slate-100 md:inline-flex">
-              Call-us: (878) 967-4455
-            </div>
-            <Link href="/login" className="rounded-full bg-white px-7 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100">
+          <div className="flex items-center justify-end gap-3 text-sm">
+            <Link href="/login" className="hidden whitespace-nowrap bg-white px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 sm:inline-flex">
               LOGIN
             </Link>
+            <button type="button" onClick={() => setMobileMenuOpen((open) => !open)} className="inline-flex h-11 w-11 items-center justify-center border border-white/15 bg-white/10 text-white transition hover:bg-white/20 lg:hidden">
+              <span className="text-xl">{mobileMenuOpen ? "✕" : "☰"}</span>
+            </button>
           </div>
         </div>
 
         {mobileMenuOpen ? (
-          <div className="border-t border-white/10 bg-[#35126d] px-4 py-5 text-white md:hidden">
+          <div className="border-t border-white/10 bg-[#35126d] px-4 py-5 text-white lg:hidden">
             <nav className="space-y-3 text-sm font-semibold">
               {[
                 ["Home", "#"],
@@ -126,9 +157,9 @@ export default function Home() {
                   {label}
                 </Link>
               ))}
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-200">
-                Call-us: (878) 967-4455
-              </div>
+              <a href="tel:+23052554455" className="block rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-200 transition hover:bg-white/10">
+                Call us: +230 5255 4455
+              </a>
             </nav>
           </div>
         ) : null}
@@ -231,43 +262,66 @@ export default function Home() {
         </div>
       </main>
 
-      <section className="bg-white text-slate-950">
-        <div className="mx-auto max-w-[1400px] px-4 py-20 sm:px-6 lg:px-8">
-          <div className="grid gap-12 lg:grid-cols-[0.95fr_1fr] lg:items-start">
-            <div className="space-y-8">
-              <h2 className="max-w-2xl text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
-                WHY CHOOSE THE NEW INDIA ASSURANCE?
+      <section className="relative overflow-hidden bg-[#f7f5fb] text-slate-950">
+        <div className="pointer-events-none absolute -right-32 top-10 h-96 w-96 rounded-full bg-violet-200/45 blur-3xl" />
+        <div className="pointer-events-none absolute left-0 top-0 h-full w-px bg-violet-600/20 lg:left-[6%]" />
+        <div className="relative mx-auto max-w-[1400px] px-4 py-24 sm:px-6 lg:px-8 lg:py-28">
+          <div className="mb-14 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <div className="mb-5 flex items-center gap-4">
+                <span className="h-px w-14 bg-violet-700" />
+                <p className="text-xs font-bold uppercase tracking-[0.34em] text-violet-700">Why choose us</p>
+              </div>
+              <h2 className="text-4xl font-bold leading-[1.05] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+                Protection that moves<br className="hidden sm:block" /> with your life.
               </h2>
-              <p className="max-w-xl text-base leading-8 text-slate-600 sm:text-lg">
-                The right insurance partner delivers safety, reputation, and a strong network of products to protect your journey.
-              </p>
+            </div>
+            <p className="max-w-md border-l-2 border-violet-600 pl-5 text-base leading-8 text-slate-600">
+              Decades of experience, dependable service, and coverage designed to keep every journey moving forward.
+            </p>
+          </div>
 
-              <div className="grid gap-4 sm:grid-cols-[0.95fr_1.05fr]">
-                <div className="space-y-4">
-                  <div className="h-[220px] overflow-hidden border border-slate-200 bg-slate-100 rounded-[1.75rem] transition duration-500 hover:-translate-y-2 hover:shadow-xl sm:h-[260px]">
-                    <img src="/images/insurance_car.png" alt="Insurance umbrella" className="h-full w-full object-cover" />
-                  </div>
-                  <div className="h-[220px] overflow-hidden border border-slate-200 bg-slate-100 rounded-[1.75rem] transition duration-500 hover:-translate-y-2 hover:shadow-xl sm:h-[260px]">
-                    <img src="/images/car4.jpg" alt="Car" className="h-full w-full object-cover" />
-                  </div>
-                </div>
-                <div className="relative">
-                  <div className="overflow-hidden border border-slate-200 bg-slate-100 shadow-xl shadow-slate-300/10 rounded-none sm:-ml-8 xl:-ml-12">
-                    <img src="/images/car_white.jpg" alt="Insurance detail" className="h-full w-full object-cover" />
-                  </div>
+          <div className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-stretch">
+            <div className="group relative min-h-[540px] overflow-hidden bg-slate-900 shadow-[0_30px_80px_rgba(35,18,74,0.22)] sm:min-h-[660px]">
+              {whyChooseImages.map((image, index) => (
+                <img
+                  key={image.src}
+                  src={image.src}
+                  alt={image.alt}
+                  className={`absolute inset-0 h-full w-full object-cover transition-all duration-1000 ${index === whyImageIndex ? "scale-100 opacity-100" : "scale-105 opacity-0"}`}
+                />
+              ))}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/5 to-slate-950/20" />
+              <div className="absolute left-0 top-0 bg-[#35126d] px-6 py-5 text-white sm:px-8">
+                <p className="text-3xl font-bold">100+</p>
+                <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.26em] text-violet-200">Years of trust</p>
+              </div>
+              <div className="absolute inset-x-0 bottom-0 p-7 text-white sm:p-10">
+                <p className="text-xs font-bold uppercase tracking-[0.28em] text-violet-200">{whyChooseImages[whyImageIndex].label}</p>
+                <p className="mt-4 max-w-md text-2xl font-semibold leading-snug sm:text-3xl">Your vehicle deserves more than a policy. It deserves a promise.</p>
+                <div className="mt-7 flex gap-2">
+                  {whyChooseImages.map((image, index) => (
+                    <button
+                      key={image.src}
+                      type="button"
+                      aria-label={`Show ${image.label}`}
+                      onClick={() => setWhyImageIndex(index)}
+                      className={`h-1.5 transition-all duration-500 ${index === whyImageIndex ? "w-12 bg-white" : "w-6 bg-white/40 hover:bg-white/70"}`}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
 
-            <div className="space-y-6">
-              <div className="grid gap-6">
+            <div className="flex flex-col justify-between gap-4">
+              <div className="grid gap-4">
                 <div className="flex gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-6">
                   <div className="mt-1 flex h-12 w-12 items-center justify-center text-[#35126d]">
                     <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true"><path d="M12 2l7 4v5c0 5.25-3.75 9.88-7 11-3.25-1.12-7-5.75-7-11V6l7-4z" /></svg>
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-950">Safety</h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">Electric cars are extremely reliable and secure. After all, electricity is not flammable!</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">Coverage and responsive assistance that help protect you whenever the unexpected happens.</p>
                   </div>
                 </div>
 
@@ -277,7 +331,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-950">Reputation</h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">Electricity is known for its relatively cheap cost and, as a result, will be much more affordable.</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">A century of experience and a reputation built by serving generations of policyholders.</p>
                   </div>
                 </div>
 
@@ -287,7 +341,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-950">Range of Products</h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">Less noise means living in large cities with electric cars is much more comfortable.</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">Flexible cover for private cars, two-wheelers, commercial vehicles, and complete fleets.</p>
                   </div>
                 </div>
 
@@ -297,7 +351,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-950">Network of Offices</h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">Simplified design – repairs are less expensive and take less time.</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">An extensive service network that keeps knowledgeable help within easy reach.</p>
                   </div>
                 </div>
 
@@ -307,10 +361,14 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-950">Trustworthiness</h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">Drivers of electric or hybrid vehicles have a much lower cost to run. Fuel cost to run an EV is roughly one third the cost of a gasoline powered car.</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">Clear guidance, dependable claims support, and service you can count on at every step.</p>
                   </div>
                 </div>
               </div>
+              <Link href="#" className="group mt-2 inline-flex items-center justify-between bg-[#35126d] px-7 py-5 text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-violet-800">
+                Explore our coverage
+                <span className="text-2xl transition-transform group-hover:translate-x-2">→</span>
+              </Link>
             </div>
           </div>
         </div>

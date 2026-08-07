@@ -1,15 +1,20 @@
-import Link from "next/link";
+"use client";
 
-export const metadata = {
-  title: "New India Assurance | Dashboard",
-  description: "Dashboard view for New India Assurance motor insurance users.",
-};
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const [sector, setSector] = useState("");
+  const [product, setProduct] = useState("");
+  const [showRakAlert, setShowRakAlert] = useState(false);
+  const canContinue = Boolean(sector && product);
+
   return (
     <div className="min-h-screen bg-[#eef0ff] font-sans text-slate-900">
       <main className="w-full mx-auto flex min-h-screen max-w-[1440px] items-start gap-6 px-4 py-4 sm:px-6 lg:px-8">
-        <aside className="hidden w-[260px] shrink-0 md:block">
+        <aside className="hidden w-[290px] shrink-0 md:block">
           <div className="rounded-[2rem] border border-slate-200 bg-white p-3 shadow-[0_30px_80px_rgba(15,23,42,0.08)]">
             <div className="mb-4 rounded-[1.75rem] bg-slate-50 p-3">
               <div className="flex h-16 w-full items-center justify-center rounded-[1.5rem] bg-white py-3">
@@ -17,29 +22,49 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-3">
-                <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500">Sector</p>
-                <button className="mt-3 flex w-full items-center justify-between rounded-3xl border border-slate-200 bg-white px-3 py-3 text-left text-sm text-slate-900 transition hover:border-violet-600">
-                  <span>Motor Insurance</span>
-                  <span className="text-slate-400">▾</span>
-                </button>
+                <label htmlFor="sector" className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">Sector</label>
+                <select id="sector" value={sector} onChange={(event) => setSector(event.target.value)} className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-violet-600 focus:ring-2 focus:ring-violet-100">
+                  <option value="" disabled>Select sector</option>
+                  <option value="motor">Motor Insurance</option>
+                  <option value="health">Health Insurance</option>
+                  <option value="travel">Travel Insurance</option>
+                  <option value="home">Home Insurance</option>
+                </select>
               </div>
 
               <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-3">
-                <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500">Product or Policy</p>
-                <button className="mt-3 flex w-full items-center justify-between rounded-3xl border border-slate-200 bg-white px-3 py-3 text-left text-sm text-slate-900 transition hover:border-violet-600">
-                  <span>My Policies</span>
-                  <span className="text-slate-400">▾</span>
-                </button>
+                <label htmlFor="product-policy" className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Product or Policy</label>
+                <select id="product-policy" value={product} onChange={(event) => setProduct(event.target.value)} className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-violet-600 focus:ring-2 focus:ring-violet-100">
+                  <option value="" disabled>Select product or policy</option>
+                  <option value="comprehensive">Comprehensive Cover</option>
+                  <option value="third-party">Third Party Liability</option>
+                  <option value="commercial">Commercial Vehicle</option>
+                  <option value="two-wheeler">Two Wheeler Cover</option>
+                </select>
+              </div>
+
+              <div className="rounded-[1.75rem] border border-slate-200 bg-white p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">Online services</p>
+                <div className="mt-4 space-y-4">
+                  <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-800">
+                    <input type="checkbox" className="h-5 w-5 accent-violet-600" />
+                    Buy Online
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-800">
+                    <input type="checkbox" className="h-5 w-5 accent-violet-600" />
+                    Renew Online
+                  </label>
+                </div>
               </div>
             </div>
 
-            <div className="mt-8 flex flex-col gap-3">
-              <button className="rounded-3xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-700">
-                Buy Online
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <button type="button" disabled={!canContinue} onClick={() => setShowRakAlert(true)} className="rounded-2xl bg-[#35126d] px-4 py-3.5 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300">
+                Go
               </button>
-              <button className="rounded-3xl border border-violet-600 bg-white px-4 py-3 text-sm font-semibold text-violet-600 transition hover:bg-slate-100">
+              <button type="button" className="rounded-2xl border border-violet-600 bg-white px-3 py-3.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50">
                 Get Quote
               </button>
             </div>
@@ -244,6 +269,47 @@ export default function DashboardPage() {
           </div>
         </section>
       </main>
+
+      {showRakAlert ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="rak-alert-title">
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto bg-white shadow-[0_30px_100px_rgba(15,23,42,0.35)]">
+            <div className="sticky top-0 flex items-center justify-between border-b border-violet-100 bg-[#35126d] px-6 py-5 text-white sm:px-8">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-violet-200">Important notice</p>
+                <h2 id="rak-alert-title" className="mt-1 text-2xl font-bold">Alert</h2>
+              </div>
+              <button type="button" onClick={() => setShowRakAlert(false)} className="flex h-10 w-10 items-center justify-center border border-white/25 text-xl transition hover:bg-white/10" aria-label="Close alert">×</button>
+            </div>
+
+            <div className="space-y-5 px-6 py-7 text-sm leading-7 text-slate-700 sm:px-8">
+              <p><strong className="text-slate-950">Dear Customer,</strong> Now you can also purchase RAK (Raasta Aapatti Kavach) Policy for your <strong>PERSONAL ACCIDENT</strong> compensation and reimbursement of hospitalization expenses incurred due to an accident.</p>
+              <div className="border-l-4 border-violet-600 bg-violet-50 p-5">
+                <h3 className="font-bold uppercase tracking-wide text-[#35126d]">Raasta Aapatti (Road Safety Insurance)</h3>
+                <p className="mt-2">The policy offers PERSONAL ACCIDENT compensation cover including reimbursement of hospitalization expenses incurred due to an accident.</p>
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-950">Section I:</h3>
+                <p className="mt-1">The policy offers Personal Accident compensation cover for Sum Insured ranging from Rs 25,000 to Rs 1 lac and in further multiples of Rs 1 lac up to Rs 10 lac.</p>
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-950">Section II:</h3>
+                <p className="mt-1">Hospitalization expenses for bodily injury caused by and arising out of an accident:</p>
+                <ol className="mt-2 space-y-1 pl-5" type="a">
+                  <li>Road Accident (at additional premium)</li>
+                  <li>Arising out of and during the course of employment (if opted for at additional premium)</li>
+                  <li>Any other accident other than (a) and (b) above—wider cover (if opted for at an additional premium)</li>
+                </ol>
+              </div>
+              <p>There is also an option to cover, at an additional premium, hospitalization expenses for bodily injury caused by and arising out of an accident to Third Parties arising out of a motor accident.</p>
+            </div>
+
+            <div className="sticky bottom-0 flex justify-end gap-3 border-t border-slate-200 bg-white px-6 py-5 sm:px-8">
+              <button type="button" onClick={() => setShowRakAlert(false)} className="border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Cancel</button>
+              <button type="button" onClick={() => router.push("/rak-policy")} className="bg-[#35126d] px-8 py-3 text-sm font-semibold text-white transition hover:bg-violet-800">OK</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

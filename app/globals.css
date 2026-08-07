@@ -43,3 +43,17 @@ body {
 .animate-float-slow {
   animation: float-slow 9s ease-in-out infinite;
 }
+
+@keyframes auth-image-drift {
+  0%, 100% { transform: scale(1.04) translate3d(0, 0, 0); }
+  50% { transform: scale(1.12) translate3d(-1.5%, -1%, 0); }
+}
+
+.auth-hero-image {
+  animation: auth-image-drift 16s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-hero-image { animation: none; }
+}

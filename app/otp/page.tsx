@@ -51,6 +51,8 @@ function OTPContent() {
       <main className="mx-auto grid min-h-screen max-w-350 grid-cols-1 items-start gap-10 px-4 py-10 lg:grid-cols-[0.95fr_0.65fr] lg:px-8">
         <section className="relative overflow-hidden rounded-4xl bg-[#412484] shadow-2xl">
           <div className="relative flex h-full min-h-130 items-center justify-center overflow-hidden rounded-4xl px-6 py-8 md:px-12">
+            <Image src="/images/login_car.jpg" alt="Insured car on the road" fill priority className="auth-hero-image object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#28135f]/95 via-[#412484]/80 to-slate-950/50" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.24),rgba(255,255,255,0)_35%)]" />
             <div className="relative z-10 flex w-full max-w-3xl flex-col gap-10 text-white">
               <div className="rounded-4xl bg-white/10 p-8 shadow-[0_40px_120px_rgba(0,0,0,0.14)] ring-1 ring-white/20 sm:p-10">

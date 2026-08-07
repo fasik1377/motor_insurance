@@ -22,7 +22,9 @@ function MobileContent() {
     <div className="min-h-screen bg-[#eef0ff]">
       <main className="mx-auto grid min-h-screen max-w-[1200px] grid-cols-1 items-start gap-10 px-4 py-10 lg:grid-cols-[1.05fr_0.95fr] lg:px-8">
         <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#412484] via-[#3a2394] to-[#1d1051] shadow-2xl">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.16),transparent_45%)]" />
+          <Image src="/images/login_car.jpg" alt="Insured car on the road" fill priority className="auth-hero-image object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#28135f]/95 via-[#35126d]/75 to-slate-950/45" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.2),transparent_45%)]" />
           <div className="relative z-10 flex min-h-[620px] flex-col justify-between gap-8 p-8 md:p-10">
             <div className="rounded-[2rem] bg-white/10 p-8 shadow-[0_40px_120px_rgba(0,0,0,0.18)] ring-1 ring-white/10 sm:p-10">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-white/80">
