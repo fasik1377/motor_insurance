@@ -21,24 +21,27 @@ const steps = [
 ];
 
 const newVehicleSections = [
-  { title: "Client Details", pending: "7 mandatory fields pending", alert: true, rows: [
+  { title: "KYC", pending: "7 mandatory fields pending", alert: true, rows: [
     ["Registration No.", "Vehicle registration number"], ["Make", "Vehicle manufacturer"], ["Model", "Vehicle model"], ["Engine No.", "Engine identification number"], ["Chassis No.", "Chassis identification number"], ["Colour", "Vehicle colour"], ["Year Mfg. & Date of Reg.", "Manufacturing year and registration date"], ["Seating", "Full count for seats and students"], ["CC / kW", "Engine capacity or power"], ["Gross Vehicle Weight", "Registered gross vehicle weight"], ["Trailer Ft.", "Trailer measurement, if applicable"], ["Remarks", "Additional vehicle remarks"],
   ] },
-  { title: "Motor Proposal", pending: "3 mandatory fields pending", alert: true, rows: [
+  { title: "Policy Details", pending: "3 mandatory fields pending", alert: true, rows: [
     ["Cover Required", "Selected motor cover"], ["Sum Insured", "Declared sum insured"], ["Voluntary Excess Amount", "Selected voluntary excess"], ["Young Driver Excess", "Applicable young driver excess"], ["Compulsory Excess", "Mandatory policy excess"], ["TPF Excess", "Third-party fire excess"], ["TPPD Excess", "Third-party property damage excess"], ["Additional Excess", "Any additional excess amount"], ["Theft Excess", "Applicable theft excess"], ["Total Loss Excess", "Applicable total-loss excess"], ["Approved Discount Request", "Approved discount reference, if available"],
   ] },
-  { title: "Policy Period", rows: [
+  { title: "Vechicle Details", rows: [
     ["Country", "Mauritius"], ["Vehicle Type", "Selected vehicle type"], ["Fuel Type", "Vehicle fuel type"], ["Class", "Motor policy class"], ["Vehicle Status", "New or existing vehicle"], ["Issue Date", "Policy issue date and time"], ["From", "Policy commencement date"], ["To", "Policy expiry date"], ["Agent", "Issuing agent details"], ["Client", "Client master record"], ["Lien", "Lienholder details, if applicable"], ["Policy Risk", "Standard or selected risk"],
   ] },
-  { title: "Get Protection for Accessories", rows: [
+  { title: "Trailers & Others", rows: [
     ["Radio", "Electrical selection, make/model, rate, amount and premium"], ["Cassette Player", "Electrical selection, make/model and value"], ["Sunvisor", "Accessory selection and value"], ["Roof Rack", "Accessory selection and value"], ["Aerial", "Accessory selection and value"], ["Special Petrol Cap", "Accessory selection and value"], ["Spot and/or Foglights", "Electrical selection, make/model and value"], ["Cushion Cover & Mats", "Accessory selection and value"], ["Back Sensor", "Electrical selection, make/model and value"], ["Body Kit", "Front/rear body-kit protection"], ["Cassette and CD Player", "Electrical selection, make/model and value"], ["CD Player", "Electrical selection, make/model and value"], ["Ceramic Coating", "Accidental damage protection"], ["DVD Player", "Electrical selection, make/model and value"], ["Electrical Central Door Locking", "Electrical selection, make/model and value"], ["Exhaust Pipe", "Accessory selection and value"], ["Fender", "Accessory selection and value"],
   ] },
-  { title: "Additional Discounts", rows: [
+  { title: "Accessories", rows: [
     ["No Claim Bonus", "Rate percentage and discount amount"], ["Fleet Discount", "Rate percentage and discount amount"], ["Special Discount", "Rate percentage and discount amount"], ["Claim Loading", "Rate percentage and loading amount"], ["Get Discount %", "Calculate and apply eligible discount"], ["Policy Remarks for Agent", "Agent discount remarks"], ["Remarks for Other Loading", "Additional loading remarks"],
   ] },
-  { title: "Additional Covers (Optional)", rows: [
+  { title: "General Information", rows: [
     ["Passenger Risk", "Optional passenger-risk cover"], ["Personal Accident", "Personal accident protection"], ["PA (Conductor)", "Personal accident cover for conductor"], ["PA (Employee)", "Personal accident cover for employee"], ["PA (Family Members)", "Personal accident cover for family members"], ["Auto Plus", "Optional Auto Plus cover"], ["Driver Only", "Named-driver protection"], ["Loss of Use", "Loss-of-use benefit"], ["Towing", "Towing expense cover"], ["Strike, Riot and Civil Commotion", "Additional peril protection"], ["Earthquake", "Earthquake protection"], ["Cyclone", "Cyclone protection"], ["Windscreen Extension", "Extended windscreen cover"], ["Waiver of Excess", "Optional excess waiver"], ["Loss of Car Keys", "Replacement car-key cover"], ["Airfreight Expenses", "Airfreight expense protection"], ["Personal Belongings", "Personal belongings in vehicle"], ["Damage by Rodents", "Rodent-damage protection"], ["Accidental Misfuelling", "Misfuelling expense cover"], ["Enhanced Personal Accidental", "Enhanced personal accident benefit"], ["Funeral Expenses", "Funeral expense benefit"],
   ] },
+  { title: "Common Det.", rows: [] },
+  { title: "Premium", rows: [] },
+  { title: "Attached Document", rows: [] },
 ];
 
 function StepIcon({ type }: { type: string }) {
@@ -111,9 +114,7 @@ function ClientDetailsForm() {
         <div className="grid gap-3 sm:grid-cols-2"><label className="flex items-center gap-2 text-sm"><input type="checkbox" className="accent-[#35126d]" /> Decline</label><label className="text-sm">Decline Remarks<input className={`mt-1 ${inputClass}`} /></label><label className="flex items-center gap-2 text-sm"><input type="checkbox" className="accent-[#35126d]" /> Special Client</label><label className="text-sm">Decline Date<input type="date" className={`mt-1 ${inputClass}`} /></label></div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 border-y border-violet-200 bg-white p-3 sm:grid-cols-5">
-        {["Save", "Print", "Print All", "CDD", "Exit"].map((action) => <button key={action} type="button" className="border border-violet-200 bg-violet-50 px-3 py-3 text-sm font-semibold text-[#35126d] transition hover:bg-violet-100">{action}</button>)}
-      </div>
+      
       <div className="grid gap-4 p-4 sm:grid-cols-[1fr_1.3fr] sm:items-end">
         <p className="text-xs leading-5 text-slate-600">Enter Name / National ID / Passport No / BRN to verify the prospective client is in ICAC/ARD/UNSC list.</p>
         <div><textarea rows={3} className={inputClass} /><button type="button" className="mt-2 w-full bg-[#35126d] px-4 py-3 text-sm font-bold text-white transition hover:bg-violet-800">CLICK HERE TO VERIFY</button></div>
@@ -131,7 +132,7 @@ function MotorProposalForm() {
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
       <div className="flex overflow-x-auto border-b border-violet-200 bg-violet-50 text-xs font-semibold text-[#35126d]">
-        {["Policy", "Vehicle", "Trailers & Others", "Accessory", "Gen. Info", "Comm Det", "Premium", "Attach Documents"].map((tab, index) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${index === 0 ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
+        {["Policy"].map((tab, index) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${index === 0 ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
       </div>
       <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
         <div className="space-y-3 p-4 sm:p-6 lg:border-r lg:border-violet-200">
@@ -157,11 +158,343 @@ function MotorProposalForm() {
   );
 }
 
+function VehicleProposalForm() {
+  const inputClass = "h-9 w-full border border-violet-200 bg-white px-2 text-sm text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
+  const labelClass = "text-xs font-semibold text-slate-600";
+  const documents = ["Certificate", "Vignette", "Sch", "Inv", "Premium", "Com", "PSSA", "Acc. Gen", "ICAC", "MIE", "AML", "AMCCU", "MRA", "PSEA", "BOM", "EWF", "Pro Note", "Summary", "Policy-wording", "KYC", "Scarcity", "Proposal"];
+  const actions = ["Insert & Save", "Edit & Save", "View", "Print", "Not approved", "Approve", "Insert 2 NTA", "Reports in PDF", "Exit"];
+
+  const field = (label: string, type: "input" | "select" = "input") => (
+    <label key={label} className="grid grid-cols-[135px_1fr] items-center gap-2">
+      <span className={labelClass}>{label}</span>
+      {type === "select" ? <select className={inputClass}><option>Select</option></select> : <input className={inputClass} />}
+    </label>
+  );
+
+  return (
+    <div className="border border-violet-200 bg-[#f7f5fb]">
+      <div className="flex overflow-x-auto border-b border-violet-200 bg-violet-50 text-xs font-semibold text-[#35126d]">
+        {["Policy", "Vehicle", "Trailers & Others", "Accessory", "Gen. Info", "Commn Det", "Premium", "Attach Documents"].map((tab) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${tab === "Vehicle" ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
+      </div>
+      <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+        <div className="p-4 sm:p-5 lg:border-r lg:border-violet-200">
+          <div className="grid gap-x-5 gap-y-3 sm:grid-cols-2">
+            <div className="space-y-3">{field("Reg No")}{field("Make", "select")}{field("Model", "select")}{field("Eng No")}{field("Chassis No")}</div>
+            <div className="space-y-3">{field("Colour")}{field("Year Mfg. & Date of Reg.")}{field("Seating")}{field("CC / kW")}{field("Trailer Ft.")}</div>
+            <label className="grid grid-cols-[135px_1fr] items-center gap-2"><span className={labelClass}>Gross Vehicle Weight</span><input className={inputClass} /></label>
+            <label className="grid grid-cols-[135px_1fr] items-center gap-2"><span className={labelClass}>Remarks</span><input className={inputClass} /></label>
+          </div>
+
+          <fieldset className="mt-5 border-t border-violet-200 pt-4">
+            <legend className="pr-3 text-sm font-bold text-[#35126d]">Cover Details</legend>
+            <label className="mb-4 flex items-start gap-2 text-xs font-semibold text-[#35126d]"><input type="checkbox" className="mt-0.5 accent-[#35126d]" />Calculate from basic Tariff, instead of Extended Comprehensive Cover for Old Vehicles.</label>
+            <div className="grid gap-x-5 gap-y-3 sm:grid-cols-2">
+              <div className="space-y-3">{field("Cover Required", "select")}{field("Vol. Excess Amount")}{field("Young Driver Excess", "select")}{field("TPF Excess", "select")}{field("Additional Excess", "select")}{field("Total Loss Excess")}</div>
+              <div className="space-y-3">{field("Add. Excess Remarks")}{field("Sum Insured")}{field("Compulsory Excess", "select")}{field("TPPD Excess")}{field("Theft Excess")}</div>
+            </div>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <label className="grid flex-1 grid-cols-[185px_1fr] items-center gap-2"><span className={labelClass}>Approved discount request</span><select className={inputClass}><option>Select request</option></select></label>
+              <button type="button" className="h-9 border border-violet-300 bg-white px-4 text-xs font-semibold text-[#35126d]">Update</button>
+              <button type="button" className="h-9 bg-[#35126d] px-5 text-xs font-bold text-white">Calculate Premium</button>
+            </div>
+          </fieldset>
+
+          <div className="mt-12">
+            <h3 className="mb-2 text-sm font-bold text-[#35126d]">Vehicle Details</h3>
+            <div className="overflow-x-auto"><table className="w-full min-w-[560px] border-collapse text-left text-xs"><thead><tr className="bg-violet-50 text-[#35126d]"><th className="border border-violet-200 px-3 py-2">Policy No</th><th className="border border-violet-200 px-3 py-2">Name</th><th className="border border-violet-200 px-3 py-2">Claim Amount</th><th className="border border-violet-200 px-3 py-2">Status</th></tr></thead><tbody><tr className="bg-amber-50"><td className="h-8 border border-violet-100" /><td className="border border-violet-100" /><td className="border border-violet-100" /><td className="border border-violet-100" /></tr><tr className="bg-emerald-50"><td className="h-8 border border-violet-100" /><td className="border border-violet-100" /><td className="border border-violet-100" /><td className="border border-violet-100" /></tr></tbody></table></div>
+          </div>
+        </div>
+        <aside className="bg-white p-4 sm:p-5">
+          <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
+          <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="vehicle-print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
+          <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] hover:bg-violet-100">{action}</button>)}</div>
+          <label className="mt-5 block text-xs font-bold uppercase tracking-wider text-red-600">Remarks<textarea rows={4} className={`mt-2 ${inputClass}`} /></label>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function TrailersAndOthersForm() {
+  const inputClass = "h-9 w-full border border-violet-200 bg-white px-2 text-sm text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
+  const documents = ["Certificate", "Vignette", "Sch", "Inv", "Premium", "Com", "PSSA", "Acc. Gen", "ICAC", "MIE", "AML", "AMCCU", "MRA", "PSEA", "BOM", "EWF", "Pro Note", "Summary", "Policy-wording", "KYC", "Scarcity", "Proposal"];
+  const actions = ["Insert & Save", "Edit & Save", "View", "Print", "Not approved", "Approve", "Insert 2 NTA", "Reports in PDF", "Exit"];
+  const columns = ["Reg No", "Make", "Model", "Chassis No", "Status", "Sum Insured", "Rate", "Premium", "Excess (Comp)", "Excess (Young)"];
+
+  return (
+    <div className="border border-violet-200 bg-[#f7f5fb]">
+      <div className="flex overflow-x-auto border-b border-violet-200 bg-violet-50 text-xs font-semibold text-[#35126d]">
+        {["Policy", "Vehicle", "Trailers & Others", "Accessory", "Gen. Info", "Commn Det", "Premium", "Attach Documents"].map((tab) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${tab === "Trailers & Others" ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
+      </div>
+
+      <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+        <div className="p-4 sm:p-5 lg:border-r lg:border-violet-200">
+          <div className="grid gap-3 sm:grid-cols-[130px_1fr_55px_150px] sm:items-center">
+            <label className="text-xs font-semibold text-slate-600">Cover Required</label>
+            <select className={inputClass}><option>Select cover</option></select>
+            <label className="text-xs font-semibold text-slate-600">Feet</label>
+            <input type="number" min="0" className={inputClass} />
+          </div>
+
+          <div className="mt-4 overflow-x-auto border border-violet-200">
+            <table className="w-full min-w-[900px] border-collapse text-left text-xs">
+              <thead><tr className="bg-violet-100 text-[#35126d]">{columns.map((column) => <th key={column} className="border-r border-violet-200 px-2 py-2 font-semibold last:border-r-0">{column}</th>)}</tr></thead>
+              <tbody><tr className="bg-slate-100">{columns.map((column) => <td key={column} className="h-44 border-r border-violet-100 last:border-r-0" />)}</tr></tbody>
+            </table>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <button type="button" className="h-9 bg-[#35126d] px-5 text-xs font-bold text-white hover:bg-violet-800">Calculate Premium</button>
+            <label className="flex items-center gap-3 text-xs font-semibold text-slate-600 sm:w-64"><span>Total Premium</span><input type="number" defaultValue="0" className={inputClass} /></label>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            <label className="grid gap-2 sm:grid-cols-[210px_1fr]"><span className="pt-2 text-xs font-semibold text-slate-600">Additional Information (if required)</span><textarea rows={2} className="w-full border border-violet-200 bg-white px-2 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" /></label>
+            <label className="grid gap-2 sm:grid-cols-[210px_1fr]"><span className="pt-2 text-xs font-semibold text-slate-600">Remarks (Super User)</span><textarea rows={2} className="w-full border border-violet-200 bg-white px-2 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" /></label>
+            <label className="grid gap-2 sm:grid-cols-[210px_1fr]"><span className="pt-2 text-xs font-semibold text-slate-600">Point (6)</span><textarea rows={2} className="w-full border border-violet-200 bg-white px-2 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" /></label>
+            <label className="grid gap-2 sm:grid-cols-[210px_1fr]"><span className="pt-2 text-xs font-semibold text-slate-600">Point (7)</span><textarea rows={2} className="w-full border border-violet-200 bg-white px-2 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" /></label>
+          </div>
+        </div>
+
+        <aside className="bg-white p-4 sm:p-5">
+          <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
+          <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="trailer-print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
+          <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] hover:bg-violet-100">{action}</button>)}</div>
+          <label className="mt-5 block text-xs font-bold uppercase tracking-wider text-red-600">Remarks<textarea rows={4} className={`mt-2 ${inputClass}`} /></label>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function AccessoriesForm() {
+  const inputClass = "h-9 w-full border border-violet-200 bg-white px-2 text-sm text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
+  const documents = ["Certificate", "Vignette", "Sch", "Inv", "Premium", "Com", "PSSA", "Acc. Gen", "ICAC", "MIE", "AML", "AMCCU", "MRA", "PSEA", "BOM", "EWF", "Pro Note", "Summary", "Policy-wording", "KYC", "Scarcity", "Proposal"];
+  const actions = ["Insert & Save", "Edit & Save", "View", "Print", "Not approved", "Approve", "Insert 2 NTA", "Reports in PDF", "Exit"];
+  const accessories = ["Radio", "Cassette Player", "Sunvisor", "Roof Rack", "Aerial", "Special Petrol Cap", "Spot and / or Foglights", "Cushion Cover & Mats", "Any other accessories", "Back Sensor", "Body Kit", "Body Kit Front", "Bumper Design", "Carpet Jackets", "Cassette and CD Player", "CD Player", "Ceramic Coating (Accidental Damage)", "Door Visor", "DVD Player", "Economical Rep.", "Electrical Cables & Accessories", "Electrical Central Door Locking", "Emblem Design Front", "Exhaust Pipe", "Exhaust tip", "Fender"];
+
+  return (
+    <div className="border border-violet-200 bg-[#f7f5fb]">
+      <div className="flex overflow-x-auto border-b border-violet-200 bg-violet-50 text-xs font-semibold text-[#35126d]">
+        {["Policy", "Vehicle", "Trailers & Others", "Accessory", "Gen. Info", "Commn Det", "Premium", "Attach Documents"].map((tab) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${tab === "Accessory" ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
+      </div>
+
+      <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+        <div className="p-4 sm:p-5 lg:border-r lg:border-violet-200">
+          <div className="max-h-[520px] overflow-auto border border-violet-200">
+            <table className="w-full min-w-[720px] border-collapse text-left text-xs">
+              <thead className="sticky top-0 z-10"><tr className="bg-violet-100 text-[#35126d]"><th className="border-r border-violet-200 px-2 py-2">Description</th><th className="border-r border-violet-200 px-2 py-2 text-center">Electrical</th><th className="border-r border-violet-200 px-2 py-2">Make &amp; Model</th><th className="border-r border-violet-200 px-2 py-2">Rate</th><th className="border-r border-violet-200 px-2 py-2">Amount</th><th className="px-2 py-2">Premium</th></tr></thead>
+              <tbody>{accessories.map((accessory, index) => <tr key={accessory} className={index % 2 === 0 ? "bg-white" : "bg-emerald-50"}><td className="border-b border-r border-violet-100 px-2 py-1.5 font-medium text-slate-700">{accessory}</td><td className="border-b border-r border-violet-100 text-center"><input type="checkbox" defaultChecked={accessory === "CD Player"} className="accent-[#35126d]" aria-label={`${accessory} electrical`} /></td><td className="border-b border-r border-violet-100 p-1"><input className="h-7 w-full border border-transparent bg-transparent px-1 outline-none focus:border-violet-300 focus:bg-white" aria-label={`${accessory} make and model`} /></td><td className="border-b border-r border-violet-100 p-1"><input type="number" defaultValue="4" className="h-7 w-16 bg-transparent px-1 text-right outline-none focus:bg-white" aria-label={`${accessory} rate`} /></td><td className="border-b border-r border-violet-100 p-1"><input type="number" className="h-7 w-full bg-transparent px-1 outline-none focus:bg-white" aria-label={`${accessory} amount`} /></td><td className="border-b border-violet-100 p-1"><input type="number" className="h-7 w-full bg-transparent px-1 outline-none focus:bg-white" aria-label={`${accessory} premium`} /></td></tr>)}</tbody>
+            </table>
+          </div>
+          <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <button type="button" className="h-9 border border-violet-300 bg-white px-5 text-xs font-bold text-[#35126d] hover:bg-violet-50">SMS TEST</button>
+            <label className="flex items-center gap-3 text-xs font-semibold text-slate-600 sm:w-64"><span>Total Premium</span><input type="number" defaultValue="0" className={inputClass} /></label>
+          </div>
+        </div>
+
+        <aside className="bg-white p-4 sm:p-5">
+          <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
+          <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="accessory-print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
+          <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] hover:bg-violet-100">{action}</button>)}</div>
+          <label className="mt-5 block text-xs font-bold uppercase tracking-wider text-red-600">Remarks<textarea rows={4} className={`mt-2 ${inputClass}`} /></label>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function GeneralInformationForm() {
+  const inputClass = "h-9 w-full border border-violet-200 bg-white px-2 text-sm text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
+  const documents = ["Certificate", "Vignette", "Sch", "Inv", "Premium", "Com", "PSSA", "Acc. Gen", "ICAC", "MIE", "AML", "AMCCU", "MRA", "PSEA", "BOM", "EWF", "Pro Note", "Summary", "Policy-wording", "KYC", "Scarcity", "Proposal"];
+  const actions = ["Insert & Save", "Edit & Save", "View", "Print", "Not approved", "Approve", "Insert 2 NTA", "Reports in PDF", "Exit"];
+  const questions = [
+    "Do you or any other person who to your knowledge will drive suffer from defective vision or hearing or from any physical infirmity?",
+    "Do you require insurance to be restricted to the vehicle being driven solely by yourself?",
+    "If Yes, please specify details of other drivers with valid licence in Mauritius.",
+    "Will the vehicle be used exclusively for private, social, domestic, pleasure and professional purpose?",
+    "Carriage of goods other than samples or personal luggage?",
+    "Is the vehicle in good condition free from any defect?",
+    "Has the driver ever been involved or convicted for causing any accident or loss?",
+    "Has any insurance company ever declined or refused to continue any insurance of yours?",
+  ];
+
+  return (
+    <div className="border border-violet-200 bg-[#f7f5fb]">
+      <div className="flex overflow-x-auto border-b border-violet-200 bg-violet-50 text-xs font-semibold text-[#35126d]">
+        {["Policy", "Vehicle", "Trailers & Others", "Accessory", "Gen. Info", "Commn Det", "Premium", "Attach Documents"].map((tab) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${tab === "Gen. Info" ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
+      </div>
+
+      <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+        <div className="space-y-3 p-4 sm:p-5 lg:border-r lg:border-violet-200">
+          {questions.slice(0, 2).map((question, index) => <div key={question} className="grid gap-3 sm:grid-cols-[22px_1fr_105px]"><span className="text-xs font-semibold">{String.fromCharCode(97 + index)})</span><p className="text-xs leading-5 text-slate-700">{question}</p><div className="flex items-center gap-4 text-xs"><label className="flex items-center gap-1"><input type="radio" name={`general-${index}`} className="accent-[#35126d]" />Yes</label><label className="flex items-center gap-1"><input type="radio" name={`general-${index}`} className="accent-[#35126d]" />No</label></div></div>)}
+
+          <div className="grid gap-3 sm:grid-cols-[22px_1fr_220px]"><span className="text-xs font-semibold">c)</span><p className="text-xs leading-5 text-slate-700">{questions[2]}</p><div className="overflow-hidden border border-violet-200"><div className="grid grid-cols-[1fr_50px] bg-violet-100 px-2 py-1 text-[11px] font-semibold"><span>Name</span><span>Age</span></div><div className="h-12 bg-slate-100" /></div></div>
+
+          {questions.slice(3, 6).map((question, index) => <div key={question} className="grid gap-3 sm:grid-cols-[22px_1fr_105px]"><span className="text-xs font-semibold">{String.fromCharCode(100 + index)})</span><p className="text-xs leading-5 text-slate-700">{question}</p><div className="flex items-center gap-4 text-xs"><label className="flex items-center gap-1"><input type="radio" name={`general-${index + 3}`} className="accent-[#35126d]" />Yes</label><label className="flex items-center gap-1"><input type="radio" name={`general-${index + 3}`} className="accent-[#35126d]" />No</label></div></div>)}
+
+          <div className="grid gap-3 border-y border-violet-100 py-3 sm:grid-cols-[150px_1fr_150px_1fr]"><label className="text-xs font-semibold text-slate-600">Licence Number</label><input className={inputClass} /><label className="text-xs font-semibold text-slate-600">Issued Date</label><input type="date" className={inputClass} /></div>
+          <div className="grid gap-3 sm:grid-cols-[250px_1fr]"><p className="text-xs leading-5 text-slate-700">State of Driving Licence / Licence</p><div className="flex gap-5 text-xs"><label className="flex items-center gap-1"><input type="radio" name="licence-state" className="accent-[#35126d]" />Permanent</label><label className="flex items-center gap-1"><input type="radio" name="licence-state" className="accent-[#35126d]" />Learner</label></div></div>
+          <label className="grid gap-3 sm:grid-cols-[250px_1fr]"><span className="text-xs leading-5 text-slate-700">Number of years you have held a valid licence to drive motor vehicles in Mauritius</span><input type="number" min="0" className={inputClass} /></label>
+
+          <div><p className="mb-2 text-xs leading-5 text-slate-700">Give details of accidents or claims (including pending prosecution, if any)</p><div className="overflow-x-auto border border-violet-200"><table className="w-full min-w-[620px] border-collapse text-left text-xs"><thead><tr className="bg-violet-100 text-[#35126d]"><th className="border-r border-violet-200 px-2 py-2">Driver Name</th><th className="border-r border-violet-200 px-2 py-2">Date of Accident</th><th className="border-r border-violet-200 px-2 py-2">Circumstances of Accident/Claim</th><th className="px-2 py-2">Loss/Cost Rs.</th></tr></thead><tbody><tr className="bg-amber-50"><td className="h-8 border-r border-violet-100" /><td className="border-r border-violet-100" /><td className="border-r border-violet-100" /><td /></tr><tr className="bg-emerald-50"><td className="h-8 border-r border-violet-100" /><td className="border-r border-violet-100" /><td className="border-r border-violet-100" /><td /></tr></tbody></table></div></div>
+
+          <label className="grid gap-3 sm:grid-cols-[290px_1fr]"><span className="text-xs text-slate-700">Name of the insurance company previously insured with</span><select className={inputClass}><option>Select company</option></select></label>
+          <label className="grid gap-3 sm:grid-cols-[290px_1fr]"><span className="text-xs text-slate-700">Details of past claims (total claims for 5 years)</span><input className={inputClass} /></label>
+          {questions.slice(6).map((question, index) => <div key={question} className="grid gap-3 sm:grid-cols-[22px_1fr_105px]"><span className="text-xs font-semibold">{String.fromCharCode(108 + index)})</span><p className="text-xs leading-5 text-slate-700">{question}</p><div className="flex items-center gap-4 text-xs"><label className="flex items-center gap-1"><input type="radio" name={`general-${index + 6}`} className="accent-[#35126d]" />Yes</label><label className="flex items-center gap-1"><input type="radio" name={`general-${index + 6}`} className="accent-[#35126d]" />No</label></div></div>)}
+          <label className="grid gap-3 sm:grid-cols-[290px_1fr]"><span className="text-xs text-slate-700">Price paid by you</span><input type="number" className={inputClass} /></label>
+          <label className="grid gap-3 sm:grid-cols-[290px_1fr]"><span className="text-xs text-slate-700">Date of purchase of vehicle</span><input type="date" className={inputClass} /></label>
+        </div>
+
+        <aside className="bg-white p-4 sm:p-5">
+          <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
+          <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="general-print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
+          <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] hover:bg-violet-100">{action}</button>)}</div>
+          <label className="mt-5 block text-xs font-bold uppercase tracking-wider text-red-600">Remarks<textarea rows={4} className={`mt-2 ${inputClass}`} /></label>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function CommonDetailsForm() {
+  const inputClass = "h-9 w-full border border-violet-200 bg-white px-2 text-sm text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
+  const documents = ["Certificate", "Vignette", "Sch", "Inv", "Premium", "Com", "PSSA", "Acc. Gen", "ICAC", "MIE", "AML", "AMCCU", "MRA", "PSEA", "BOM", "EWF", "Pro Note", "Summary", "Policy-wording", "KYC", "Scarcity", "Proposal"];
+  const actions = ["Insert & Save", "Edit & Save", "View", "Print", "Not approved", "Approve", "Insert 2 NTA", "Reports in PDF", "Exit"];
+  const yesNo = (name: string) => <div className="flex items-center gap-5 text-xs"><label className="flex items-center gap-1"><input type="radio" name={name} className="accent-[#35126d]" />Yes</label><label className="flex items-center gap-1"><input type="radio" name={name} className="accent-[#35126d]" />No</label></div>;
+
+  return (
+    <div className="border border-violet-200 bg-[#f7f5fb]">
+      <div className="flex overflow-x-auto border-b border-violet-200 bg-violet-50 text-xs font-semibold text-[#35126d]">
+        {["Policy", "Vehicle", "Trailers & Others", "Accessory", "Gen. Info", "Commn Det", "Premium", "Attach Documents"].map((tab) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${tab === "Commn Det" ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
+      </div>
+
+      <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+        <div className="space-y-4 p-4 sm:p-6 lg:border-r lg:border-violet-200">
+          <div className="grid gap-3 sm:grid-cols-[22px_1fr_minmax(360px,1.2fr)]"><span className="text-xs font-semibold">a)</span><p className="text-xs leading-5 text-slate-700">Purpose for which vehicle will be used</p><div className="flex flex-wrap gap-x-5 gap-y-2 text-xs"><label className="flex items-center gap-1"><input type="radio" name="vehicle-purpose" className="accent-[#35126d]" />Passenger Carry</label><label className="flex items-center gap-1"><input type="radio" name="vehicle-purpose" className="accent-[#35126d]" />Commercial</label><label className="flex items-center gap-1"><input type="radio" name="vehicle-purpose" className="accent-[#35126d]" />Goods Carry</label><label className="flex items-center gap-1"><input type="radio" name="vehicle-purpose" className="accent-[#35126d]" />Other</label></div></div>
+          <div className="grid gap-3 sm:grid-cols-[22px_1fr_minmax(360px,1.2fr)]"><span className="text-xs font-semibold">b)</span><p className="text-xs leading-5 text-slate-700">If vehicle used for carriage of goods specify its nature</p><div className="flex flex-wrap gap-x-5 gap-y-2 text-xs"><label className="flex items-center gap-1"><input type="radio" name="goods-nature" className="accent-[#35126d]" />General</label><label className="flex items-center gap-1"><input type="radio" name="goods-nature" className="accent-[#35126d]" />Hazardous</label></div></div>
+          <div className="grid gap-3 sm:grid-cols-[22px_1fr_230px]"><span className="text-xs font-semibold">c)</span><p className="text-xs leading-5 text-slate-700">If hazardous cargo will be carried state whether explosives or petrol will be carried</p>{yesNo("hazardous-cargo")}</div>
+          <div className="grid gap-3 sm:grid-cols-[22px_1fr_230px]"><span className="text-xs font-semibold">d)</span><p className="text-xs leading-5 text-slate-700">Vehicle registered in your name</p>{yesNo("registered-name")}</div>
+          <div className="grid gap-3 sm:grid-cols-[22px_1fr_230px]"><span className="text-xs font-semibold">e)</span><p className="text-xs leading-5 text-slate-700">Has any alteration or addition been made to manufacturer&apos;s standard design</p>{yesNo("altered-design")}</div>
+          <label className="grid gap-3 sm:ml-[22px] sm:grid-cols-[1fr_1.2fr]"><span className="text-xs leading-5 text-slate-500">If yes, provide alteration details</span><textarea rows={3} className="w-full border border-violet-200 bg-white px-2 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" /></label>
+          <div className="grid gap-3 border-y border-violet-100 py-4 sm:grid-cols-[22px_1fr_170px_1fr]"><span className="text-xs font-semibold">f)</span><p className="text-xs leading-5 text-slate-700">Maximum licensed carrying capacity (No. of passengers) in case of passenger carrying vehicle.</p><label className="text-xs font-semibold text-slate-600">No. of Passengers</label><input type="number" min="0" className={inputClass} /></div>
+          <div className="grid gap-3 sm:grid-cols-[22px_1fr_230px]"><span className="text-xs font-semibold">g)</span><p className="text-xs leading-5 text-slate-700">Whether the use of the vehicle is limited to own premises</p>{yesNo("own-premises")}</div>
+          <div className="grid gap-3 sm:grid-cols-[22px_1fr_230px]"><span className="text-xs font-semibold">h)</span><p className="text-xs leading-5 text-slate-700">Whether the commercial vehicle is also used for private purpose</p>{yesNo("private-purpose")}</div>
+          <label className="grid gap-3 sm:ml-[22px] sm:grid-cols-[1fr_1.2fr]"><span className="text-xs leading-5 text-slate-700">Excluding use for hire / reward</span><textarea rows={3} className="w-full border border-violet-200 bg-white px-2 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" /></label>
+          <label className="grid gap-3 sm:ml-[22px] sm:grid-cols-[1fr_1.2fr]"><span className="text-xs leading-5 text-slate-700">If yes please give details</span><textarea rows={3} className="w-full border border-violet-200 bg-white px-2 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" /></label>
+        </div>
+
+        <aside className="bg-white p-4 sm:p-5">
+          <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
+          <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="common-print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
+          <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] hover:bg-violet-100">{action}</button>)}</div>
+          <label className="mt-5 block text-xs font-bold uppercase tracking-wider text-red-600">Remarks<textarea rows={4} className={`mt-2 ${inputClass}`} /></label>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function PremiumForm() {
+  const inputClass = "h-8 w-full border border-violet-200 bg-white px-2 text-xs text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
+  const documents = ["Certificate", "Vignette", "Sch", "Inv", "Premium", "Com", "PSSA", "Acc. Gen", "ICAC", "MIE", "AML", "AMCCU", "MRA", "PSEA", "BOM", "EWF", "Pro Note", "Summary", "Policy-wording", "KYC", "Scarcity", "Proposal"];
+  const actions = ["Insert & Save", "Edit & Save", "View", "Print", "Not approved", "Approve", "Insert 2 NTA", "Reports in PDF", "Exit"];
+  const leftGroups = [
+    ["Additional Cover", ["Passenger Risk", "Personal Accident", "PA (Conductor)", "PA (Employee)", "PA (Family Members)", "Auto Plus", "Driver Only", "Loss of Use", "Towing"]],
+    ["Add Extra Perils", ["Strike, Riot and Civil Commotion", "Earthquake", "Cyclone"]],
+    ["Discounts", ["No Claim Bonus", "Fleet Discount", "Special Discount"]],
+    ["Claim/Other Loading", ["Claim Loading"]],
+  ];
+  const additionalCovers = ["Windscreen Extension", "Waiver of Excess", "Loss of Car Keys", "Airfreight Expenses", "Personal Belongings", "Damage by Rodents", "Accidental Misfuelling", "Enhanced Personal Accidental", "Funeral Expenses"];
+
+  const optionTable = (title: string, rows: string[]) => <div key={title} className="border border-violet-200"><div className="grid grid-cols-[1fr_52px_80px] bg-[#7766db] px-2 py-1.5 text-[11px] font-bold text-white"><span>{title}</span><span>No</span><span>Amount</span></div>{rows.map((row, index) => <div key={row} className={`grid grid-cols-[1fr_52px_80px] items-center border-t border-violet-100 px-2 py-1 ${index % 2 ? "bg-violet-50/50" : "bg-white"}`}><label className="flex items-center gap-2 text-xs"><input type="checkbox" className="accent-[#35126d]" />{row}</label><input type="number" className="h-6 w-11 border border-violet-100 bg-transparent px-1" aria-label={`${row} number`} /><input type="number" defaultValue="0" className="h-6 w-full border border-violet-100 bg-transparent px-1 text-right" aria-label={`${row} amount`} /></div>)}</div>;
+
+  return (
+    <div className="border border-violet-200 bg-[#f7f5fb]">
+      <div className="flex overflow-x-auto border-b border-violet-200 bg-violet-50 text-xs font-semibold text-[#35126d]">
+        {["Policy", "Vehicle", "Trailers & Others", "Accessory", "Gen. Info", "Commn Det", "Premium", "Attach Documents"].map((tab) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${tab === "Premium" ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
+      </div>
+
+      <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+        <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-2 lg:border-r lg:border-violet-200">
+          <div className="space-y-3">
+            <div className="border border-violet-200 bg-white p-2"><label className="flex items-center gap-2 text-xs font-semibold text-[#35126d]"><input type="checkbox" className="accent-[#35126d]" />Remove only Commission</label><div className="mt-2 grid grid-cols-[1fr_90px] gap-2"><label className="flex items-center gap-2 text-xs"><input type="checkbox" />Basic Rate</label><input className={inputClass} /><label className="flex items-center gap-2 text-xs"><input type="checkbox" />Fap Risk</label><input className={inputClass} /></div></div>
+            {leftGroups.map(([title, rows]) => optionTable(title as string, rows as string[]))}
+            <button type="button" className="float-right h-9 bg-[#35126d] px-6 text-xs font-bold text-white hover:bg-violet-800">Get Discount %</button>
+          </div>
+
+          <div className="space-y-3">
+            {optionTable("Additional Cover", additionalCovers)}
+            <div className="grid grid-cols-[110px_1fr_65px_1fr] items-center gap-2"><label className="text-xs font-semibold">Authorized by</label><select className={inputClass}><option>Select</option></select><label className="text-xs font-semibold">Remarks</label><input className={inputClass} /></div>
+            <div className="flex flex-wrap gap-5 py-1 text-xs"><label className="flex items-center gap-1"><input type="radio" name="premium-period" defaultChecked className="accent-[#35126d]" />Annual</label><label className="flex items-center gap-1"><input type="radio" name="premium-period" className="accent-[#35126d]" />Pro Rata</label><label className="flex items-center gap-1"><input type="radio" name="premium-period" className="accent-[#35126d]" />Short Period</label></div>
+            <div className="grid grid-cols-2 gap-5">
+              <div className="space-y-2">{[["Total Premium (Incl. Tow)", ""], ["Doc. Charges", "150"], ["Levy Charge", "0.39"], ["Hit & Run Charge", ""], ["Inv. Amount", "150"], ["Agent Comm %", ""], ["Comm. Amt", "0.00"]].map(([label, value]) => <label key={label} className="grid grid-cols-[1fr_70px] items-center gap-2 text-xs font-semibold"><span>{label}</span><input defaultValue={value} className={inputClass} /></label>)}</div>
+              <div className="space-y-2">{["Currency", "Ex. Rate", "Sum Insured", "Premium", "Doc.", "Levy", "Inv. Amount", "Com. Amt"].map((label) => <label key={label} className="grid grid-cols-[1fr_70px] items-center gap-2 text-xs"><span>{label}</span>{label === "Currency" ? <select className={inputClass}><option>MUR</option></select> : <input type="number" defaultValue="0" className={inputClass} />}</label>)}</div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2"><label className="text-xs font-semibold">Policy remarks for Agent<textarea rows={3} className="mt-1 w-full border border-violet-200 bg-white p-2 font-normal outline-none focus:border-[#35126d]" /></label><label className="text-xs font-semibold">Remarks for Other Loading<textarea rows={3} className="mt-1 w-full border border-violet-200 bg-white p-2 font-normal outline-none focus:border-[#35126d]" /></label></div>
+          </div>
+        </div>
+
+        <aside className="bg-white p-4 sm:p-5">
+          <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
+          <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="premium-print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
+          <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] hover:bg-violet-100">{action}</button>)}</div>
+          <label className="mt-5 block text-xs font-bold uppercase tracking-wider text-red-600">Remarks<textarea rows={4} className={`mt-2 ${inputClass}`} /></label>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function AttachedDocumentForm() {
+  const inputClass = "h-9 w-full border border-violet-200 bg-white px-2 text-sm text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
+  const documents = ["Certificate", "Vignette", "Sch", "Inv", "Premium", "Com", "PSSA", "Acc. Gen", "ICAC", "MIE", "AML", "AMCCU", "MRA", "PSEA", "BOM", "EWF", "Pro Note", "Summary", "Policy-wording", "KYC", "Scarcity", "Proposal"];
+  const requiredDocuments = ["Licence", "NID_Passport_Ben", "HorsePower SaleDeed", "ProposalForm", "KYC_AddressProof"];
+  const actions = ["Insert & Save", "Edit & Save", "View", "Print", "Not approved", "Approve", "Insert 2 NTA", "Reports in PDF", "Exit"];
+
+  return (
+    <div className="border border-violet-200 bg-[#f7f5fb]">
+      <div className="flex overflow-x-auto border-b border-violet-200 bg-violet-50 text-xs font-semibold text-[#35126d]">
+        {["Policy", "Vehicle", "Trailers & Others", "Accessory", "Gen. Info", "Commn Det", "Premium", "Attach Documents"].map((tab) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${tab === "Attach Documents" ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
+      </div>
+
+      <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+        <div className="p-4 sm:p-5 lg:border-r lg:border-violet-200">
+          <p className="text-xs font-bold uppercase text-slate-800">Click the below link to attach the policy documents</p>
+          <label className="mt-3 grid max-w-md grid-cols-[100px_1fr] items-center gap-3"><span className="text-xs font-semibold text-slate-600">Doc Type</span><select className={inputClass}><option>Select document type</option><option>Licence</option><option>National ID / Passport</option><option>Sale Deed</option><option>Proposal Form</option><option>Address Proof</option></select></label>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-[minmax(0,1.7fr)_minmax(220px,0.8fr)]">
+            <div className="overflow-hidden border border-violet-200">
+              <div className="grid grid-cols-[55px_1fr] bg-violet-100 px-2 py-2 text-xs font-bold text-[#35126d]"><span>Sl-no</span><span>File-Name</span></div>
+              <div className="min-h-[330px] bg-slate-100">
+                {[1, 2, 3, 4, 5].map((row) => <button key={row} type="button" className={`grid h-9 w-full grid-cols-[55px_1fr] border-t border-violet-100 text-left text-xs ${row % 2 === 0 ? "bg-emerald-50" : "bg-white"}`}><span className="border-r border-violet-100 px-2 py-2">{row}</span><span className="px-2 py-2 text-violet-600">{row === 1 ? "Click to attach document" : ""}</span></button>)}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-bold leading-5 text-slate-700">Check to confirm the below documents uploaded in the system</p>
+              <div className="overflow-hidden border border-violet-200"><div className="grid grid-cols-[1fr_70px] bg-violet-100 px-2 py-2 text-xs font-bold text-[#35126d]"><span>Name of the Documents</span><span>Uploaded</span></div>{requiredDocuments.map((document, index) => <label key={document} className={`grid grid-cols-[1fr_70px] items-center border-t border-violet-100 px-2 py-2 text-xs ${index % 2 ? "bg-emerald-50" : "bg-white"}`}><span>{document}</span><input type="checkbox" className="justify-self-center accent-[#35126d]" /></label>)}<div className="h-48 bg-slate-100" /></div>
+              <button type="button" className="mt-3 w-full bg-[#35126d] px-4 py-3 text-xs font-bold text-white hover:bg-violet-800">Update Documents selection</button>
+            </div>
+          </div>
+        </div>
+
+        <aside className="bg-white p-4 sm:p-5">
+          <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
+          <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="attachment-print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
+          <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] hover:bg-violet-100">{action}</button>)}</div>
+          <label className="mt-5 block text-xs font-bold uppercase tracking-wider text-red-600">Remarks<textarea rows={4} className={`mt-2 ${inputClass}`} /></label>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
 export default function BuyOnlinePage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [registration, setRegistration] = useState("");
   const [fullName, setFullName] = useState("");
-  const [openSection, setOpenSection] = useState<string | null>("Client Details");
+  const [openSection, setOpenSection] = useState<string | null>("KYC");
   const detailsComplete = Boolean(registration.trim() && fullName.trim());
 
   const advanceStep = () => {
@@ -239,7 +572,7 @@ export default function BuyOnlinePage() {
                           <div className="overflow-hidden">
                             <div className="overflow-x-auto p-4">
                               {section.pending ? <p className="mb-3 text-xs font-semibold text-red-700 sm:hidden">{section.pending}</p> : null}
-                              {section.title === "Client Details" ? <ClientDetailsForm /> : section.title === "Motor Proposal" ? <MotorProposalForm /> : <table className="w-full min-w-[520px] border-collapse text-left text-sm">
+                              {section.title === "KYC" ? <ClientDetailsForm /> : section.title === "Policy Details" ? <MotorProposalForm /> : section.title === "Vechicle Details" ? <VehicleProposalForm /> : section.title === "Trailers & Others" ? <TrailersAndOthersForm /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm /> : section.title === "Premium" ? <PremiumForm /> : section.title === "Attached Document" ? <AttachedDocumentForm /> : <table className="w-full min-w-[520px] border-collapse text-left text-sm">
                                 <thead><tr className="bg-violet-50 text-[#35126d]"><th className="border border-violet-200 px-4 py-3">Field</th><th className="border border-violet-200 px-4 py-3">Information required</th><th className="border border-violet-200 px-4 py-3">Status</th></tr></thead>
                                 <tbody>
                                   {section.rows.map(([field, information]) => (
