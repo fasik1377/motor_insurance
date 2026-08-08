@@ -73,32 +73,79 @@ export default function DashboardPage() {
 
         <section className="flex-1 min-w-0">
           <div className="space-y-6">
-            <header className="rounded-[2rem] bg-white px-5 py-5 shadow-sm shadow-slate-200/50">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-700">
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 font-semibold uppercase tracking-[0.25em] text-slate-500">
-                    Home
-                  </span>
+            <header className="relative z-30 rounded-2xl border border-white/80 bg-white/95 px-4 py-3 shadow-[0_12px_40px_rgba(30,20,70,0.08)] backdrop-blur sm:px-5">
+              <div className="flex items-center justify-between gap-4">
+                <nav className="flex min-w-0 items-center gap-1" aria-label="Main navigation">
+                  <Link href="/dashboard" className="flex h-10 items-center gap-2 rounded-xl bg-[#412484] px-4 text-xs font-semibold text-white shadow-md shadow-violet-900/15">
+                    <span aria-hidden="true">⌂</span> Home
+                  </Link>
                   {[
-                    "About Us",
-                    "Products",
-                    "Register a claim",
-                    "Contact Us",
-                    "Support Ticket",
-                    "Notification",
-                    "Talk to Expert",
-                  ].map((item) => (
-                    <span key={item} className="rounded-full border border-slate-200 bg-white px-2 py-2 font-semibold text-slate-700 shadow-sm">
+                    ["About Us", "#about"],
+                    ["Products", "#products"],
+                    ["Register a claim", "#claim"],
+                    ["Contact Us", "#contact"],
+                  ].map(([item, href]) => (
+                    <Link key={item} href={href} className="hidden h-10 items-center rounded-xl px-3 text-xs font-semibold text-slate-600 transition hover:bg-violet-50 hover:text-[#412484] xl:flex">
                       {item}
-                    </span>
+                    </Link>
                   ))}
-                </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm overflow-hidden">
-                    <img src="/images/car_white.jpg" alt="Profile avatar" className="h-10 w-10 object-cover" />
-                  </span>
-                </div>
+                  <details className="group relative">
+                    <summary className="flex h-10 cursor-pointer list-none items-center gap-2 rounded-xl px-3 text-xs font-semibold text-slate-600 transition hover:bg-violet-50 hover:text-[#412484] [&::-webkit-details-marker]:hidden">
+                      More <span className="text-[10px] transition group-open:rotate-180">▼</span>
+                    </summary>
+                    <div className="absolute left-0 top-[calc(100%+0.6rem)] w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_50px_rgba(30,20,70,0.16)]">
+                      {[
+                        ["About Us", "#about", "xl:hidden"],
+                        ["Products", "#products", "xl:hidden"],
+                        ["Register a claim", "#claim", "xl:hidden"],
+                        ["Contact Us", "#contact", "xl:hidden"],
+                        ["Support Ticket", "#support", ""],
+                        ["Notification", "#notifications", ""],
+                        ["Talk to Expert", "#expert", ""],
+                      ].map(([item, href, responsiveClass]) => (
+                        <Link key={item} href={href} className={`flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-violet-50 hover:text-[#412484] ${responsiveClass}`}>
+                          {item}
+                        </Link>
+                      ))}
+                    </div>
+                  </details>
+                </nav>
+
+                <details className="group relative shrink-0">
+                  <summary className="flex cursor-pointer list-none items-center gap-3 rounded-xl p-1.5 pr-2 transition hover:bg-slate-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-violet-100 [&::-webkit-details-marker]:hidden">
+                    <span className="hidden text-right sm:block">
+                      <span className="block text-xs font-semibold text-slate-800">Alex Rawles</span>
+                      <span className="mt-0.5 block text-[10px] text-slate-400">My account</span>
+                    </span>
+                    <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border-2 border-white bg-violet-100 shadow-md ring-1 ring-slate-200">
+                      <img src="/images/car_white.jpg" alt="Alex Rawles profile" className="h-full w-full object-cover" />
+                    </span>
+                    <span className="text-[10px] text-slate-400 transition group-open:rotate-180">▼</span>
+                  </summary>
+                  <div className="absolute right-0 top-[calc(100%+0.6rem)] w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_20px_60px_rgba(30,20,70,0.18)]">
+                    <div className="mb-2 rounded-xl bg-gradient-to-br from-[#412484] to-[#6f4bb6] px-4 py-3 text-white">
+                      <p className="text-sm font-semibold">Alex Rawles</p>
+                      <p className="mt-0.5 text-xs text-violet-100">alexrawles@gmail.com</p>
+                    </div>
+                    {[
+                      ["PROFILE", "/profile", "◎"],
+                      ["MY PRODUCTS", "#products", "◇"],
+                      ["KYC", "#kyc", "✓"],
+                      ["SETTINGS", "#settings", "⚙"],
+                    ].map(([item, href, icon]) => (
+                      <Link key={item} href={href} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold tracking-wide text-slate-600 transition hover:bg-violet-50 hover:text-[#412484]">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-sm text-[#5b3aa4]">{icon}</span>
+                        {item}
+                      </Link>
+                    ))}
+                    <div className="my-2 h-px bg-slate-100" />
+                    <Link href="/login" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold tracking-wide text-rose-600 transition hover:bg-rose-50">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-base">↪</span>
+                      LOGOUT
+                    </Link>
+                  </div>
+                </details>
               </div>
             </header>
 
@@ -305,7 +352,7 @@ export default function DashboardPage() {
 
             <div className="sticky bottom-0 flex justify-end gap-3 border-t border-slate-200 bg-white px-6 py-5 sm:px-8">
               <button type="button" onClick={() => setShowRakAlert(false)} className="border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Cancel</button>
-              <button type="button" onClick={() => router.push("/rak-policy")} className="bg-[#35126d] px-8 py-3 text-sm font-semibold text-white transition hover:bg-violet-800">OK</button>
+              <button type="button" onClick={() => router.push("/buy-online")} className="bg-[#35126d] px-8 py-3 text-sm font-semibold text-white transition hover:bg-violet-800">OK</button>
             </div>
           </div>
         </div>

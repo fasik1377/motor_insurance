@@ -157,35 +157,49 @@ function MotorProposalForm() {
   );
 }
 
-export default function RakPolicyPage() {
-  const [choice, setChoice] = useState<"new" | "renew" | "">("");
+export default function BuyOnlinePage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [registration, setRegistration] = useState("");
   const [fullName, setFullName] = useState("");
-  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [openSection, setOpenSection] = useState<string | null>("Client Details");
   const detailsComplete = Boolean(registration.trim() && fullName.trim());
 
   const advanceStep = () => {
-    if (currentStep === 0 && choice) setCurrentStep(1);
+    if (currentStep === 0) setCurrentStep(1);
     if (currentStep === 1 && detailsComplete) setCurrentStep(2);
     if (currentStep === 2) setCurrentStep(3);
   };
 
   return (
-    <main className="min-h-screen bg-white font-sans text-slate-700">
-      <div className="border-b border-slate-300 px-5 py-3">
-        <nav className="flex flex-wrap items-center gap-4 text-sm font-semibold">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#f4efff_0,_#f5f7fb_42%,_#eef1f7_100%)] font-sans text-slate-700">
+      <div className="border-b border-white/80 bg-white/90 px-5 py-4 shadow-sm backdrop-blur">
+        <nav className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-3 text-sm font-semibold">
           <Link href="/dashboard" className="text-[#175b9d] hover:underline">My Dashboard</Link>
           <span className="text-slate-500">&gt;</span>
           <span className="text-[#175b9d]">Private Car</span>
           <span className="text-slate-500">&gt;</span>
-          <span className="font-normal text-[#6d2c7d]">Detailed Quote</span>
+          <span className="font-normal text-[#6d2c7d]">Buy Online</span>
         </nav>
       </div>
 
-      <div className="mx-auto grid max-w-[1500px] gap-10 px-4 py-10 lg:grid-cols-[minmax(0,2.1fr)_minmax(320px,1fr)] lg:px-5">
+      <div className="mx-auto max-w-[1500px] px-4 pt-8 lg:px-5">
+        <div className="relative overflow-hidden rounded-[2rem] border border-violet-100 bg-white px-7 py-8 text-slate-900 shadow-[0_20px_55px_rgba(53,18,109,0.10)] sm:px-10">
+          <div className="absolute -right-16 -top-24 h-64 w-64 rounded-full border-[42px] border-violet-50" />
+          <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-[#35126d] via-violet-400 to-sky-400" />
+          <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#6542a4]">Motor insurance</p>
+              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Protect your new vehicle</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">Build your cover online with a guided quote, clear options, and secure payment.</p>
+            </div>
+            <div className="hidden rounded-2xl bg-violet-50 p-3 ring-1 ring-violet-100 sm:block"><VehicleIcon /></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto grid max-w-[1500px] gap-8 px-4 py-8 lg:grid-cols-[minmax(0,2.1fr)_minmax(300px,0.72fr)] lg:px-5">
         <section>
-          <div className="relative mb-9 grid grid-cols-4 overflow-x-auto rounded-xl border border-violet-100 bg-[#f8f6fc] px-2 py-5 shadow-sm sm:px-5">
+          <div className="relative mb-6 grid grid-cols-4 overflow-x-auto rounded-2xl border border-white bg-white/90 px-2 py-5 shadow-[0_12px_35px_rgba(53,18,109,0.08)] sm:px-5">
             <div className="absolute left-[12.5%] right-[12.5%] top-10 h-0.5 bg-violet-200" />
             <div className="absolute left-[12.5%] top-10 h-0.5 bg-[#35126d] transition-all duration-500" style={{ width: `${currentStep * 25}%` }} />
             {steps.map((step, index) => (
@@ -198,36 +212,24 @@ export default function RakPolicyPage() {
             ))}
           </div>
 
-          <div className="overflow-hidden border border-violet-100 bg-white shadow-[0_20px_60px_rgba(53,18,109,0.1)]">
-            <div className="bg-[#35126d] px-5 py-3 text-center text-lg font-medium text-white">
-              {currentStep === 0 && "Choose your insurance journey"}
+          <div className="overflow-hidden rounded-[2rem] border border-white bg-white shadow-[0_20px_60px_rgba(53,18,109,0.10)]">
+            <div className="border-b border-violet-100 bg-white px-6 py-5 sm:px-8">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-500">New vehicle cover</p>
+              <h2 className="mt-1 text-xl font-semibold text-[#35126d]">
+              {currentStep === 0 && "Complete your insurance details"}
               {currentStep === 1 && "Tell us about you and your vehicle"}
               {currentStep === 2 && "Review your quote information"}
               {currentStep === 3 && "Choose your payment method"}
+              </h2>
             </div>
 
             {currentStep === 0 ? (
-              <div>
-              <div className="grid min-h-[260px] grid-cols-2">
-                <label className={`group flex cursor-pointer flex-col items-center justify-center gap-4 border-r border-violet-100 px-3 py-8 text-center transition sm:flex-row sm:gap-6 sm:px-5 ${choice === "new" ? "bg-violet-50 ring-2 ring-inset ring-[#35126d]" : "hover:bg-violet-50/50"}`}>
-                  <input type="radio" name="policy-choice" value="new" checked={choice === "new"} onChange={() => setChoice("new")} className="h-6 w-6 shrink-0 accent-[#35126d]" />
-                  <VehicleIcon />
-                  <span className="text-sm font-semibold text-[#35126d] sm:text-lg">Buy insurance for a new vehicle</span>
-                </label>
-                <label className={`group flex cursor-pointer flex-col items-center justify-center gap-4 px-3 py-8 text-center transition sm:flex-row sm:gap-6 sm:px-5 ${choice === "renew" ? "bg-violet-50 ring-2 ring-inset ring-[#35126d]" : "hover:bg-violet-50/50"}`}>
-                  <input type="radio" name="policy-choice" value="renew" checked={choice === "renew"} onChange={() => setChoice("renew")} className="h-6 w-6 shrink-0 accent-[#35126d]" />
-                  <VehicleIcon renewal />
-                  <span className="text-sm font-semibold text-[#35126d] sm:text-lg">Renew existing policy from any insurer</span>
-                </label>
-              </div>
-
-              {choice === "new" ? (
-                <div className="space-y-1 border-t border-violet-200 bg-[#f7f5fb] p-2 sm:p-4">
+              <div className="space-y-3 bg-[#f8f7fc] p-3 sm:p-6">
                   {newVehicleSections.map((section) => {
                     const isOpen = openSection === section.title;
                     return (
-                      <div key={section.title} className="overflow-hidden border border-violet-200 bg-white">
-                        <button type="button" onClick={() => setOpenSection(isOpen ? null : section.title)} aria-expanded={isOpen} className={`flex w-full items-center gap-3 px-4 py-3 text-left text-white transition ${isOpen ? "bg-[#35126d]" : "bg-[#4b5f96] hover:bg-[#3f5185]"}`}>
+                      <div key={section.title} className="overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-sm">
+                        <button type="button" onClick={() => setOpenSection(isOpen ? null : section.title)} aria-expanded={isOpen} className={`flex w-full items-center gap-3 px-5 py-4 text-left transition ${isOpen ? "bg-violet-50 text-[#35126d] shadow-[inset_4px_0_0_#35126d]" : "bg-white text-slate-700 hover:bg-slate-50"}`}>
                           <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold ${section.alert ? "text-red-600" : "text-emerald-600"}`}>{section.alert ? "!" : "✓"}</span>
                           <span className="min-w-0 flex-1 text-sm font-semibold sm:text-base">{section.title}</span>
                           {section.pending ? <span className="hidden rounded-full bg-red-700 px-3 py-1 text-xs font-bold text-white sm:inline-flex">{section.pending}</span> : null}
@@ -251,8 +253,6 @@ export default function RakPolicyPage() {
                       </div>
                     );
                   })}
-                </div>
-              ) : null}
               </div>
             ) : null}
 
@@ -269,7 +269,7 @@ export default function RakPolicyPage() {
 
             {currentStep === 2 ? (
               <div className="grid gap-4 p-6 sm:grid-cols-3 sm:p-10">
-                {[{ label: "Insurance type", value: choice === "new" ? "New vehicle" : "Policy renewal" }, { label: "Policyholder", value: fullName }, { label: "Registration", value: registration.toUpperCase() }].map((item) => (
+                {[{ label: "Insurance type", value: "New vehicle" }, { label: "Policyholder", value: fullName }, { label: "Registration", value: registration.toUpperCase() }].map((item) => (
                   <div key={item.label} className="border-l-4 border-[#35126d] bg-violet-50 p-5"><p className="text-xs font-bold uppercase tracking-wider text-violet-500">{item.label}</p><p className="mt-2 font-semibold text-slate-900">{item.value}</p></div>
                 ))}
               </div>
@@ -284,21 +284,38 @@ export default function RakPolicyPage() {
 
             <div className="flex items-center justify-between border-t border-violet-100 bg-[#faf9fd] px-6 py-4">
               <button type="button" disabled={currentStep === 0} onClick={() => setCurrentStep((step) => Math.max(0, step - 1))} className="border border-violet-300 px-6 py-3 text-sm font-semibold text-[#35126d] transition hover:bg-violet-50 disabled:invisible">Back</button>
-              <button type="button" disabled={(currentStep === 0 && !choice) || (currentStep === 1 && !detailsComplete)} onClick={currentStep < 3 ? advanceStep : undefined} className="bg-[#35126d] px-8 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-300">{currentStep === 3 ? "Proceed to pay" : "Continue"}</button>
+              <button type="button" disabled={currentStep === 1 && !detailsComplete} onClick={currentStep < 3 ? advanceStep : undefined} className="rounded-xl bg-[#35126d] px-8 py-3 text-sm font-semibold uppercase tracking-wider text-white shadow-lg shadow-violet-900/15 transition hover:-translate-y-0.5 hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-300">{currentStep === 3 ? "Proceed to pay" : "Continue"}</button>
             </div>
           </div>
         </section>
 
-        <aside className="self-start border border-[#aebbd0] bg-white px-6 py-4">
-          <div className="flex items-center gap-4 border-b border-amber-100 pb-3">
-            <svg viewBox="0 0 24 24" className="h-6 w-6 text-sky-500" fill="currentColor"><path d="M5 20h14v-2H5v2zm14-9h-4V3H9v8H5l7 7 7-7z" /></svg>
-            <h2 className="text-2xl font-normal text-[#8a5b08]">Downloads</h2>
+        <aside className="self-start overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-[0_20px_55px_rgba(53,18,109,0.10)] lg:sticky lg:top-6">
+          <div className="border-b border-slate-100 bg-gradient-to-r from-violet-50 to-white px-6 py-6">
+            <div className="flex items-center gap-4">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[#5b3aa4] shadow-sm ring-1 ring-violet-100">
+                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 19h14" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </span>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-500">Resources</p>
+                <h2 className="mt-1 text-xl font-semibold text-slate-900">Policy downloads</h2>
+              </div>
+            </div>
+            <p className="mt-4 text-sm leading-6 text-slate-500">Forms, policy documents and helpful motor insurance guides.</p>
           </div>
-          <ul className="space-y-4 py-4">
+          <ul className="space-y-2 p-3">
             {downloads.map((item) => (
-              <li key={item}><a href="#" className="text-sm leading-6 text-[#2876c7] transition hover:text-[#174e88] hover:underline">{item}</a></li>
+              <li key={item}>
+                <a href="#" className="group flex items-start gap-3 rounded-xl px-3 py-3 transition hover:bg-violet-50">
+                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-[10px] font-bold text-[#5b3aa4] ring-1 ring-slate-200 transition group-hover:bg-white group-hover:ring-violet-200">PDF</span>
+                  <span className="min-w-0 flex-1 text-sm leading-5 text-slate-600 transition group-hover:text-[#412484]">{item}</span>
+                  <svg viewBox="0 0 24 24" className="mt-1 h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-y-0.5 group-hover:text-violet-500" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 4v11m0 0 4-4m-4 4-4-4M5 20h14" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </a>
+              </li>
             ))}
           </ul>
+          <div className="border-t border-slate-100 bg-slate-50/70 px-6 py-4">
+            <p className="text-xs leading-5 text-slate-400">PDF documents open in a new window for easy viewing and printing.</p>
+          </div>
         </aside>
       </div>
     </main>
