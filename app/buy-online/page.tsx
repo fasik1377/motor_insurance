@@ -74,12 +74,6 @@ function ClientDetailsForm() {
 
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
-      <div className="grid grid-cols-3 border-b border-violet-200 text-center text-xs font-semibold text-[#35126d]">
-        <button type="button" className="border-r border-violet-200 bg-white px-3 py-3 shadow-[inset_0_-3px_0_#35126d]">Client Info (KYC)</button>
-        <button type="button" className="border-r border-violet-200 px-3 py-3 hover:bg-white">AML Approval Authority</button>
-        <button type="button" className="px-3 py-3 hover:bg-white">Documents</button>
-      </div>
-
       <div className="space-y-3 p-4 sm:p-6">
         <div className="grid gap-3 sm:grid-cols-[130px_minmax(0,1fr)_100px_minmax(0,0.45fr)] sm:items-center">
           <label className={labelClass}>Client Code</label><div className="flex gap-2"><input className={inputClass} /><button type="button" className="border border-violet-300 bg-white px-3 text-[#35126d]">Search</button></div>
@@ -131,9 +125,6 @@ function MotorProposalForm() {
 
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
-      <div className="flex overflow-x-auto border-b border-violet-200 bg-violet-50 text-xs font-semibold text-[#35126d]">
-        {["Policy"].map((tab, index) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${index === 0 ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
-      </div>
       <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
         <div className="space-y-3 p-4 sm:p-6 lg:border-r lg:border-violet-200">
           <div className="grid gap-3 sm:grid-cols-[130px_1fr_130px_1fr] sm:items-center"><label className={labelClass}>Policy No.</label><input className={inputClass} /><span /><span /></div>
@@ -173,9 +164,6 @@ function VehicleProposalForm() {
 
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
-      <div className="flex overflow-x-auto border-b border-violet-200 bg-violet-50 text-xs font-semibold text-[#35126d]">
-        {["Policy", "Vehicle", "Trailers & Others", "Accessory", "Gen. Info", "Commn Det", "Premium", "Attach Documents"].map((tab) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${tab === "Vehicle" ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
-      </div>
       <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
         <div className="p-4 sm:p-5 lg:border-r lg:border-violet-200">
           <div className="grid gap-x-5 gap-y-3 sm:grid-cols-2">
@@ -223,9 +211,6 @@ function TrailersAndOthersForm() {
 
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
-      <div className="flex overflow-x-auto border-b border-violet-200 bg-violet-50 text-xs font-semibold text-[#35126d]">
-        {["Policy", "Vehicle", "Trailers & Others", "Accessory", "Gen. Info", "Commn Det", "Premium", "Attach Documents"].map((tab) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${tab === "Trailers & Others" ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
-      </div>
 
       <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
         <div className="p-4 sm:p-5 lg:border-r lg:border-violet-200">
@@ -275,9 +260,6 @@ function AccessoriesForm() {
 
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
-      <div className="flex overflow-x-auto border-b border-violet-200 bg-violet-50 text-xs font-semibold text-[#35126d]">
-        {["Policy", "Vehicle", "Trailers & Others", "Accessory", "Gen. Info", "Commn Det", "Premium", "Attach Documents"].map((tab) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${tab === "Accessory" ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
-      </div>
 
       <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
         <div className="p-4 sm:p-5 lg:border-r lg:border-violet-200">
@@ -321,9 +303,6 @@ function GeneralInformationForm() {
 
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
-      <div className="flex overflow-x-auto border-b border-violet-200 bg-violet-50 text-xs font-semibold text-[#35126d]">
-        {["Policy", "Vehicle", "Trailers & Others", "Accessory", "Gen. Info", "Commn Det", "Premium", "Attach Documents"].map((tab) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${tab === "Gen. Info" ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
-      </div>
 
       <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
         <div className="space-y-3 p-4 sm:p-5 lg:border-r lg:border-violet-200">
@@ -365,9 +344,6 @@ function CommonDetailsForm() {
 
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
-      <div className="flex overflow-x-auto border-b border-violet-200 bg-violet-50 text-xs font-semibold text-[#35126d]">
-        {["Policy", "Vehicle", "Trailers & Others", "Accessory", "Gen. Info", "Commn Det", "Premium", "Attach Documents"].map((tab) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${tab === "Commn Det" ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
-      </div>
 
       <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
         <div className="space-y-4 p-4 sm:p-6 lg:border-r lg:border-violet-200">
@@ -411,9 +387,6 @@ function PremiumForm() {
 
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
-      <div className="flex overflow-x-auto border-b border-violet-200 bg-violet-50 text-xs font-semibold text-[#35126d]">
-        {["Policy", "Vehicle", "Trailers & Others", "Accessory", "Gen. Info", "Commn Det", "Premium", "Attach Documents"].map((tab) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${tab === "Premium" ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
-      </div>
 
       <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
         <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-2 lg:border-r lg:border-violet-200">
@@ -454,9 +427,6 @@ function AttachedDocumentForm() {
 
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
-      <div className="flex overflow-x-auto border-b border-violet-200 bg-violet-50 text-xs font-semibold text-[#35126d]">
-        {["Policy", "Vehicle", "Trailers & Others", "Accessory", "Gen. Info", "Commn Det", "Premium", "Attach Documents"].map((tab) => <button key={tab} type="button" className={`shrink-0 border-r border-violet-200 px-4 py-3 ${tab === "Attach Documents" ? "bg-white shadow-[inset_0_-3px_0_#35126d]" : "hover:bg-white"}`}>{tab}</button>)}
-      </div>
 
       <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
         <div className="p-4 sm:p-5 lg:border-r lg:border-violet-200">

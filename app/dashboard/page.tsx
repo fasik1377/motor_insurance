@@ -4,12 +4,40 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+type OnlineService = "buy" | "renew" | "";
+
 export default function DashboardPage() {
   const router = useRouter();
   const [sector, setSector] = useState("");
   const [product, setProduct] = useState("");
+  const [onlineService, setOnlineService] = useState<OnlineService>("");
   const [showRakAlert, setShowRakAlert] = useState(false);
-  const canContinue = Boolean(sector && product);
+  const [showRenewPrompt, setShowRenewPrompt] = useState(false);
+  const [registrationNumber, setRegistrationNumber] = useState("");
+  const [registrationError, setRegistrationError] = useState("");
+  const canContinue = Boolean(sector && product && onlineService);
+
+  const handleGo = () => {
+    if (onlineService === "buy") {
+      setShowRakAlert(true);
+      return;
+    }
+
+    if (onlineService === "renew") {
+      setRegistrationNumber("");
+      setRegistrationError("");
+      setShowRenewPrompt(true);
+    }
+  };
+
+  const handleRenew = () => {
+    if (!/^\d{4}$/.test(registrationNumber)) {
+      setRegistrationError("Enter exactly four digits.");
+      return;
+    }
+
+    router.push("/renew-online");
+  };
 
   return (
     <div className="min-h-screen bg-[#eef0ff] font-sans text-slate-900">
@@ -49,11 +77,21 @@ export default function DashboardPage() {
                 <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">Online services</p>
                 <div className="mt-4 space-y-4">
                   <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-800">
-                    <input type="checkbox" className="h-5 w-5 accent-violet-600" />
+                    <input
+                      type="checkbox"
+                      checked={onlineService === "buy"}
+                      onChange={() => setOnlineService((current) => current === "buy" ? "" : "buy")}
+                      className="h-5 w-5 accent-violet-600"
+                    />
                     Buy Online
                   </label>
                   <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-800">
-                    <input type="checkbox" className="h-5 w-5 accent-violet-600" />
+                    <input
+                      type="checkbox"
+                      checked={onlineService === "renew"}
+                      onChange={() => setOnlineService((current) => current === "renew" ? "" : "renew")}
+                      className="h-5 w-5 accent-violet-600"
+                    />
                     Renew Online
                   </label>
                 </div>
@@ -61,7 +99,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="mt-5 grid grid-cols-2 gap-3">
-              <button type="button" disabled={!canContinue} onClick={() => setShowRakAlert(true)} className="rounded-2xl bg-[#35126d] px-4 py-3.5 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300">
+              <button type="button" disabled={!canContinue} onClick={handleGo} className="rounded-2xl bg-[#35126d] px-4 py-3.5 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300">
                 Go
               </button>
               <button type="button" className="rounded-2xl border border-violet-600 bg-white px-3 py-3.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50">
@@ -354,6 +392,52 @@ export default function DashboardPage() {
               <button type="button" onClick={() => setShowRakAlert(false)} className="border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Cancel</button>
               <button type="button" onClick={() => router.push("/buy-online")} className="bg-[#35126d] px-8 py-3 text-sm font-semibold text-white transition hover:bg-violet-800">OK</button>
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showRenewPrompt ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="renew-prompt-title">
+          <div className="w-full max-w-md bg-white shadow-[0_30px_100px_rgba(15,23,42,0.35)]">
+            <div className="flex items-center justify-between bg-[#35126d] px-6 py-5 text-white">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-violet-200">Renew Online</p>
+                <h2 id="renew-prompt-title" className="mt-1 text-2xl font-bold">Registration number</h2>
+              </div>
+              <button type="button" onClick={() => setShowRenewPrompt(false)} className="flex h-10 w-10 items-center justify-center border border-white/25 text-xl transition hover:bg-white/10" aria-label="Close registration number prompt">×</button>
+            </div>
+
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleRenew();
+              }}
+              className="px-6 py-7"
+            >
+              <label htmlFor="registration-number" className="text-sm font-semibold text-slate-900">Enter the four-digit registration number</label>
+              <input
+                id="registration-number"
+                value={registrationNumber}
+                onChange={(event) => {
+                  setRegistrationNumber(event.target.value.replace(/\D/g, "").slice(0, 4));
+                  setRegistrationError("");
+                }}
+                inputMode="numeric"
+                pattern="[0-9]{4}"
+                maxLength={4}
+                autoFocus
+                aria-invalid={Boolean(registrationError)}
+                aria-describedby={registrationError ? "registration-error" : undefined}
+                className="mt-3 w-full border border-slate-300 px-4 py-3 text-lg tracking-[0.35em] outline-none transition focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                placeholder="0000"
+              />
+              {registrationError ? <p id="registration-error" className="mt-2 text-sm font-medium text-rose-600">{registrationError}</p> : null}
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowRenewPrompt(false)} className="border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Cancel</button>
+                <button type="submit" className="bg-[#35126d] px-8 py-3 text-sm font-semibold text-white transition hover:bg-violet-800">Continue</button>
+              </div>
+            </form>
           </div>
         </div>
       ) : null}
