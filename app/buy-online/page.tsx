@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 const downloads = [
@@ -52,20 +51,6 @@ function StepIcon({ type }: { type: string }) {
     return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M8 4h8M9 2h6v4H9z" /><rect x="5" y="4" width="14" height="18" rx="1" /><path d="M8 10h8M8 14h8M8 18h5" /></svg>;
   }
   return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 3h11l3 3v15H5z" /><path d="M8 8h8M8 12h8M8 16h5" />{type === "details" ? <circle cx="17" cy="18" r="3" fill="white" /> : null}</svg>;
-}
-
-function VehicleIcon({ renewal }: { renewal?: boolean }) {
-  return (
-    <div className="relative flex h-16 w-20 items-end justify-center">
-      <svg viewBox="0 0 72 52" className={`h-14 w-20 ${renewal ? "text-[#2878ad]" : "text-[#c58a19]"}`} fill="none" stroke="currentColor" strokeWidth="2.4">
-        {renewal ? <><circle cx="18" cy="14" r="7" fill="currentColor" /><path d="M10 39V27c0-5 4-9 9-9s9 4 9 9v12M14 26l5 4 5-4M19 30v7" fill="currentColor" /></> : <><path d="M3 35h7l5-12h24l9 12h8v9H3z" /><circle cx="16" cy="44" r="5" fill="white" /><circle cx="44" cy="44" r="5" fill="white" /><path d="M17 23l5-8h16l8 8" /></>}
-        <path d="M38 5h23l7 7v34H38z" fill="white" stroke="#a5a5a5" />
-        <path d="M61 5v8h7" stroke="#a5a5a5" />
-        <circle cx="52" cy="28" r="8" stroke={renewal ? "#00a78e" : "#00a78e"} />
-        {renewal ? <path d="M48 25a5 5 0 1 1 0 7M47 22v5h5M57 34v-5h-5" stroke="#00a78e" /> : <path d="m52 34-4 6-1-6-6-1 5-4M52 34l4 6 1-6 6-1-5-4" stroke="#00a78e" />}
-      </svg>
-    </div>
-  );
 }
 
 function ClientDetailsForm() {
@@ -475,39 +460,14 @@ export default function BuyOnlinePage() {
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#f4efff_0,_#f5f7fb_42%,_#eef1f7_100%)] font-sans text-slate-700">
-      <div className="border-b border-white/80 bg-white/90 px-5 py-4 shadow-sm backdrop-blur">
-        <nav className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-3 text-sm font-semibold">
-          <Link href="/dashboard" className="text-[#175b9d] hover:underline">My Dashboard</Link>
-          <span className="text-slate-500">&gt;</span>
-          <span className="text-[#175b9d]">Private Car</span>
-          <span className="text-slate-500">&gt;</span>
-          <span className="font-normal text-[#6d2c7d]">Buy Online</span>
-        </nav>
-      </div>
-
-      <div className="mx-auto max-w-[1500px] px-4 pt-8 lg:px-5">
-        <div className="relative overflow-hidden rounded-[2rem] border border-violet-100 bg-white px-7 py-8 text-slate-900 shadow-[0_20px_55px_rgba(53,18,109,0.10)] sm:px-10">
-          <div className="absolute -right-16 -top-24 h-64 w-64 rounded-full border-[42px] border-violet-50" />
-          <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-[#35126d] via-violet-400 to-sky-400" />
-          <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#6542a4]">Motor insurance</p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Protect your new vehicle</h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">Build your cover online with a guided quote, clear options, and secure payment.</p>
-            </div>
-            <div className="hidden rounded-2xl bg-violet-50 p-3 ring-1 ring-violet-100 sm:block"><VehicleIcon /></div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mx-auto grid max-w-[1500px] gap-8 px-4 py-8 lg:grid-cols-[minmax(0,2.1fr)_minmax(300px,0.72fr)] lg:px-5">
+      <div className="grid w-full gap-3 p-2 sm:p-3 lg:grid-cols-[minmax(0,2.2fr)_minmax(280px,0.65fr)]">
         <section>
-          <div className="relative mb-6 grid grid-cols-4 overflow-x-auto rounded-2xl border border-white bg-white/90 px-2 py-5 shadow-[0_12px_35px_rgba(53,18,109,0.08)] sm:px-5">
-            <div className="absolute left-[12.5%] right-[12.5%] top-10 h-0.5 bg-violet-200" />
-            <div className="absolute left-[12.5%] top-10 h-0.5 bg-[#35126d] transition-all duration-500" style={{ width: `${currentStep * 25}%` }} />
+          <div className="relative mb-3 grid grid-cols-4 overflow-x-auto rounded-xl border border-violet-100 bg-white px-2 py-3 shadow-[0_8px_24px_rgba(53,18,109,0.06)] sm:px-4">
+            <div className="absolute left-[12.5%] right-[12.5%] top-8 h-0.5 bg-violet-200" />
+            <div className="absolute left-[12.5%] top-8 h-0.5 bg-[#35126d] transition-all duration-500" style={{ width: `${currentStep * 25}%` }} />
             {steps.map((step, index) => (
               <button key={step.label} type="button" disabled={index > currentStep} onClick={() => index < currentStep && setCurrentStep(index)} className="relative z-10 flex min-w-[110px] flex-col items-center text-center disabled:cursor-default">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition ${index <= currentStep ? "border-[#35126d] bg-[#35126d] text-white shadow-lg shadow-violet-900/20" : "border-violet-200 bg-white text-violet-300"}`}>
+                <div className={`flex h-9 w-9 items-center justify-center rounded-full border-2 transition ${index === currentStep ? "border-[#35126d] bg-[#35126d] text-white ring-4 ring-violet-100" : index < currentStep ? "border-violet-500 bg-violet-500 text-white" : "border-violet-200 bg-white text-violet-300"}`}>
                   <StepIcon type={step.icon} />
                 </div>
                 <p className={`mt-2 whitespace-nowrap text-xs font-semibold sm:text-sm ${index === currentStep ? "text-[#35126d]" : index < currentStep ? "text-violet-600" : "text-slate-400"}`}>{step.label}</p>
@@ -515,24 +475,24 @@ export default function BuyOnlinePage() {
             ))}
           </div>
 
-          <div className="overflow-hidden rounded-[2rem] border border-white bg-white shadow-[0_20px_60px_rgba(53,18,109,0.10)]">
-            <div className="border-b border-violet-100 bg-white px-6 py-5 sm:px-8">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-500">New vehicle cover</p>
-              <h2 className="mt-1 text-xl font-semibold text-[#35126d]">
+          <div className="overflow-hidden rounded-xl border border-violet-100 bg-white shadow-[0_12px_35px_rgba(53,18,109,0.07)]">
+            <div className="relative border-b border-violet-100 bg-gradient-to-r from-white via-white to-violet-50 px-4 py-4 sm:px-5">
+              <div className="absolute inset-y-0 left-0 w-1 bg-[#35126d]" />
+              <h1 className="text-xl font-semibold tracking-tight text-[#35126d]">
               {currentStep === 0 && "Complete your insurance details"}
               {currentStep === 1 && "Tell us about you and your vehicle"}
               {currentStep === 2 && "Review your quote information"}
               {currentStep === 3 && "Choose your payment method"}
-              </h2>
+              </h1>
             </div>
 
             {currentStep === 0 ? (
-              <div className="space-y-3 bg-[#f8f7fc] p-3 sm:p-6">
+              <div className="space-y-2 bg-[#f8f9fc] p-3 sm:p-4">
                   {newVehicleSections.map((section) => {
                     const isOpen = openSection === section.title;
                     return (
-                      <div key={section.title} className="overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-sm">
-                        <button type="button" onClick={() => setOpenSection(isOpen ? null : section.title)} aria-expanded={isOpen} className={`flex w-full items-center gap-3 px-5 py-4 text-left transition ${isOpen ? "bg-violet-50 text-[#35126d] shadow-[inset_4px_0_0_#35126d]" : "bg-white text-slate-700 hover:bg-slate-50"}`}>
+                      <div key={section.title} className="overflow-hidden rounded-lg border border-slate-200 bg-white transition hover:border-violet-200">
+                        <button type="button" onClick={() => setOpenSection(isOpen ? null : section.title)} aria-expanded={isOpen} className={`flex w-full items-center gap-3 px-4 py-3 text-left transition ${isOpen ? "bg-violet-50 text-[#35126d] shadow-[inset_3px_0_0_#35126d]" : "bg-white text-slate-700 hover:bg-slate-50"}`}>
                           <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold ${section.alert ? "text-red-600" : "text-emerald-600"}`}>{section.alert ? "!" : "✓"}</span>
                           <span className="min-w-0 flex-1 text-sm font-semibold sm:text-base">{section.title}</span>
                           {section.pending ? <span className="hidden rounded-full bg-red-700 px-3 py-1 text-xs font-bold text-white sm:inline-flex">{section.pending}</span> : null}
@@ -540,7 +500,7 @@ export default function BuyOnlinePage() {
                         </button>
                         <div className={`grid transition-all duration-300 ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
                           <div className="overflow-hidden">
-                            <div className="overflow-x-auto p-4">
+                            <div className="overflow-x-auto p-3">
                               {section.pending ? <p className="mb-3 text-xs font-semibold text-red-700 sm:hidden">{section.pending}</p> : null}
                               {section.title === "KYC" ? <ClientDetailsForm /> : section.title === "Policy Details" ? <MotorProposalForm /> : section.title === "Vechicle Details" ? <VehicleProposalForm /> : section.title === "Trailers & Others" ? <TrailersAndOthersForm /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm /> : section.title === "Premium" ? <PremiumForm /> : section.title === "Attached Document" ? <AttachedDocumentForm /> : <table className="w-full min-w-[520px] border-collapse text-left text-sm">
                                 <thead><tr className="bg-violet-50 text-[#35126d]"><th className="border border-violet-200 px-4 py-3">Field</th><th className="border border-violet-200 px-4 py-3">Information required</th><th className="border border-violet-200 px-4 py-3">Status</th></tr></thead>
@@ -560,7 +520,7 @@ export default function BuyOnlinePage() {
             ) : null}
 
             {currentStep === 1 ? (
-              <div className="grid gap-6 p-6 sm:grid-cols-2 sm:p-10">
+              <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-6">
                 <label className="text-sm font-semibold text-slate-700">Full name
                   <input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Enter policyholder name" className="mt-2 w-full border border-slate-300 bg-violet-50/30 px-4 py-3 font-normal outline-none transition focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" />
                 </label>
@@ -571,7 +531,7 @@ export default function BuyOnlinePage() {
             ) : null}
 
             {currentStep === 2 ? (
-              <div className="grid gap-4 p-6 sm:grid-cols-3 sm:p-10">
+              <div className="grid gap-3 p-4 sm:grid-cols-3 sm:p-6">
                 {[{ label: "Insurance type", value: "New vehicle" }, { label: "Policyholder", value: fullName }, { label: "Registration", value: registration.toUpperCase() }].map((item) => (
                   <div key={item.label} className="border-l-4 border-[#35126d] bg-violet-50 p-5"><p className="text-xs font-bold uppercase tracking-wider text-violet-500">{item.label}</p><p className="mt-2 font-semibold text-slate-900">{item.value}</p></div>
                 ))}
@@ -579,7 +539,7 @@ export default function BuyOnlinePage() {
             ) : null}
 
             {currentStep === 3 ? (
-              <div className="grid gap-4 p-6 sm:grid-cols-2 sm:p-10">
+              <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-6">
                 <label className="flex cursor-pointer items-center gap-4 border border-violet-200 bg-violet-50 p-5"><input type="radio" name="payment" defaultChecked className="h-5 w-5 accent-[#35126d]" /><span className="font-semibold text-[#35126d]">Credit or debit card</span></label>
                 <label className="flex cursor-pointer items-center gap-4 border border-violet-200 p-5"><input type="radio" name="payment" className="h-5 w-5 accent-[#35126d]" /><span className="font-semibold text-[#35126d]">Internet banking</span></label>
               </div>
@@ -592,8 +552,8 @@ export default function BuyOnlinePage() {
           </div>
         </section>
 
-        <aside className="self-start overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-[0_20px_55px_rgba(53,18,109,0.10)] lg:sticky lg:top-6">
-          <div className="border-b border-slate-100 bg-gradient-to-r from-violet-50 to-white px-6 py-6">
+        <aside className="self-start overflow-hidden rounded-xl border border-violet-100 bg-white shadow-[0_12px_35px_rgba(53,18,109,0.06)] lg:sticky lg:top-3">
+          <div className="border-b border-violet-100 bg-gradient-to-br from-violet-50 to-white px-4 py-4">
             <div className="flex items-center gap-4">
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[#5b3aa4] shadow-sm ring-1 ring-violet-100">
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 19h14" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -603,12 +563,12 @@ export default function BuyOnlinePage() {
                 <h2 className="mt-1 text-xl font-semibold text-slate-900">Policy downloads</h2>
               </div>
             </div>
-            <p className="mt-4 text-sm leading-6 text-slate-500">Forms, policy documents and helpful motor insurance guides.</p>
+            <p className="mt-2 text-sm leading-5 text-slate-500">Forms, policy documents and helpful motor insurance guides.</p>
           </div>
-          <ul className="space-y-2 p-3">
+          <ul className="space-y-1 p-2">
             {downloads.map((item) => (
               <li key={item}>
-                <a href="#" className="group flex items-start gap-3 rounded-xl px-3 py-3 transition hover:bg-violet-50">
+                <a href="#" className="group flex items-start gap-3 rounded-lg px-3 py-2.5 transition hover:bg-violet-50">
                   <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-[10px] font-bold text-[#5b3aa4] ring-1 ring-slate-200 transition group-hover:bg-white group-hover:ring-violet-200">PDF</span>
                   <span className="min-w-0 flex-1 text-sm leading-5 text-slate-600 transition group-hover:text-[#412484]">{item}</span>
                   <svg viewBox="0 0 24 24" className="mt-1 h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-y-0.5 group-hover:text-violet-500" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 4v11m0 0 4-4m-4 4-4-4M5 20h14" strokeLinecap="round" strokeLinejoin="round" /></svg>

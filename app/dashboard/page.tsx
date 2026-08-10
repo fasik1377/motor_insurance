@@ -41,16 +41,16 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#eef0ff] font-sans text-slate-900">
-      <main className="w-full mx-auto flex min-h-screen max-w-[1440px] items-start gap-6 px-4 py-4 sm:px-6 lg:px-8">
-        <aside className="hidden w-[290px] shrink-0 md:block">
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-3 shadow-[0_30px_80px_rgba(15,23,42,0.08)]">
+      <main className="flex min-h-screen w-full items-start gap-3 p-2 sm:gap-4 sm:p-3">
+        <aside className="hidden w-[270px] shrink-0 md:block">
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
             <div className="mb-4 rounded-[1.75rem] bg-slate-50 p-3">
               <div className="flex h-16 w-full items-center justify-center rounded-[1.5rem] bg-white py-3">
                 <img src="/images/logo.png" alt="New India Assurance logo" className="h-12 object-contain" />
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-3">
                 <label htmlFor="sector" className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">Sector</label>
                 <select id="sector" value={sector} onChange={(event) => setSector(event.target.value)} className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-violet-600 focus:ring-2 focus:ring-violet-100">
@@ -98,7 +98,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-3">
+            <div className="mt-3 grid grid-cols-2 gap-2">
               <button type="button" disabled={!canContinue} onClick={handleGo} className="rounded-2xl bg-[#35126d] px-4 py-3.5 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300">
                 Go
               </button>
@@ -110,7 +110,7 @@ export default function DashboardPage() {
         </aside>
 
         <section className="flex-1 min-w-0">
-          <div className="space-y-6">
+          <div className="space-y-4">
             <header className="relative z-30 rounded-2xl border border-white/80 bg-white/95 px-4 py-3 shadow-[0_12px_40px_rgba(30,20,70,0.08)] backdrop-blur sm:px-5">
               <div className="flex items-center justify-between gap-4">
                 <nav className="flex min-w-0 items-center gap-1" aria-label="Main navigation">
@@ -187,15 +187,17 @@ export default function DashboardPage() {
               </div>
             </header>
 
-            <div className="rounded-[2rem] bg-white p-6 shadow-sm shadow-slate-200/50 sm:p-8">
-              <div className="mb-6 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative overflow-hidden rounded-2xl border border-violet-100 bg-white p-4 shadow-[0_12px_35px_rgba(53,18,109,0.07)] sm:p-5">
+              <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-violet-100/60 blur-3xl" />
+              <div className="relative mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-sm uppercase tracking-[0.35em] text-slate-500">Motor Insurance</p>
-                  <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-violet-500">Your insurance dashboard</p>
+                  <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
                     Welcome back, Alex
                   </h2>
+                  <p className="mt-1 text-sm text-slate-500">Everything looks good. Your main policy is active.</p>
                 </div>
-                <div className="flex items-center gap-3 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="flex items-center gap-3 rounded-xl border border-violet-100 bg-white/80 px-4 py-3 shadow-sm backdrop-blur">
                   <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-600 text-white">👤</span>
                   <div>
                     <p className="text-sm font-semibold text-slate-950">Alex Rawles</p>
@@ -204,10 +206,11 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] xl:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">
-                <div className="min-w-0 rounded-[2rem] bg-slate-50 p-6 shadow-sm shadow-slate-200/40">
-                  <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/40">
-                    <div className="relative overflow-hidden rounded-[2rem] bg-slate-100 p-6">
+              <div className="relative grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] xl:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">
+                <div className="min-w-0">
+                  <div className="h-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-100 to-violet-50 p-3">
+                      <span className="absolute left-4 top-4 z-10 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">Protected</span>
                       <div className="absolute inset-x-6 bottom-6 h-24 rounded-full bg-violet-100/80 blur-3xl" />
                       <img
                         src="/images/car_white.jpg"
@@ -216,22 +219,22 @@ export default function DashboardPage() {
                       />
                     </div>
 
-                    <div className="mt-6 text-center sm:text-left">
-                      <p className="text-sm uppercase tracking-[0.35em] text-slate-500">Motor Insurance</p>
-                      <h3 className="mt-3 text-3xl font-semibold text-slate-950">Your Vehicle Overview</h3>
+                    <div className="mt-4 text-center sm:text-left">
+                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-violet-500">Primary vehicle</p>
+                      <h3 className="mt-1 text-2xl font-semibold text-slate-950">Your Vehicle Overview</h3>
                       <p className="mt-3 text-sm text-slate-500">Your car is protected with the latest coverage and active policy status.</p>
                     </div>
 
-                    <div className="mt-8 grid gap-4 sm:grid-cols-3">
-                      <div className="rounded-[1.75rem] bg-slate-50 p-4 text-center">
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
                         <p className="text-xs uppercase tracking-[0.35em] text-slate-500">Policy</p>
                         <p className="mt-3 text-lg font-semibold text-slate-950">Comprehensive</p>
                       </div>
-                      <div className="rounded-[1.75rem] bg-slate-50 p-4 text-center">
+                      <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-center">
                         <p className="text-xs uppercase tracking-[0.35em] text-slate-500">Status</p>
                         <p className="mt-3 text-lg font-semibold text-violet-600">Active</p>
                       </div>
-                      <div className="rounded-[1.75rem] bg-slate-50 p-4 text-center">
+                      <div className="rounded-xl border border-violet-100 bg-violet-50 p-3 text-center">
                         <p className="text-xs uppercase tracking-[0.35em] text-slate-500">Renewal</p>
                         <p className="mt-3 text-lg font-semibold text-slate-950">Aug 2026</p>
                       </div>
@@ -239,10 +242,10 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="min-w-0 grid gap-5">
-                  <div className="rounded-[2rem] bg-white p-6 shadow-sm shadow-slate-200/40">
+                <div className="min-w-0 grid gap-4">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
                     <p className="text-sm uppercase tracking-[0.35em] text-slate-500">History</p>
-                    <div className="mt-5 rounded-[1.75rem] bg-slate-50 p-5">
+                    <div className="mt-4 rounded-xl bg-slate-50 p-4">
                       <div className="grid grid-cols-7 gap-1 items-end">
                         {[
                           { day: "Mon", height: 40 },
@@ -254,9 +257,9 @@ export default function DashboardPage() {
                           { day: "Sun", height: 56 },
                         ].map((item) => (
                           <div key={item.day} className="flex flex-col items-center gap-3">
-                            <div className="flex h-36 items-end justify-center w-full">
+                            <div className="flex h-24 items-end justify-center w-full">
                               <div
-                                className={`w-full rounded-t-3xl ${item.active ? "bg-violet-600" : "bg-violet-200"}`}
+                                className={`w-full rounded-t-lg transition hover:bg-violet-500 ${item.active ? "bg-gradient-to-t from-[#412484] to-violet-500" : "bg-violet-200"}`}
                                 style={{ height: `${item.height}%` }}
                               />
                             </div>
@@ -264,26 +267,26 @@ export default function DashboardPage() {
                           </div>
                         ))}
                       </div>
-                      <div className="mt-5 rounded-3xl bg-white p-3 text-center text-xs uppercase tracking-[0.25em] text-slate-500">
+                      <div className="mt-3 rounded-lg bg-white p-2 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                         Weekly driver score overview
                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-[2rem] bg-white p-6 shadow-sm shadow-slate-200/40">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm uppercase tracking-[0.35em] text-slate-500">Alerts</p>
-                        <h3 className="mt-3 text-2xl font-semibold text-slate-950">Quick updates</h3>
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-violet-500">Notification center</p>
+                        <h3 className="mt-1 text-xl font-semibold text-slate-950">Notifications</h3>
                       </div>
-                      <span className="text-xs uppercase tracking-[0.25em] text-slate-500">New</span>
+                      <span className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-600">2 new</span>
                     </div>
-                    <div className="mt-6 grid gap-4">
-                      <div className="rounded-[1.75rem] bg-slate-50 p-4">
+                    <div className="mt-4 grid gap-2">
+                      <div className="rounded-xl border border-amber-100 bg-amber-50/70 p-3 transition hover:border-amber-200 hover:bg-amber-50">
                         <p className="text-sm font-semibold text-slate-950">Policy renewal reminder</p>
                         <p className="mt-1 text-sm text-slate-600">Your car cover renews on 12 Aug 2026.</p>
                       </div>
-                      <div className="rounded-[1.75rem] bg-slate-50 p-4">
+                      <div className="rounded-xl border border-sky-100 bg-sky-50/70 p-3 transition hover:border-sky-200 hover:bg-sky-50">
                         <p className="text-sm font-semibold text-slate-950">Claim update</p>
                         <p className="mt-1 text-sm text-slate-600">Your claim #1087 is currently under review.</p>
                       </div>
@@ -293,55 +296,55 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="grid gap-6 xl:grid-cols-[0.85fr_0.45fr]">
-              <div className="rounded-[2rem] bg-white p-6 shadow-sm shadow-slate-200/50">
+            <div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm uppercase tracking-[0.35em] text-slate-500">Products</p>
-                    <h3 className="mt-3 text-2xl font-semibold text-slate-950">My Policies</h3>
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-violet-500">Products</p>
+                    <h3 className="mt-1 text-xl font-semibold text-slate-950">My Policies</h3>
                   </div>
                   <Link href="#" className="text-sm font-semibold text-violet-600 hover:text-violet-700">
                     View All
                   </Link>
                 </div>
 
-                <div className="mt-8 overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-50 text-sm text-slate-900">
-                  <div className="grid grid-cols-1 gap-4 border-b border-slate-200 bg-white px-5 py-4 font-semibold text-slate-700 sm:grid-cols-[1.6fr_0.8fr_0.9fr]">
+                <div className="mt-4 overflow-hidden rounded-xl border border-violet-100 bg-slate-50 text-sm text-slate-900">
+                  <div className="grid grid-cols-1 gap-4 border-b border-violet-100 bg-gradient-to-r from-violet-50 to-slate-50 px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 sm:grid-cols-[1.6fr_0.8fr_0.9fr]">
                     <span>Policy</span>
                     <span>Status</span>
                     <span>Renewal</span>
                   </div>
-                  <div className="grid grid-cols-1 gap-4 border-b border-slate-200 px-5 py-4 bg-white text-sm sm:grid-cols-[1.6fr_0.8fr_0.9fr]">
-                    <span>Comprehensive Car Cover</span>
-                    <span className="text-violet-600">Active</span>
-                    <span>Aug 2026</span>
+                  <div className="grid grid-cols-1 items-center gap-4 border-b border-slate-100 bg-white px-5 py-4 text-sm transition hover:bg-violet-50/60 sm:grid-cols-[1.6fr_0.8fr_0.9fr]">
+                    <span className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 font-bold text-violet-700">C</span><span><span className="block font-semibold">Comprehensive Car Cover</span><span className="text-xs text-slate-400">Policy #MI-1087</span></span></span>
+                    <span><span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Active</span></span>
+                    <span><span className="block font-medium">12 Aug 2026</span><span className="text-xs text-slate-400">12 months left</span></span>
                   </div>
-                  <div className="grid grid-cols-1 gap-4 px-5 py-4 bg-white text-sm sm:grid-cols-[1.6fr_0.8fr_0.9fr]">
-                    <span>Third Party Liability</span>
-                    <span className="text-slate-600">Pending</span>
-                    <span>Sep 2026</span>
+                  <div className="grid grid-cols-1 items-center gap-4 bg-white px-5 py-4 text-sm transition hover:bg-violet-50/60 sm:grid-cols-[1.6fr_0.8fr_0.9fr]">
+                    <span className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 font-bold text-sky-700">T</span><span><span className="block font-semibold">Third Party Liability</span><span className="text-xs text-slate-400">Policy #TPL-2042</span></span></span>
+                    <span><span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">Pending</span></span>
+                    <span><span className="block font-medium">03 Sep 2026</span><span className="text-xs text-slate-400">Awaiting approval</span></span>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-[2rem] bg-white p-6 shadow-sm shadow-slate-200/50">
+              <div className="hidden">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm uppercase tracking-[0.35em] text-slate-500">Notifications</p>
-                    <h3 className="mt-3 text-2xl font-semibold text-slate-950">Alerts</h3>
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-violet-500">Notifications</p>
+                    <h3 className="mt-1 text-xl font-semibold text-slate-950">What&apos;s new</h3>
                   </div>
                   <span className="text-xs uppercase tracking-[0.25em] text-slate-500">New</span>
                 </div>
-                <div className="mt-6 grid gap-4">
-                  <div className="rounded-[1.75rem] bg-slate-50 p-4">
+                <div className="mt-4 grid gap-2">
+                  <div className="rounded-xl border border-amber-100 bg-white p-3 shadow-sm">
                     <p className="text-sm font-semibold text-slate-950">Policy renewal reminder</p>
                     <p className="mt-1 text-sm text-slate-600">Your car cover renews on 12 Aug 2026.</p>
                   </div>
-                  <div className="rounded-[1.75rem] bg-slate-50 p-4">
+                  <div className="rounded-xl border border-sky-100 bg-white p-3 shadow-sm">
                     <p className="text-sm font-semibold text-slate-950">Claim update</p>
                     <p className="mt-1 text-sm text-slate-600">Your claim #1087 is currently under review.</p>
                   </div>
-                  <div className="rounded-[1.75rem] bg-slate-50 p-4">
+                  <div className="rounded-xl border border-violet-100 bg-violet-50/70 p-3">
                     <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Interesting</p>
                     <ul className="mt-3 space-y-2 text-sm text-slate-600">
                       <li>✔️ New partner discounts available</li>
