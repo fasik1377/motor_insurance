@@ -11,102 +11,45 @@ export default function LoginPage() {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!robotChecked) return;
-
-    const trimmedContact = contact.trim();
-    if (!trimmedContact) return;
-
-    const type = trimmedContact.includes("@") ? "email" : "mobile";
-    router.push(`/otp?type=${type}&contact=${encodeURIComponent(trimmedContact)}`);
+    const value = contact.trim();
+    if (!robotChecked || !value) return;
+    router.push(`/otp?type=${value.includes("@") ? "email" : "mobile"}&contact=${encodeURIComponent(value)}`);
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <main className="grid min-h-screen grid-cols-1 lg:grid-cols-[1.3fr_1fr]">
-        <section className="relative overflow-hidden bg-[#3b2d92] px-6 py-12 text-white sm:px-10 lg:px-16">
-          <Image src="/images/login_car.jpg" alt="Insured car on the road" fill priority className="auth-hero-image object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#241052]/95 via-[#35126d]/75 to-slate-950/25" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.18),transparent_42%)]" />
-          <div className="relative mx-auto flex h-full max-w-4xl flex-col justify-between gap-10">
-            <div className="mt-6 max-w-xl rounded-[2rem] bg-white/10 p-8 shadow-2xl shadow-black/20 backdrop-blur-sm">
-              <p className="text-sm font-semibold uppercase tracking-[0.35em] text-[#cdb8ff]">Motor Insurance Service</p>
-              <h1 className="mt-6 text-3xl font-semibold leading-tight text-white sm:text-4xl">
-                Introducing new features
-              </h1>
-              <p className="mt-4 text-sm leading-7 text-white/80 sm:text-base">
-                Analyzing previous trends ensures that businesses always make the right decision. And as the scale of the decision and its impact magnifies...
-              </p>
-              <button className="mt-8 inline-flex rounded-full bg-[#281b5d] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-black/20 transition hover:bg-[#1e1549]">
-                Learn more
-              </button>
-            </div>
+    <main className="grid h-dvh overflow-hidden bg-white lg:grid-cols-[1.15fr_0.85fr]">
+      <section className="relative hidden overflow-hidden bg-[#27105f] text-white lg:block">
+        <Image src="/images/login_car.jpg" alt="Insured car on the road" fill priority className="auth-hero-image object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#241052]/95 via-[#35126d]/75 to-slate-950/30" />
+        <div className="relative flex h-full flex-col justify-center px-[8%]">
+          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-violet-200">Motor Insurance Service</p>
+          <h1 className="mt-4 max-w-xl text-4xl font-semibold leading-tight xl:text-5xl">Insurance built around every journey.</h1>
+          <p className="mt-4 max-w-lg text-sm leading-6 text-white/75 xl:text-base">Sign in securely to manage your policy, renew your cover, and keep moving with confidence.</p>
+          <div className="mt-8 border-l-2 border-violet-300/70 pl-4 text-sm text-white/80">Secure one-time passcode verification</div>
+        </div>
+      </section>
 
-            <div className="relative grid gap-3 rounded-[2rem] border border-white/10 bg-white/10 p-6 text-white shadow-inner shadow-white/10 backdrop-blur-sm sm:grid-cols-[auto_1fr] sm:items-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white/10 text-2xl">
-                🔒
-              </div>
-              <div>
-                <p className="text-sm uppercase tracking-[0.3em] text-[#cdb8ff]">Secure setup</p>
-                <p className="mt-2 text-sm text-white/80">Use your email or mobile number to receive a one-time passcode.</p>
-              </div>
-            </div>
+      <section className="flex h-full items-center justify-center bg-slate-50 px-5 py-4 sm:px-10">
+        <div className="w-full max-w-md border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.1)] sm:p-8">
+          <Image src="/images/logo.png" alt="New India Assurance logo" width={220} height={70} priority className="mx-auto h-14 w-auto object-contain" />
+          <div className="mt-5 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#412484]">Welcome</p>
+            <h2 className="mt-2 text-2xl font-semibold text-slate-900">Sign in or sign up</h2>
+            <p className="mt-2 text-sm leading-5 text-slate-500">Enter your email or mobile number and we’ll send you a secure code.</p>
           </div>
-        </section>
-
-        <section className="flex items-center justify-center bg-slate-50 px-6 py-12 sm:px-10 lg:px-16">
-          <div className="w-full max-w-md rounded-[2rem] bg-white p-10 shadow-[0_40px_120px_rgba(15,23,42,0.12)]">
-            <div className="mb-10 text-center">
-              <div className="mx-auto mb-6 inline-flex h-20 w-56 items-center justify-center rounded-3xl border border-slate-200 bg-slate-100 p-3">
-                <Image src="/images/logo.png" alt="New India Assurance logo" width={220} height={48} className="h-auto w-auto object-contain" />
-              </div>
-              <h2 className="text-2xl font-semibold text-slate-900">Sign in / Sign up</h2>
-              <p className="mt-3 text-sm leading-6 text-slate-500">
-                Enter your email or mobile number to receive a secure one-time passcode for your account to sign in or sign up.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <label className="block text-sm font-medium text-slate-700">
-                E-mail or Mobile Number
-                <input
-                  type="text"
-                  value={contact}
-                  onChange={(event) => setContact(event.target.value)}
-                  placeholder="example@gmail.com"
-                  className="mt-3 w-full rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#412484] focus:ring-2 focus:ring-[#412484]/20"
-                />
-              </label>
-
-              <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-                <label className="flex cursor-pointer items-center gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700 transition hover:border-[#412484]">
-                  <input
-                    type="checkbox"
-                    checked={robotChecked}
-                    onChange={(event) => setRobotChecked(event.target.checked)}
-                    className="h-5 w-5 rounded border-slate-300 text-[#412484] focus:ring-[#412484]"
-                  />
-                  <div>
-                    <p className="font-semibold text-slate-900">I am not a robot</p>
-                    <p className="text-xs text-slate-500">Check this box to confirm your identity.</p>
-                  </div>
-                </label>
-              </div>
-
-              <button
-                type="submit"
-                disabled={!robotChecked}
-                className="w-full rounded-full bg-[#35126d] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2d1765] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
-              >
-                Sign in or Sign up
-              </button>
-            </form>
-
-            <p className="mt-6 text-center text-xs text-slate-400">
-              We’ll send a one-time passcode to your email or mobile number, then move you to OTP verification to finish sign in.
-            </p>
-          </div>
-        </section>
-      </main>
-    </div>
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <label className="block text-sm font-medium text-slate-700">Email or mobile number
+              <input type="text" value={contact} onChange={(e) => setContact(e.target.value)} placeholder="example@gmail.com" className="mt-2 h-12 w-full border border-slate-300 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-[#412484] focus:ring-2 focus:ring-[#412484]/15" />
+            </label>
+            <label className="flex cursor-pointer items-center gap-3 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 hover:border-[#412484]">
+              <input type="checkbox" checked={robotChecked} onChange={(e) => setRobotChecked(e.target.checked)} className="h-5 w-5 accent-[#412484]" />
+              <span><span className="block font-semibold text-slate-900">I am not a robot</span><span className="text-xs text-slate-500">Confirm your identity to continue.</span></span>
+            </label>
+            <button type="submit" disabled={!robotChecked || !contact.trim()} className="h-12 w-full bg-[#412484] px-5 text-sm font-semibold text-white transition hover:bg-[#321b70] disabled:cursor-not-allowed disabled:bg-slate-300">Continue securely</button>
+          </form>
+          <p className="mt-4 text-center text-xs text-slate-400">Your information is encrypted and securely handled.</p>
+        </div>
+      </section>
+    </main>
   );
 }
