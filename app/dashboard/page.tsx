@@ -12,6 +12,7 @@ export default function DashboardPage() {
   const [product, setProduct] = useState("");
   const [onlineService, setOnlineService] = useState<OnlineService>("");
   const [showRakAlert, setShowRakAlert] = useState(false);
+  const [hasAcceptedRakNotice, setHasAcceptedRakNotice] = useState(false);
   const [showRenewPrompt, setShowRenewPrompt] = useState(false);
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [registrationError, setRegistrationError] = useState("");
@@ -19,6 +20,7 @@ export default function DashboardPage() {
 
   const handleGo = () => {
     if (onlineService === "buy") {
+      setHasAcceptedRakNotice(false);
       setShowRakAlert(true);
       return;
     }
@@ -391,9 +393,20 @@ export default function DashboardPage() {
               <p>There is also an option to cover, at an additional premium, hospitalization expenses for bodily injury caused by and arising out of an accident to Third Parties arising out of a motor accident.</p>
             </div>
 
-            <div className="sticky bottom-0 flex justify-end gap-3 border-t border-slate-200 bg-white px-6 py-5 sm:px-8">
-              <button type="button" onClick={() => setShowRakAlert(false)} className="border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Cancel</button>
-              <button type="button" onClick={() => router.push("/buy-online")} className="bg-[#35126d] px-8 py-3 text-sm font-semibold text-white transition hover:bg-violet-800">OK</button>
+            <div className="sticky bottom-0 flex flex-col gap-4 border-t border-slate-200 bg-white px-6 py-5 sm:px-8">
+              <label className="flex cursor-pointer items-start gap-3 text-sm font-medium leading-6 text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={hasAcceptedRakNotice}
+                  onChange={(event) => setHasAcceptedRakNotice(event.target.checked)}
+                  className="mt-0.5 h-5 w-5 shrink-0 accent-violet-700"
+                />
+                I have read and understood this important notice.
+              </label>
+              <div className="flex justify-end gap-3">
+                <button type="button" onClick={() => setShowRakAlert(false)} className="border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Cancel</button>
+                <button type="button" disabled={!hasAcceptedRakNotice} onClick={() => router.push("/buy-online")} className="bg-[#35126d] px-8 py-3 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300">OK</button>
+              </div>
             </div>
           </div>
         </div>

@@ -96,7 +96,7 @@ export default function Home() {
     <div className="min-h-screen bg-slate-950 text-white">
       <header className="border-b border-slate-900 bg-[#35126d] shadow-sm shadow-slate-950/20">
         <div className="mx-auto grid max-w-[1600px] grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-8 lg:px-10 xl:gap-12">
-            <div className="flex items-center rounded-2xl border border-white/15 bg-white/10 px-4 py-2 shadow-lg shadow-black/20">
+            <div className="flex items-center border border-white/15 bg-white/10 px-4 py-2 shadow-lg shadow-black/20">
               <Image src="/images/logo.png" alt="New India Assurance logo" width={180} height={64} className="h-auto w-auto object-contain" />
             </div>
             <nav className="hidden h-full items-center justify-center gap-1 text-sm font-semibold text-slate-100 lg:flex xl:gap-2">
@@ -172,7 +172,7 @@ export default function Home() {
 
         <div className="relative mx-auto flex min-h-[calc(100vh-80px)] max-w-[1600px] items-center px-4 py-20 sm:px-6 lg:px-10">
           <div className="w-full">
-            <div className="relative flex min-h-[calc(100vh-100px)] overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/40">
+            <div className="relative flex min-h-[calc(100vh-100px)] overflow-hidden border border-white/10 shadow-2xl shadow-black/40">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.14),transparent_35%),linear-gradient(180deg,rgba(0,0,0,0.08),rgba(0,0,0,0.42))]" />
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute left-10 top-14 h-40 w-40 rounded-full bg-violet-500/15 blur-3xl" />
@@ -199,14 +199,14 @@ export default function Home() {
                 <div style={{ perspective: "1400px" }}>
                   <div className="transform-gpu border border-white/10 bg-[#35126d]/95 px-6 py-5 shadow-2xl shadow-black/50 backdrop-blur-xl transition duration-500 hover:-translate-y-2 hover:shadow-[0_40px_90px_rgba(0,0,0,0.35)]" style={{ transformStyle: "preserve-3d" }}>
                     <div className="grid gap-4 md:grid-cols-[260px_1fr] lg:gap-6">
-                      <div className="flex items-center justify-center rounded-[2rem] bg-white/10 px-6 py-6 text-center text-sm uppercase tracking-[0.24em] text-slate-200 shadow-inner shadow-white/10 ring-1 ring-white/10 backdrop-blur-xl">
+                      <div className="flex items-center justify-center bg-white/10 px-6 py-6 text-center text-sm uppercase tracking-[0.24em] text-slate-200 shadow-inner shadow-white/10 ring-1 ring-white/10 backdrop-blur-xl">
                         <div>
                           <p className="text-xs uppercase tracking-[0.32em] text-violet-200">Coverage built for every lifestyle</p>
                           
                         </div>
                       </div>
                       <div className="grid gap-3 grid-cols-2 md:grid-cols-5 items-center">
-                        <div className="group flex flex-col items-center justify-center gap-3 rounded-[2rem] border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
+                        <div className="group flex flex-col items-center justify-center gap-3 border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
                           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
                             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <path d="M12 2 6 5v5a6 6 0 0 0 12 0V5l-6-3Z" />
@@ -215,7 +215,7 @@ export default function Home() {
                           </div>
                           <div className="font-semibold text-sm">Health</div>
                         </div>
-                        <div className="group flex flex-col items-center justify-center gap-3 rounded-[2rem] border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
+                        <div className="group flex flex-col items-center justify-center gap-3 border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
                           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
                             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <circle cx="12" cy="12" r="5" />
@@ -224,7 +224,7 @@ export default function Home() {
                           </div>
                           <div className="font-semibold text-sm">Motor</div>
                         </div>
-                        <div className="group flex flex-col items-center justify-center gap-3 rounded-[2rem] border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
+                        <div className="group flex flex-col items-center justify-center gap-3 border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
                           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
                             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <path d="m2 12 8 3 3-3-3-3-8 3Z" />
@@ -233,7 +233,7 @@ export default function Home() {
                           </div>
                           <div className="font-semibold text-sm">Travel</div>
                         </div>
-                        <div className="group flex flex-col items-center justify-center gap-3 rounded-[2rem] border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
+                        <div className="group flex flex-col items-center justify-center gap-3 border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
                           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
                             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <path d="M3 12 12 4l9 8v8a1 1 0 0 1-1 1h-5V14H9v7H4a1 1 0 0 1-1-1v-7Z" />
@@ -241,7 +241,7 @@ export default function Home() {
                           </div>
                           <div className="font-semibold text-sm">Home</div>
                         </div>
-                        <div className="group flex flex-col items-center justify-center gap-3 rounded-[2rem] border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
+                        <div className="group flex flex-col items-center justify-center gap-3 border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
                           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
                             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <rect x="4" y="4" width="6" height="6" rx="1.2" />
@@ -315,7 +315,7 @@ export default function Home() {
 
             <div className="flex flex-col justify-between gap-4">
               <div className="grid gap-4">
-                <div className="flex gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-6">
+                <div className="flex gap-4 border border-slate-200 bg-slate-50 p-6">
                   <div className="mt-1 flex h-12 w-12 items-center justify-center text-[#35126d]">
                     <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true"><path d="M12 2l7 4v5c0 5.25-3.75 9.88-7 11-3.25-1.12-7-5.75-7-11V6l7-4z" /></svg>
                   </div>
@@ -325,7 +325,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="flex gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-6">
+                <div className="flex gap-4 border border-slate-200 bg-slate-50 p-6">
                   <div className="mt-1 flex h-12 w-12 items-center justify-center text-[#35126d]">
                     <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true"><path d="M12 17.27L18.18 21 16.54 13.97 22 9.24l-7.19-.62L12 2 9.19 8.62 2 9.24l5.46 4.73L5.82 21z" /></svg>
                   </div>
@@ -335,7 +335,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="flex gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-6">
+                <div className="flex gap-4 border border-slate-200 bg-slate-50 p-6">
                   <div className="mt-1 flex h-12 w-12 items-center justify-center text-[#35126d]">
                     <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true"><path d="M4 6h16v2H4V6zm0 4h16v2H4v-2zm0 4h16v2H4v-2z" /></svg>
                   </div>
@@ -345,7 +345,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="flex gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-6">
+                <div className="flex gap-4 border border-slate-200 bg-slate-50 p-6">
                   <div className="mt-1 flex h-12 w-12 items-center justify-center text-[#35126d]">
                     <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true"><path d="M4 4h16v14H4V4zm2 2v10h12V6H6zm2 2h8v2H8V8z" /></svg>
                   </div>
@@ -355,7 +355,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="flex gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-6">
+                <div className="flex gap-4 border border-slate-200 bg-slate-50 p-6">
                   <div className="mt-1 flex h-12 w-12 items-center justify-center text-[#35126d]">
                     <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 3.75 3 6.85 7 11 4-4.15 7-7.25 7-11 0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z" /></svg>
                   </div>
@@ -382,7 +382,7 @@ export default function Home() {
               <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">Motor Insurance Services</h2>
             </div>
 
-            <div className="relative w-full overflow-hidden rounded-[1.5rem] border border-white/10 bg-slate-950/10 px-4 py-8 shadow-2xl shadow-black/20 sm:px-6">
+            <div className="relative w-full overflow-hidden border border-white/10 bg-slate-950/10 px-4 py-8 shadow-2xl shadow-black/20 sm:px-6">
               <div className="grid gap-6 sm:grid-cols-3">
                 {serviceSlides.map((slide, index) => (
                   <div key={slide.title} className={`relative overflow-hidden ${index === serviceSlide ? "scale-100" : "scale-95 opacity-70"} transition-all duration-300`}>
@@ -433,7 +433,7 @@ export default function Home() {
 
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {inventoryItems.map((item) => (
-              <div key={item.title} className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white shadow-sm">
+              <div key={item.title} className="overflow-hidden border border-slate-200 bg-white shadow-sm">
                 <div className="h-32 overflow-hidden bg-slate-100 sm:h-36">
                   <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
                 </div>
@@ -464,7 +464,7 @@ export default function Home() {
               { value: "25", label: "Countries" },
               { value: "32.35K Cr", label: "Visitors Per Day" },
             ].map((stat) => (
-              <div key={stat.label} className="rounded-[1.5rem] border border-white/10 bg-white/5 px-5 py-8 text-center shadow-xl shadow-black/10 backdrop-blur-xl">
+              <div key={stat.label} className="border border-white/10 bg-white/5 px-5 py-8 text-center shadow-xl shadow-black/10 backdrop-blur-xl">
                 <p className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">{stat.value}</p>
                 <p className="mt-3 text-xs uppercase tracking-[0.24em] text-violet-200">{stat.label}</p>
               </div>
@@ -495,7 +495,7 @@ export default function Home() {
                 description: "Distinctly recontextualize top-line users. Shabby chic ramps gentrify picks, exactly and literally.",
               },
             ].map((item) => (
-              <div key={item.title} className="rounded-[2rem] border border-white/10 bg-white/5 p-8 text-center backdrop-blur-xl shadow-xl shadow-black/20">
+              <div key={item.title} className="border border-white/10 bg-white/5 p-8 text-center backdrop-blur-xl shadow-xl shadow-black/20">
                 <h3 className="text-base font-semibold uppercase tracking-[0.3em] text-white/90">{item.title}</h3>
                 <p className="mt-4 text-sm leading-7 text-slate-200">{item.description}</p>
               </div>
