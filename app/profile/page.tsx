@@ -9,7 +9,7 @@ export default function ProfilePage() {
     <main className="min-h-screen bg-slate-100 p-2 font-sans text-slate-900 sm:p-3">
       <header className="mb-3 flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-6">
         <Image src="/images/logo.png" alt="New India Assurance logo" width={220} height={88} priority className="h-11 w-auto object-contain" />
-        <Link href="/dashboard" className="text-sm font-semibold text-[#412484] hover:underline">Back to dashboard</Link>
+       
       </header>
 
       <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
