@@ -134,6 +134,27 @@ function MotorProposalForm() {
   );
 }
 
+const sectionDescriptions: Record<string, string> = {
+  KYC: "Policyholder identity and contact information",
+  "Policy Details": "Cover dates, policy class and client records",
+  "Vechicle Details": "Registration, engine and vehicle specifications",
+  "Trailers & Others": "Trailer and additional equipment information",
+  Accessories: "Optional equipment, discounts and loadings",
+  "General Information": "Driver history, vehicle use and declarations",
+  "Common Det.": "Usage, ownership and carrying capacity",
+  Premium: "Covers, charges and final premium calculation",
+  "Attached Document": "Upload and confirm supporting documents",
+};
+
+function SectionIcon({ title }: { title: string }) {
+  if (title === "KYC") return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="8" r="3" /><path d="M5.5 20c.6-4 2.8-6 6.5-6s5.9 2 6.5 6" /></svg>;
+  if (title === "Policy Details") return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 3h9l3 3v15H6z" /><path d="M9 10h6M9 14h6M9 18h4" /></svg>;
+  if (title === "Vechicle Details") return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m5 16 1.5-6h11l1.5 6M4 16h16v4h-3v-2H7v2H4zM7 13h.01M17 13h.01" /></svg>;
+  if (title === "Attached Document") return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M8 12.5 13.5 7a3 3 0 0 1 4.2 4.2l-7 7a5 5 0 0 1-7.1-7.1l7.2-7.2" /></svg>;
+  if (title === "Premium") return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9" /><path d="M15 8.5c-.7-.6-1.7-1-3-1-1.7 0-3 .9-3 2s1.1 1.8 3 2.2 3 1.1 3 2.3-1.3 2.2-3 2.2c-1.2 0-2.4-.4-3.2-1.2M12 5.5v13" /></svg>;
+  return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 3 4 7v5c0 4.6 3.4 7.8 8 9 4.6-1.2 8-4.4 8-9V7z" /><path d="m9 12 2 2 4-4" /></svg>;
+}
+
 function VehicleProposalForm() {
   const inputClass = "h-9 w-full border border-violet-200 bg-white px-2 text-sm text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
   const labelClass = "text-xs font-semibold text-slate-600";
@@ -487,35 +508,41 @@ export default function BuyOnlinePage() {
             </div>
 
             {currentStep === 0 ? (
-              <div className="space-y-2 bg-[#f8f9fc] p-3 sm:p-4">
-                  {newVehicleSections.map((section) => {
-                    const isOpen = openSection === section.title;
-                    return (
-                      <div key={section.title} className="overflow-hidden rounded-lg border border-slate-200 bg-white transition hover:border-violet-200">
-                        <button type="button" onClick={() => setOpenSection(isOpen ? null : section.title)} aria-expanded={isOpen} className={`flex w-full items-center gap-3 px-4 py-3 text-left transition ${isOpen ? "bg-violet-50 text-[#35126d] shadow-[inset_3px_0_0_#35126d]" : "bg-white text-slate-700 hover:bg-slate-50"}`}>
-                          <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold ${section.alert ? "text-red-600" : "text-emerald-600"}`}>{section.alert ? "!" : "✓"}</span>
-                          <span className="min-w-0 flex-1 text-sm font-semibold sm:text-base">{section.title}</span>
-                          {section.pending ? <span className="hidden rounded-full bg-red-700 px-3 py-1 text-xs font-bold text-white sm:inline-flex">{section.pending}</span> : null}
-                          <span className={`text-2xl font-semibold leading-none transition-transform ${isOpen ? "rotate-45" : ""}`}>+</span>
-                        </button>
-                        <div className={`grid transition-all duration-300 ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
-                          <div className="overflow-hidden">
-                            <div className="overflow-x-auto p-3">
-                              {section.pending ? <p className="mb-3 text-xs font-semibold text-red-700 sm:hidden">{section.pending}</p> : null}
-                              {section.title === "KYC" ? <ClientDetailsForm /> : section.title === "Policy Details" ? <MotorProposalForm /> : section.title === "Vechicle Details" ? <VehicleProposalForm /> : section.title === "Trailers & Others" ? <TrailersAndOthersForm /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm /> : section.title === "Premium" ? <PremiumForm /> : section.title === "Attached Document" ? <AttachedDocumentForm /> : <table className="w-full min-w-[520px] border-collapse text-left text-sm">
-                                <thead><tr className="bg-violet-50 text-[#35126d]"><th className="border border-violet-200 px-4 py-3">Field</th><th className="border border-violet-200 px-4 py-3">Information required</th><th className="border border-violet-200 px-4 py-3">Status</th></tr></thead>
-                                <tbody>
-                                  {section.rows.map(([field, information]) => (
-                                    <tr key={field} className="transition hover:bg-violet-50/50"><td className="border border-violet-100 px-4 py-3 font-semibold text-slate-800">{field}</td><td className="border border-violet-100 px-4 py-3 text-slate-600">{information}</td><td className="border border-violet-100 px-4 py-3"><span className="inline-flex bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">To be completed</span></td></tr>
-                                  ))}
-                                </tbody>
-                              </table>}
-                            </div>
-                          </div>
-                        </div>
+              <div className="bg-[#f8f9fc] p-3 sm:p-4">
+                <div className="mb-4 overflow-hidden rounded-2xl bg-[#35126d] text-white shadow-lg shadow-violet-950/10">
+                  <div className="grid gap-4 bg-[radial-gradient(circle_at_85%_10%,_rgba(167,139,250,0.55),_transparent_35%)] p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-6">
+                    <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-200">Your application journey</p><h2 className="mt-2 text-xl font-semibold">Build your cover, one clear step at a time</h2><p className="mt-1 max-w-xl text-sm leading-6 text-violet-100">Choose a section from the journey map. Your information stays visible in one focused workspace.</p></div>
+                    <div className="flex items-center gap-3 rounded-xl bg-white/10 px-4 py-3 ring-1 ring-white/15"><span className="text-3xl font-semibold">0%</span><span className="text-xs leading-4 text-violet-100">Application<br />completed</span></div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 xl:grid-cols-[270px_minmax(0,1fr)]">
+                  <nav aria-label="Insurance detail sections" className="relative rounded-2xl border border-violet-100 bg-white p-2 shadow-sm">
+                    <div className="absolute bottom-8 left-[29px] top-8 hidden w-px bg-violet-100 xl:block" />
+                    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                      {newVehicleSections.map((section, index) => {
+                        const isActive = openSection === section.title;
+                        return <button key={section.title} type="button" onClick={() => setOpenSection(section.title)} aria-current={isActive ? "step" : undefined} className={`group relative flex items-center gap-3 rounded-xl p-3 text-left transition ${isActive ? "bg-[#35126d] text-white shadow-md shadow-violet-900/15" : "text-slate-600 hover:bg-violet-50 hover:text-[#35126d]"}`}>
+                          <span className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${isActive ? "bg-white/15 text-white" : "bg-violet-50 text-violet-600 ring-1 ring-violet-100 group-hover:bg-white"}`}><SectionIcon title={section.title} /></span>
+                          <span className="min-w-0 flex-1"><span className={`block text-[10px] font-bold uppercase tracking-widest ${isActive ? "text-violet-200" : "text-slate-400"}`}>Section {String(index + 1).padStart(2, "0")}</span><span className="mt-0.5 block truncate text-sm font-semibold">{section.title}</span></span>
+                          {section.alert ? <span className={`h-2 w-2 shrink-0 rounded-full ${isActive ? "bg-amber-300" : "bg-red-500"}`} /> : <svg viewBox="0 0 20 20" className={`h-4 w-4 shrink-0 ${isActive ? "text-violet-200" : "text-slate-300"}`} fill="none" stroke="currentColor" strokeWidth="2"><path d="m7 4 6 6-6 6" /></svg>}
+                        </button>;
+                      })}
+                    </div>
+                  </nav>
+
+                  {newVehicleSections.map((section) => openSection === section.title ? (
+                    <section key={section.title} className="min-w-0 overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-sm">
+                      <div className="flex flex-col gap-3 border-b border-violet-100 bg-gradient-to-r from-violet-50/80 to-white p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                        <div className="flex items-center gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-[#35126d] shadow-sm ring-1 ring-violet-100"><SectionIcon title={section.title} /></span><div><h3 className="font-semibold text-slate-900 sm:text-lg">{section.title}</h3><p className="mt-0.5 text-xs text-slate-500 sm:text-sm">{sectionDescriptions[section.title]}</p></div></div>
+                        {section.pending ? <span className="self-start rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-100 sm:self-auto">{section.pending}</span> : <span className="self-start rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 sm:self-auto">Ready to complete</span>}
                       </div>
-                    );
-                  })}
+                      <div className="overflow-x-auto p-3 sm:p-4">
+                        {section.title === "KYC" ? <ClientDetailsForm /> : section.title === "Policy Details" ? <MotorProposalForm /> : section.title === "Vechicle Details" ? <VehicleProposalForm /> : section.title === "Trailers & Others" ? <TrailersAndOthersForm /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm /> : section.title === "Premium" ? <PremiumForm /> : <AttachedDocumentForm />}
+                      </div>
+                    </section>
+                  ) : null)}
+                </div>
               </div>
             ) : null}
 
