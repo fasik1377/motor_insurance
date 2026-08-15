@@ -2,15 +2,30 @@
 
 import { useState } from "react";
 
-const downloads = [
-  "Revised Motor Third party premium rates, effective from 16-06-2019 (3.87 MB)",
-  "Indian Motor Tariff - 2002 (1.51 MB)",
-  "Claim Consent Form (287.24 KB)",
-  "Proposal Form (81.92 KB)",
-  "Claim Form (54.78 KB)",
-  "Do's and Dont's (37.82 KB)",
-  "CIS AROGYA SANJEEVANI POLICY (496.19 KB)",
+type PolicyCover = "" | "Comprehensive" | "Third Party Fire & Theft" | "Third Party Only";
+
+const generalDownloads = [
+  { name: "Motor insurance proposal form", size: "81.92 KB", href: "/documents/motor-proposal-form.pdf" },
+  { name: "Motor claim form", size: "54.78 KB", href: "/documents/motor-claim-form.pdf" },
+  { name: "Safe driving — do's and don'ts", size: "37.82 KB", href: "/documents/motor-safety-guide.pdf" },
 ];
+
+const policyDownloads: Record<Exclude<PolicyCover, "">, { name: string; size: string; href: string }[]> = {
+  Comprehensive: [
+    { name: "Comprehensive motor policy wording", size: "1.24 MB", href: "/documents/comprehensive-policy-wording.pdf" },
+    { name: "Comprehensive cover benefits guide", size: "420 KB", href: "/documents/comprehensive-benefits-guide.pdf" },
+    { name: "Comprehensive claims checklist", size: "196 KB", href: "/documents/comprehensive-claims-checklist.pdf" },
+  ],
+  "Third Party Fire & Theft": [
+    { name: "Third Party Fire & Theft policy wording", size: "980 KB", href: "/documents/third-party-fire-theft-wording.pdf" },
+    { name: "Fire and theft claims checklist", size: "184 KB", href: "/documents/fire-theft-claims-checklist.pdf" },
+  ],
+  "Third Party Only": [
+    { name: "Third Party Only policy wording", size: "860 KB", href: "/documents/third-party-only-wording.pdf" },
+    { name: "Revised motor third-party premium rates", size: "3.87 MB", href: "/documents/third-party-premium-rates.pdf" },
+    { name: "Third-party accident guide", size: "210 KB", href: "/documents/third-party-accident-guide.pdf" },
+  ],
+};
 
 const steps = [
   { label: "Detailed Quote", icon: "quote" },
@@ -110,7 +125,7 @@ function MotorProposalForm() {
 
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
-      <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+      <div>
         <div className="space-y-3 p-4 sm:p-6 lg:border-r lg:border-violet-200">
           <div className="grid gap-3 sm:grid-cols-[130px_1fr_130px_1fr] sm:items-center"><label className={labelClass}>Policy No.</label><input className={inputClass} /><span /><span /></div>
           <div className="grid gap-3 sm:grid-cols-[130px_1fr_130px_1fr] sm:items-center"><label className={labelClass}>Country</label><select defaultValue="mauritius" className={inputClass}><option value="mauritius">Mauritius</option></select><label className={labelClass}>Certificate No.</label><input className={inputClass} /></div>
@@ -123,7 +138,7 @@ function MotorProposalForm() {
           <div className="grid gap-3 sm:grid-cols-[130px_1fr] sm:items-start"><label className={`${labelClass} flex items-center gap-2`}><input type="checkbox" className="accent-[#35126d]" /> Lien</label><div><div className="grid grid-cols-2 gap-2"><select className={inputClass}><option>Select lien type</option></select><select className={inputClass}><option>Select lienholder</option></select></div><textarea rows={3} className={`mt-2 ${inputClass}`} /></div></div>
           <div className="grid gap-3 sm:grid-cols-[130px_1fr] sm:items-center"><label className={labelClass}>Policy Risk</label><select defaultValue="standard" className={inputClass}><option value="standard">Standard</option><option value="high">High Risk</option></select></div>
         </div>
-        <aside className="bg-white p-4 sm:p-6">
+        <aside className="hidden">
           <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
           <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
           <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] transition hover:bg-violet-100">{action}</button>)}</div>
@@ -155,7 +170,7 @@ function SectionIcon({ title }: { title: string }) {
   return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 3 4 7v5c0 4.6 3.4 7.8 8 9 4.6-1.2 8-4.4 8-9V7z" /><path d="m9 12 2 2 4-4" /></svg>;
 }
 
-function VehicleProposalForm() {
+function VehicleProposalForm({ policyCover, onPolicyCoverChange }: { policyCover: PolicyCover; onPolicyCoverChange: (cover: PolicyCover) => void }) {
   const inputClass = "h-9 w-full border border-violet-200 bg-white px-2 text-sm text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
   const labelClass = "text-xs font-semibold text-slate-600";
   const documents = ["Certificate", "Vignette", "Sch", "Inv", "Premium", "Com", "PSSA", "Acc. Gen", "ICAC", "MIE", "AML", "AMCCU", "MRA", "PSEA", "BOM", "EWF", "Pro Note", "Summary", "Policy-wording", "KYC", "Scarcity", "Proposal"];
@@ -170,7 +185,7 @@ function VehicleProposalForm() {
 
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
-      <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+      <div>
         <div className="p-4 sm:p-5 lg:border-r lg:border-violet-200">
           <div className="grid gap-x-5 gap-y-3 sm:grid-cols-2">
             <div className="space-y-3">{field("Reg No")}{field("Make", "select")}{field("Model", "select")}{field("Eng No")}{field("Chassis No")}</div>
@@ -183,7 +198,10 @@ function VehicleProposalForm() {
             <legend className="pr-3 text-sm font-bold text-[#35126d]">Cover Details</legend>
             <label className="mb-4 flex items-start gap-2 text-xs font-semibold text-[#35126d]"><input type="checkbox" className="mt-0.5 accent-[#35126d]" />Calculate from basic Tariff, instead of Extended Comprehensive Cover for Old Vehicles.</label>
             <div className="grid gap-x-5 gap-y-3 sm:grid-cols-2">
-              <div className="space-y-3">{field("Cover Required", "select")}{field("Vol. Excess Amount")}{field("Young Driver Excess", "select")}{field("TPF Excess", "select")}{field("Additional Excess", "select")}{field("Total Loss Excess")}</div>
+              <div className="space-y-3">
+                <label className="grid grid-cols-[135px_1fr] items-center gap-2"><span className={labelClass}>Cover Required</span><select value={policyCover} onChange={(event) => onPolicyCoverChange(event.target.value as PolicyCover)} className={inputClass}><option value="">Select cover</option><option>Comprehensive</option><option>Third Party Fire &amp; Theft</option><option>Third Party Only</option></select></label>
+                {field("Vol. Excess Amount")}{field("Young Driver Excess", "select")}{field("TPF Excess", "select")}{field("Additional Excess", "select")}{field("Total Loss Excess")}
+              </div>
               <div className="space-y-3">{field("Add. Excess Remarks")}{field("Sum Insured")}{field("Compulsory Excess", "select")}{field("TPPD Excess")}{field("Theft Excess")}</div>
             </div>
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -198,8 +216,7 @@ function VehicleProposalForm() {
             <div className="overflow-x-auto"><table className="w-full min-w-[560px] border-collapse text-left text-xs"><thead><tr className="bg-violet-50 text-[#35126d]"><th className="border border-violet-200 px-3 py-2">Policy No</th><th className="border border-violet-200 px-3 py-2">Name</th><th className="border border-violet-200 px-3 py-2">Claim Amount</th><th className="border border-violet-200 px-3 py-2">Status</th></tr></thead><tbody><tr className="bg-amber-50"><td className="h-8 border border-violet-100" /><td className="border border-violet-100" /><td className="border border-violet-100" /><td className="border border-violet-100" /></tr><tr className="bg-emerald-50"><td className="h-8 border border-violet-100" /><td className="border border-violet-100" /><td className="border border-violet-100" /><td className="border border-violet-100" /></tr></tbody></table></div>
           </div>
         </div>
-        <aside className="bg-white p-4 sm:p-5">
-          <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
+        <aside className="hidden">
           <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="vehicle-print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
           <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] hover:bg-violet-100">{action}</button>)}</div>
           <label className="mt-5 block text-xs font-bold uppercase tracking-wider text-red-600">Remarks<textarea rows={4} className={`mt-2 ${inputClass}`} /></label>
@@ -218,7 +235,7 @@ function TrailersAndOthersForm() {
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
 
-      <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+      <div>
         <div className="p-4 sm:p-5 lg:border-r lg:border-violet-200">
           <div className="grid gap-3 sm:grid-cols-[130px_1fr_55px_150px] sm:items-center">
             <label className="text-xs font-semibold text-slate-600">Cover Required</label>
@@ -247,7 +264,7 @@ function TrailersAndOthersForm() {
           </div>
         </div>
 
-        <aside className="bg-white p-4 sm:p-5">
+        <aside className="hidden">
           <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
           <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="trailer-print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
           <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] hover:bg-violet-100">{action}</button>)}</div>
@@ -267,7 +284,7 @@ function AccessoriesForm() {
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
 
-      <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+      <div>
         <div className="p-4 sm:p-5 lg:border-r lg:border-violet-200">
           <div className="max-h-[520px] overflow-auto border border-violet-200">
             <table className="w-full min-w-[720px] border-collapse text-left text-xs">
@@ -281,7 +298,7 @@ function AccessoriesForm() {
           </div>
         </div>
 
-        <aside className="bg-white p-4 sm:p-5">
+        <aside className="hidden">
           <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
           <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="accessory-print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
           <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] hover:bg-violet-100">{action}</button>)}</div>
@@ -310,7 +327,7 @@ function GeneralInformationForm() {
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
 
-      <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+      <div>
         <div className="space-y-3 p-4 sm:p-5 lg:border-r lg:border-violet-200">
           {questions.slice(0, 2).map((question, index) => <div key={question} className="grid gap-3 sm:grid-cols-[22px_1fr_105px]"><span className="text-xs font-semibold">{String.fromCharCode(97 + index)})</span><p className="text-xs leading-5 text-slate-700">{question}</p><div className="flex items-center gap-4 text-xs"><label className="flex items-center gap-1"><input type="radio" name={`general-${index}`} className="accent-[#35126d]" />Yes</label><label className="flex items-center gap-1"><input type="radio" name={`general-${index}`} className="accent-[#35126d]" />No</label></div></div>)}
 
@@ -331,7 +348,7 @@ function GeneralInformationForm() {
           <label className="grid gap-3 sm:grid-cols-[290px_1fr]"><span className="text-xs text-slate-700">Date of purchase of vehicle</span><input type="date" className={inputClass} /></label>
         </div>
 
-        <aside className="bg-white p-4 sm:p-5">
+        <aside className="hidden">
           <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
           <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="general-print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
           <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] hover:bg-violet-100">{action}</button>)}</div>
@@ -351,7 +368,7 @@ function CommonDetailsForm() {
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
 
-      <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+      <div>
         <div className="space-y-4 p-4 sm:p-6 lg:border-r lg:border-violet-200">
           <div className="grid gap-3 sm:grid-cols-[22px_1fr_minmax(360px,1.2fr)]"><span className="text-xs font-semibold">a)</span><p className="text-xs leading-5 text-slate-700">Purpose for which vehicle will be used</p><div className="flex flex-wrap gap-x-5 gap-y-2 text-xs"><label className="flex items-center gap-1"><input type="radio" name="vehicle-purpose" className="accent-[#35126d]" />Passenger Carry</label><label className="flex items-center gap-1"><input type="radio" name="vehicle-purpose" className="accent-[#35126d]" />Commercial</label><label className="flex items-center gap-1"><input type="radio" name="vehicle-purpose" className="accent-[#35126d]" />Goods Carry</label><label className="flex items-center gap-1"><input type="radio" name="vehicle-purpose" className="accent-[#35126d]" />Other</label></div></div>
           <div className="grid gap-3 sm:grid-cols-[22px_1fr_minmax(360px,1.2fr)]"><span className="text-xs font-semibold">b)</span><p className="text-xs leading-5 text-slate-700">If vehicle used for carriage of goods specify its nature</p><div className="flex flex-wrap gap-x-5 gap-y-2 text-xs"><label className="flex items-center gap-1"><input type="radio" name="goods-nature" className="accent-[#35126d]" />General</label><label className="flex items-center gap-1"><input type="radio" name="goods-nature" className="accent-[#35126d]" />Hazardous</label></div></div>
@@ -366,7 +383,7 @@ function CommonDetailsForm() {
           <label className="grid gap-3 sm:ml-[22px] sm:grid-cols-[1fr_1.2fr]"><span className="text-xs leading-5 text-slate-700">If yes please give details</span><textarea rows={3} className="w-full border border-violet-200 bg-white px-2 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" /></label>
         </div>
 
-        <aside className="bg-white p-4 sm:p-5">
+        <aside className="hidden">
           <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
           <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="common-print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
           <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] hover:bg-violet-100">{action}</button>)}</div>
@@ -394,7 +411,7 @@ function PremiumForm() {
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
 
-      <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+      <div>
         <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-2 lg:border-r lg:border-violet-200">
           <div className="space-y-3">
             <div className="border border-violet-200 bg-white p-2"><label className="flex items-center gap-2 text-xs font-semibold text-[#35126d]"><input type="checkbox" className="accent-[#35126d]" />Remove only Commission</label><div className="mt-2 grid grid-cols-[1fr_90px] gap-2"><label className="flex items-center gap-2 text-xs"><input type="checkbox" />Basic Rate</label><input className={inputClass} /><label className="flex items-center gap-2 text-xs"><input type="checkbox" />Fap Risk</label><input className={inputClass} /></div></div>
@@ -414,7 +431,7 @@ function PremiumForm() {
           </div>
         </div>
 
-        <aside className="bg-white p-4 sm:p-5">
+        <aside className="hidden">
           <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
           <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="premium-print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
           <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] hover:bg-violet-100">{action}</button>)}</div>
@@ -434,7 +451,7 @@ function AttachedDocumentForm() {
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
 
-      <div className="grid lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+      <div>
         <div className="p-4 sm:p-5 lg:border-r lg:border-violet-200">
           <p className="text-xs font-bold uppercase text-slate-800">Click the below link to attach the policy documents</p>
           <label className="mt-3 grid max-w-md grid-cols-[100px_1fr] items-center gap-3"><span className="text-xs font-semibold text-slate-600">Doc Type</span><select className={inputClass}><option>Select document type</option><option>Licence</option><option>National ID / Passport</option><option>Sale Deed</option><option>Proposal Form</option><option>Address Proof</option></select></label>
@@ -455,7 +472,7 @@ function AttachedDocumentForm() {
           </div>
         </div>
 
-        <aside className="bg-white p-4 sm:p-5">
+        <aside className="hidden">
           <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
           <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="attachment-print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
           <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] hover:bg-violet-100">{action}</button>)}</div>
@@ -470,8 +487,10 @@ export default function BuyOnlinePage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [registration, setRegistration] = useState("");
   const [fullName, setFullName] = useState("");
+  const [policyCover, setPolicyCover] = useState<PolicyCover>("");
   const [openSection, setOpenSection] = useState<string | null>("KYC");
   const detailsComplete = Boolean(registration.trim() && fullName.trim());
+  const availableDownloads = policyCover ? [...policyDownloads[policyCover], ...generalDownloads] : generalDownloads;
 
   const advanceStep = () => {
     if (currentStep === 0) setCurrentStep(1);
@@ -538,7 +557,7 @@ export default function BuyOnlinePage() {
                         {section.pending ? <span className="self-start rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-100 sm:self-auto">{section.pending}</span> : <span className="self-start rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 sm:self-auto">Ready to complete</span>}
                       </div>
                       <div className="overflow-x-auto p-3 sm:p-4">
-                        {section.title === "KYC" ? <ClientDetailsForm /> : section.title === "Policy Details" ? <MotorProposalForm /> : section.title === "Vechicle Details" ? <VehicleProposalForm /> : section.title === "Trailers & Others" ? <TrailersAndOthersForm /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm /> : section.title === "Premium" ? <PremiumForm /> : <AttachedDocumentForm />}
+                        {section.title === "KYC" ? <ClientDetailsForm /> : section.title === "Policy Details" ? <MotorProposalForm /> : section.title === "Vechicle Details" ? <VehicleProposalForm policyCover={policyCover} onPolicyCoverChange={setPolicyCover} /> : section.title === "Trailers & Others" ? <TrailersAndOthersForm /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm /> : section.title === "Premium" ? <PremiumForm /> : <AttachedDocumentForm />}
                       </div>
                     </section>
                   ) : null)}
@@ -591,20 +610,24 @@ export default function BuyOnlinePage() {
               </div>
             </div>
             <p className="mt-2 text-sm leading-5 text-slate-500">Forms, policy documents and helpful motor insurance guides.</p>
+            <div className={`mt-4 flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold ${policyCover ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100" : "bg-amber-50 text-amber-700 ring-1 ring-amber-100"}`}>
+              <span className={`h-2 w-2 rounded-full ${policyCover ? "bg-emerald-500" : "bg-amber-500"}`} />
+              {policyCover || "Select a cover in Vehicle Details"}
+            </div>
           </div>
           <ul className="space-y-1 p-2">
-            {downloads.map((item) => (
-              <li key={item}>
-                <a href="#" className="group flex items-start gap-3 rounded-lg px-3 py-2.5 transition hover:bg-violet-50">
+            {availableDownloads.map((item, index) => (
+              <li key={item.href}>
+                <a href={item.href} download className="group flex items-start gap-3 rounded-lg px-3 py-2.5 transition hover:bg-violet-50">
                   <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-[10px] font-bold text-[#5b3aa4] ring-1 ring-slate-200 transition group-hover:bg-white group-hover:ring-violet-200">PDF</span>
-                  <span className="min-w-0 flex-1 text-sm leading-5 text-slate-600 transition group-hover:text-[#412484]">{item}</span>
+                  <span className="min-w-0 flex-1"><span className="block text-sm leading-5 text-slate-600 transition group-hover:text-[#412484]">{item.name}</span><span className="mt-0.5 block text-[11px] text-slate-400">{item.size}{policyCover && index < policyDownloads[policyCover].length ? " · Selected cover" : " · General"}</span></span>
                   <svg viewBox="0 0 24 24" className="mt-1 h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-y-0.5 group-hover:text-violet-500" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 4v11m0 0 4-4m-4 4-4-4M5 20h14" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 </a>
               </li>
             ))}
           </ul>
           <div className="border-t border-slate-100 bg-slate-50/70 px-6 py-4">
-            <p className="text-xs leading-5 text-slate-400">PDF documents open in a new window for easy viewing and printing.</p>
+            <p className="text-xs leading-5 text-slate-400">{policyCover ? `Showing documents for ${policyCover}, plus general motor forms.` : "Choose your cover to reveal its policy wording and claims guidance."}</p>
           </div>
         </aside>
       </div>
