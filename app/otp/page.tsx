@@ -7,10 +7,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 function OTPContent() {
   const router = useRouter();
   const params = useSearchParams();
-  const contact = params.get("contact") ?? "your contact";
+  const contact = (params.get("contact") ?? "your contact").replace(params.get("type") === "email" ? /$^/ : /[\s()-]/g, "");
   const isEmail = params.get("type") === "email";
   const isMobileConfirmation = params.get("next") === "profile";
   const [otp, setOtp] = useState(Array(6).fill("") as string[]);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
 
   const changeDigit = (value: string, index: number) => {
@@ -19,10 +21,16 @@ function OTPContent() {
     if (digit && index < 5) inputs.current[index + 1]?.focus();
   };
 
-  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (otp.join("").length !== 6) return;
-    router.push(isMobileConfirmation ? `/profile?mobile=${encodeURIComponent(contact)}` : `/mobile?contact=${encodeURIComponent(contact)}`);
+    setSaving(true); setError("");
+    try {
+      const response = await fetch("/api/auth/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contact, type: isEmail ? "email" : "mobile", code: otp.join("") }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Verification failed.");
+      router.push(isMobileConfirmation ? "/profile" : `/mobile?contact=${encodeURIComponent(contact)}`);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Verification failed."); setSaving(false); }
   };
 
   return (
@@ -51,9 +59,10 @@ function OTPContent() {
             <div className="mt-2 grid grid-cols-6 gap-2">
               {otp.map((digit, index) => <input key={index} ref={(node) => { inputs.current[index] = node; }} aria-label={`OTP digit ${index + 1}`} inputMode="numeric" maxLength={1} value={digit} onChange={(e) => changeDigit(e.target.value, index)} onKeyDown={(e) => { if (e.key === "Backspace" && !digit && index > 0) inputs.current[index - 1]?.focus(); }} className="h-12 min-w-0 border border-slate-300 bg-slate-50 text-center text-lg font-semibold text-slate-900 outline-none focus:border-[#412484] focus:ring-2 focus:ring-[#412484]/15" />)}
             </div>
-            <button type="submit" disabled={otp.join("").length !== 6} className="mt-5 h-12 w-full bg-[#412484] text-sm font-semibold text-white transition hover:bg-[#321b70] disabled:cursor-not-allowed disabled:bg-slate-300">Verify and continue</button>
+            {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
+            <button type="submit" disabled={saving || otp.join("").length !== 6} className="mt-5 h-12 w-full bg-[#412484] text-sm font-semibold text-white transition hover:bg-[#321b70] disabled:cursor-not-allowed disabled:bg-slate-300">{saving ? "Saving..." : "Verify and continue"}</button>
           </form>
-          <p className="mt-4 text-center text-xs text-slate-400">Didn’t receive it? You can request a new code in 30 seconds.</p>
+          <button type="button" onClick={async()=>{setError("");const response=await fetch("/api/auth/otp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contact,type:isEmail?"email":"mobile"})});const data=await response.json();setError(response.ok?"A new code has been sent.":data.error);}} className="mt-4 w-full text-center text-xs font-semibold text-[#412484]">Didn’t receive it? Send a new code</button>
         </div>
       </section>
     </main>

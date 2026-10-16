@@ -9,13 +9,16 @@ function MobileContent() {
   const params = useSearchParams();
   const [mobile, setMobile] = useState("");
   const [robotChecked, setRobotChecked] = useState(false);
+  const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
   const previousContact = params.get("contact") ?? "your verified contact";
 
-  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const value = mobile.trim();
     if (!robotChecked || !value) return;
-    router.push(`/otp?type=mobile&contact=${encodeURIComponent(value)}&next=profile`);
+    setSending(true); setError("");
+    try { const response=await fetch("/api/auth/otp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contact:value,type:"mobile"})}),data=await response.json();if(!response.ok)throw new Error(data.error||"Unable to send code.");router.push(`/otp?type=mobile&contact=${encodeURIComponent(value)}&next=profile`); } catch(reason){setError(reason instanceof Error?reason.message:"Unable to send code.");setSending(false);}
   };
 
   return (
@@ -48,7 +51,8 @@ function MobileContent() {
               <input type="checkbox" checked={robotChecked} onChange={(e) => setRobotChecked(e.target.checked)} className="h-5 w-5 accent-[#412484]" />
               <span><span className="block font-semibold text-slate-900">I am not a robot</span><span className="text-xs text-slate-500">Confirm your identity to continue.</span></span>
             </label>
-            <button type="submit" disabled={!robotChecked || !mobile.trim()} className="h-12 w-full bg-[#412484] text-sm font-semibold text-white transition hover:bg-[#321b70] disabled:cursor-not-allowed disabled:bg-slate-300">Send mobile OTP</button>
+            {error?<p className="text-sm text-rose-600">{error}</p>:null}
+            <button type="submit" disabled={sending || !robotChecked || !mobile.trim()} className="h-12 w-full bg-[#412484] text-sm font-semibold text-white transition hover:bg-[#321b70] disabled:cursor-not-allowed disabled:bg-slate-300">{sending?"Sending code...":"Send mobile OTP"}</button>
           </form>
           <p className="mt-4 text-center text-xs text-slate-400">We’ll verify this number before creating your profile.</p>
         </div>

@@ -1,71 +1,20 @@
+"use client";
 import Image from "next/image";
-import Link from "next/link";
-
-const inputStyles =
-  "mt-2 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#5b3aa4] focus:ring-2 focus:ring-[#5b3aa4]/10";
-
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+const inputStyles = "mt-2 h-11 w-full border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-[#5b3aa4] focus:ring-2 focus:ring-[#5b3aa4]/10";
+type Profile = { title: string; firstName: string; surname: string; gender: string; dateOfBirth: string };
 export default function ProfilePage() {
-  return (
-    <main className="min-h-screen bg-slate-100 p-2 font-sans text-slate-900 sm:p-3">
-      <header className="mb-3 flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-6">
-        <Image src="/images/logo.png" alt="New India Assurance logo" width={220} height={88} priority className="h-11 w-auto object-contain" />
-       
-      </header>
-
-      <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="mx-auto max-w-5xl px-5 py-6 sm:px-8 sm:py-8">
-          <div className="mb-6 border-b border-slate-100 pb-5">
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Create your profile</h1>
-            <p className="mt-1 text-sm text-slate-500">Enter your details as they appear on your official documents.</p>
-          </div>
-
-          <form className="space-y-6">
-            <fieldset>
-              <legend className="mb-4 flex w-full items-center gap-3 text-sm font-semibold text-slate-800">
-                Basic information <span className="h-px flex-1 bg-slate-100" />
-              </legend>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[0.55fr_1fr_1fr]">
-                <label className="text-sm font-medium text-slate-700">Title
-                  <select className={inputStyles} defaultValue="Mr."><option>Mr.</option><option>Mrs.</option><option>Miss</option><option>Dr.</option></select>
-                </label>
-                <label className="text-sm font-medium text-slate-700">First name
-                  <input type="text" placeholder="e.g. Alex" className={inputStyles} />
-                </label>
-                <label className="text-sm font-medium text-slate-700 sm:col-span-2 lg:col-span-1">Surname
-                  <input type="text" placeholder="e.g. Rawles" className={inputStyles} />
-                </label>
-                <label className="text-sm font-medium text-slate-700">Gender
-                  <select className={inputStyles} defaultValue=""><option value="" disabled>Select gender</option><option>Male</option><option>Female</option><option>Other</option></select>
-                </label>
-                <label className="text-sm font-medium text-slate-700 lg:col-span-2">Date of birth
-                  <input type="date" className={inputStyles} />
-                </label>
-              </div>
-            </fieldset>
-
-            <fieldset>
-              <legend className="mb-4 flex w-full items-center gap-3 text-sm font-semibold text-slate-800">
-                Verified contact details <span className="h-px flex-1 bg-slate-100" />
-              </legend>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Email address</p>
-                  <p className="mt-1 truncate text-sm font-semibold text-slate-700">alexrawles@gmail.com <span className="text-emerald-600">✓</span></p>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Mobile number</p>
-                  <p className="mt-1 truncate text-sm font-semibold text-slate-700">+60 12 345 68709 <span className="text-emerald-600">✓</span></p>
-                </div>
-              </div>
-            </fieldset>
-
-            <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs text-slate-400">Your information is encrypted and securely stored.</p>
-              <Link href="/dashboard" className="inline-flex h-11 items-center justify-center rounded-lg bg-[#412484] px-6 text-sm font-semibold text-white transition hover:bg-[#321b70]">Create account</Link>
-            </div>
-          </form>
-        </div>
-      </section>
-    </main>
-  );
+    const router = useRouter(), [profile, setProfile] = useState<Profile>({ title: "Mr.", firstName: "", surname: "", gender: "", dateOfBirth: "" }), [contact, setContact] = useState({ email: "", mobile: "", emailVerified: false, mobileVerified: false }), [status, setStatus] = useState("Loading your profile..."), [saving, setSaving] = useState(false);
+    useEffect(() => { void (async () => { const response = await fetch("/api/profile"), data = await response.json(); if (response.status === 401) return router.replace("/login"); if (!response.ok) return setStatus(data.error || "Unable to load your profile."); const p = data.profile; setContact({ email: p.Email ?? "", mobile: p.Mobile ?? "", emailVerified: Boolean(p.EmailVerified), mobileVerified: Boolean(p.MobileVerified) }); if (p.FirstName) setProfile({ title: p.Title, firstName: p.FirstName, surname: p.Surname, gender: p.Gender, dateOfBirth: p.DateOfBirth }); setStatus(""); })(); }, [router]);
+    const update = (key: keyof Profile, value: string) => setProfile(current => ({ ...current, [key]: value }));
+    const submit = async (event: React.FormEvent) => { event.preventDefault(); setSaving(true); setStatus(""); const response = await fetch("/api/profile", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(profile) }), data = await response.json(); if (!response.ok) { setStatus(data.error || "Unable to save your profile."); setSaving(false); return; } router.push("/dashboard"); };
+    return <main className="min-h-screen bg-slate-100 p-2 font-sans text-slate-900 sm:p-3"><header className="mb-3 border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-6"><Image src="/images/logo.png" alt="New India Assurance logo" width={220} height={88} priority className="h-11 w-auto object-contain" /></header><section className="border border-slate-200 bg-white shadow-sm"><div className="mx-auto max-w-5xl px-5 py-6 sm:px-8 sm:py-8"><div className="mb-6 border-b border-slate-100 pb-5"><h1 className="text-2xl font-semibold sm:text-3xl">Create your profile</h1><p className="mt-1 text-sm text-slate-500">Enter your details as they appear on your official documents.</p></div>
+        <form onSubmit={submit} className="space-y-6"><fieldset><legend className="mb-4 flex w-full items-center gap-3 text-sm font-semibold">Basic information <span className="h-px flex-1 bg-slate-100" /></legend><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[0.55fr_1fr_1fr]">
+            <label className="text-sm font-medium">Title<select className={inputStyles} value={profile.title} onChange={e => update("title", e.target.value)}><option>Mr.</option><option>Mrs.</option><option>Miss</option><option>Dr.</option></select></label>
+            <label className="text-sm font-medium">First name<input required value={profile.firstName} onChange={e => update("firstName", e.target.value)} className={inputStyles} /></label><label className="text-sm font-medium">Surname<input required value={profile.surname} onChange={e => update("surname", e.target.value)} className={inputStyles} /></label>
+            <label className="text-sm font-medium">Gender<select required className={inputStyles} value={profile.gender} onChange={e => update("gender", e.target.value)}><option value="" disabled>Select gender</option><option>Male</option><option>Female</option><option>Other</option></select></label><label className="text-sm font-medium lg:col-span-2">Date of birth<input required type="date" max={new Date().toISOString().slice(0, 10)} value={profile.dateOfBirth} onChange={e => update("dateOfBirth", e.target.value)} className={inputStyles} /></label></div></fieldset>
+            <fieldset><legend className="mb-4 flex items-center gap-3 text-sm font-semibold">Verified contact details <span className="h-px flex-1 bg-slate-100" /></legend><div className="grid gap-3 sm:grid-cols-2"><Contact label="Email address" value={contact.email} verified={contact.emailVerified} /><Contact label="Mobile number" value={contact.mobile} verified={contact.mobileVerified} /></div></fieldset>
+            {status ? <p className="text-sm text-rose-600">{status}</p> : null}<div className="flex justify-end border-t border-slate-100 pt-5"><button disabled={saving || Boolean(status)} className="h-11 bg-[#412484] px-6 text-sm font-semibold text-white disabled:bg-slate-300">{saving ? "Saving..." : "Save profile"}</button></div></form></div></section></main>;
 }
+function Contact({ label, value, verified }: { label: string; value: string; verified: boolean }) { return <div className="border border-slate-200 bg-slate-50 px-4 py-3"><p className="text-xs uppercase text-slate-400">{label}</p><p className="mt-1 text-sm font-semibold">{value || "Not provided"} {verified ? <span className="text-emerald-600">✓</span> : null}</p></div> }

@@ -8,12 +8,15 @@ export default function LoginPage() {
   const router = useRouter();
   const [contact, setContact] = useState("");
   const [robotChecked, setRobotChecked] = useState(false);
+  const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const value = contact.trim();
     if (!robotChecked || !value) return;
-    router.push(`/otp?type=${value.includes("@") ? "email" : "mobile"}&contact=${encodeURIComponent(value)}`);
+    const type=value.includes("@")?"email":"mobile"; setSending(true); setError("");
+    try { const response=await fetch("/api/auth/otp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contact:value,type})}),data=await response.json();if(!response.ok)throw new Error(data.error||"Unable to send code.");router.push(`/otp?type=${type}&contact=${encodeURIComponent(value)}`); } catch(reason){setError(reason instanceof Error?reason.message:"Unable to send code.");setSending(false);}
   };
 
   return (
@@ -45,7 +48,8 @@ export default function LoginPage() {
               <input type="checkbox" checked={robotChecked} onChange={(e) => setRobotChecked(e.target.checked)} className="h-5 w-5 accent-[#412484]" />
               <span><span className="block font-semibold text-slate-900">I am not a robot</span><span className="text-xs text-slate-500">Confirm your identity to continue.</span></span>
             </label>
-            <button type="submit" disabled={!robotChecked || !contact.trim()} className="h-12 w-full bg-[#412484] px-5 text-sm font-semibold text-white transition hover:bg-[#321b70] disabled:cursor-not-allowed disabled:bg-slate-300">Continue securely</button>
+            {error?<p className="text-sm text-rose-600">{error}</p>:null}
+            <button type="submit" disabled={sending || !robotChecked || !contact.trim()} className="h-12 w-full bg-[#412484] px-5 text-sm font-semibold text-white transition hover:bg-[#321b70] disabled:cursor-not-allowed disabled:bg-slate-300">{sending?"Sending code...":"Continue securely"}</button>
           </form>
           <p className="mt-4 text-center text-xs text-slate-400">Your information is encrypted and securely handled.</p>
         </div>

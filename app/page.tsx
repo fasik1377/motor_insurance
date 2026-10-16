@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -97,7 +97,7 @@ export default function Home() {
       <header className="border-b border-slate-900 bg-[#35126d] shadow-sm shadow-slate-950/20">
         <div className="mx-auto grid max-w-[1600px] grid-cols-[1fr_auto] items-center gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-8 lg:px-10 xl:gap-12">
             <div className="flex items-center border border-white/15 bg-white/10 px-4 py-2 shadow-lg shadow-black/20">
-              <Image src="/images/logo.png" alt="New India Assurance logo" width={180} height={64} className="h-auto w-auto object-contain" />
+              <Image src="/images/logo.png" alt="New India Assurance logo" width={140} height={50} className="h-auto w-auto object-contain" />
             </div>
             <nav className="hidden h-full items-center justify-center gap-1 text-sm font-semibold text-slate-100 lg:flex xl:gap-2">
               <Link href="#" className="bg-white px-3 py-3 text-[#35126d] transition hover:bg-violet-50 xl:px-4">Home</Link>
@@ -136,7 +136,7 @@ export default function Home() {
               LOGIN
             </Link>
             <button type="button" onClick={() => setMobileMenuOpen((open) => !open)} className="inline-flex h-11 w-11 items-center justify-center border border-white/15 bg-white/10 text-white transition hover:bg-white/20 lg:hidden">
-              <span className="text-xl">{mobileMenuOpen ? "✕" : "☰"}</span>
+              <span className="text-xl">{mobileMenuOpen ? "?" : "?"}</span>
             </button>
           </div>
         </div>
@@ -153,11 +153,11 @@ export default function Home() {
                 ["Help", "#"],
                 ["Contact", "#"],
               ].map(([label, href]) => (
-                <Link key={label} href={href} onClick={() => setMobileMenuOpen(false)} className="block rounded-2xl border border-white/10 bg-white/5 px-4 py-3 transition hover:bg-white/10">
+                <Link key={label} href={href} onClick={() => setMobileMenuOpen(false)} className="block border border-white/10 bg-white/5 px-4 py-3 transition hover:bg-white/10">
                   {label}
                 </Link>
               ))}
-              <a href="tel:+23052554455" className="block rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-200 transition hover:bg-white/10">
+              <a href="tel:+23052554455" className="block border border-white/10 bg-white/5 px-4 py-3 text-slate-200 transition hover:bg-white/10">
                 Call us: +230 5255 4455
               </a>
             </nav>
@@ -178,16 +178,16 @@ export default function Home() {
                 <div className="absolute left-10 top-14 h-40 w-40 rounded-full bg-violet-500/15 blur-3xl" />
                 <div className="absolute right-16 top-24 h-28 w-28 rounded-full bg-cyan-400/20 blur-3xl" />
               </div>
-              <button type="button" onClick={goPrev} className="absolute left-6 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center rounded-[18px] border border-white/20 bg-white/10 px-4 py-3 text-white backdrop-blur-sm transition hover:bg-white/20">
+              <button type="button" onClick={goPrev} className="absolute left-6 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center border border-white/20 bg-white/10 px-4 py-3 text-white backdrop-blur-sm transition hover:bg-white/20">
                 <span className="text-2xl">&#8249;</span>
               </button>
-              <button type="button" onClick={goNext} className="absolute right-6 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center rounded-[18px] border border-white/20 bg-white/10 px-4 py-3 text-white backdrop-blur-sm transition hover:bg-white/20">
+              <button type="button" onClick={goNext} className="absolute right-6 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center border border-white/20 bg-white/10 px-4 py-3 text-white backdrop-blur-sm transition hover:bg-white/20">
                 <span className="text-2xl">&#8250;</span>
               </button>
 
               <div className="relative z-10 mx-auto grid h-full max-w-6xl grid-rows-[auto_1fr] gap-[70px] px-6 py-12 sm:px-10 lg:px-16">
                 <div className="max-w-3xl">
-                  <div className="inline-flex h-2 w-20 rounded-full bg-violet-400" />
+                  <div className="inline-flex h-2 w-20 bg-violet-400" />
                   <h1 className="mt-6 text-3xl font-bold uppercase tracking-[0.2em] text-white sm:text-4xl">
                     NEW INDIA ASSURANCE
                   </h1>
@@ -207,7 +207,7 @@ export default function Home() {
                       </div>
                       <div className="grid gap-3 grid-cols-2 md:grid-cols-5 items-center">
                         <div className="group flex flex-col items-center justify-center gap-3 border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
+                          <div className="flex h-12 w-12 items-center justify-center bg-white/10 text-white">
                             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <path d="M12 2 6 5v5a6 6 0 0 0 12 0V5l-6-3Z" />
                               <path d="M9 12h6m-3-3v6" />
@@ -216,7 +216,7 @@ export default function Home() {
                           <div className="font-semibold text-sm">Health</div>
                         </div>
                         <div className="group flex flex-col items-center justify-center gap-3 border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
+                          <div className="flex h-12 w-12 items-center justify-center bg-white/10 text-white">
                             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <circle cx="12" cy="12" r="5" />
                               <path d="M12 7v-2m0 12v2m5-5h2m-12 0H5" />
@@ -225,7 +225,7 @@ export default function Home() {
                           <div className="font-semibold text-sm">Motor</div>
                         </div>
                         <div className="group flex flex-col items-center justify-center gap-3 border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
+                          <div className="flex h-12 w-12 items-center justify-center bg-white/10 text-white">
                             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <path d="m2 12 8 3 3-3-3-3-8 3Z" />
                               <path d="M10 15V8l7 4-7 3Z" />
@@ -234,7 +234,7 @@ export default function Home() {
                           <div className="font-semibold text-sm">Travel</div>
                         </div>
                         <div className="group flex flex-col items-center justify-center gap-3 border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
+                          <div className="flex h-12 w-12 items-center justify-center bg-white/10 text-white">
                             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <path d="M3 12 12 4l9 8v8a1 1 0 0 1-1 1h-5V14H9v7H4a1 1 0 0 1-1-1v-7Z" />
                             </svg>
@@ -242,7 +242,7 @@ export default function Home() {
                           <div className="font-semibold text-sm">Home</div>
                         </div>
                         <div className="group flex flex-col items-center justify-center gap-3 border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
+                          <div className="flex h-12 w-12 items-center justify-center bg-white/10 text-white">
                             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <rect x="4" y="4" width="6" height="6" rx="1.2" />
                               <rect x="14" y="4" width="6" height="6" rx="1.2" />
@@ -367,7 +367,7 @@ export default function Home() {
               </div>
               <Link href="#" className="group mt-2 inline-flex items-center justify-between bg-[#35126d] px-7 py-5 text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-violet-800">
                 Explore our coverage
-                <span className="text-2xl transition-transform group-hover:translate-x-2">→</span>
+                <span className="text-2xl transition-transform group-hover:translate-x-2">?</span>
               </Link>
             </div>
           </div>
@@ -392,7 +392,7 @@ export default function Home() {
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/95 via-slate-950/40 to-transparent px-5 py-6">
                       <p className="text-xs uppercase tracking-[0.35em] text-violet-200">{slide.title}</p>
                       <p className="mt-3 text-sm leading-6 text-slate-100">{slide.description}</p>
-                      <button className="mt-5 rounded-full border border-white/25 bg-white/10 px-5 py-2 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-white/15">
+                      <button className="mt-5 border border-white/25 bg-white/10 px-5 py-2 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-white/15">
                         Details
                       </button>
                     </div>
@@ -401,10 +401,10 @@ export default function Home() {
               </div>
 
               <div className="pointer-events-none absolute inset-x-0 top-1/2 hidden justify-between px-4 sm:flex">
-                <button type="button" onClick={() => setServiceSlide((prev) => (prev - 1 + serviceSlides.length) % serviceSlides.length)} className="pointer-events-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white transition hover:bg-black/60">
+                <button type="button" onClick={() => setServiceSlide((prev) => (prev - 1 + serviceSlides.length) % serviceSlides.length)} className="pointer-events-auto inline-flex h-12 w-12 items-center justify-center border border-white/20 bg-black/40 text-white transition hover:bg-black/60">
                   <span className="text-2xl">‹</span>
                 </button>
-                <button type="button" onClick={() => setServiceSlide((prev) => (prev + 1) % serviceSlides.length)} className="pointer-events-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white transition hover:bg-black/60">
+                <button type="button" onClick={() => setServiceSlide((prev) => (prev + 1) % serviceSlides.length)} className="pointer-events-auto inline-flex h-12 w-12 items-center justify-center border border-white/20 bg-black/40 text-white transition hover:bg-black/60">
                   <span className="text-2xl">›</span>
                 </button>
               </div>
@@ -426,7 +426,7 @@ export default function Home() {
               <p className="text-sm font-semibold uppercase tracking-[0.35em] text-violet-600">What’s New?</p>
               <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Latest updates from our insurance inventory</h2>
             </div>
-            <button className="inline-flex items-center justify-center rounded-full border border-violet-600 bg-transparent px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-violet-600 transition hover:bg-violet-600 hover:text-white">
+            <button className="inline-flex items-center justify-center border border-violet-600 bg-transparent px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-violet-600 transition hover:bg-violet-600 hover:text-white">
               View all inventory
             </button>
           </div>
@@ -440,7 +440,7 @@ export default function Home() {
                 <div className="p-5">
                   <p className="text-xs uppercase tracking-[0.08em] text-violet-600">Launching India’s most comprehensive broker insurance</p>
                   <h3 className="mt-4 text-base font-semibold text-slate-950">{item.title}</h3>
-                  <button className="mt-6 inline-flex items-center rounded-full border border-violet-600 bg-transparent px-4 py-2 text-sm font-semibold uppercase tracking-[0.1em] text-violet-600 transition hover:bg-violet-600 hover:text-white">
+                  <button className="mt-6 inline-flex items-center border border-violet-600 bg-transparent px-4 py-2 text-sm font-semibold uppercase tracking-[0.1em] text-violet-600 transition hover:bg-violet-600 hover:text-white">
                     Download
                   </button>
                 </div>
@@ -508,7 +508,7 @@ export default function Home() {
         <div className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">OUR CSR INITIATIVE</h2>
-            <button className="rounded-full border border-violet-600 px-4 py-2 text-xs text-violet-600">ONLINE SHOP</button>
+            <button className="border border-violet-600 px-4 py-2 text-xs text-violet-600">ONLINE SHOP</button>
           </div>
 
           <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
@@ -548,7 +548,7 @@ export default function Home() {
                   <input type="email" placeholder="Your email" className="w-full border-b border-white/20 bg-transparent px-4 py-2 text-sm text-white outline-none placeholder:text-slate-300" />
                   <input type="text" placeholder="Subject" className="w-full border-b border-white/20 bg-transparent px-4 py-2 text-sm text-white outline-none placeholder:text-slate-300" />
                   <textarea placeholder="Your message (optional)" rows={4} className="w-full border-b border-white/20 bg-transparent px-4 py-2 text-sm text-white outline-none placeholder:text-slate-300" />
-                  <button type="submit" className="mt-4 inline-flex rounded-full bg-white px-8 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-200">
+                  <button type="submit" className="mt-4 inline-flex bg-white px-8 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-200">
                     Submit
                   </button>
                 </form>
