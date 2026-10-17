@@ -28,16 +28,13 @@ export async function GET(request: Request) {
     const feet = parseInt(params.trailerFeet || "0");
     const excess = parseFloat(params.excess || "0");
     const sumInsured = parseFloat(params.sumInsured || "0");
-    const mgw = parseFloat(params.gvw || "0");
+    // The page sends the gross vehicle weight as "mgw"; "gvw" is accepted as a fallback.
+    const mgw = parseFloat(params.mgw || params.gvw || "0");
     const isPrivateCar = vehicleClass.toUpperCase().includes("PRIVATE CAR") ? 1 : 0;
-    
-    if (seating === 0 && cc === 0) {
-      return NextResponse.json({ 
-        success: false, 
-        errorMsg: "Missing Seating and CC" 
-      });
-    }
-    
+
+    // The "Missing Seating and CC" check is left to usp_GetPremiumRateMotor, which first
+    // overrides CC for TRAILER / MOTOR TRADE and only then validates seating and CC.
+
     console.log("[Premium API] Calling stored procedure with:", {
       country, issueDate, blnCompCover, vehicleStatus, vehicleClass, vehicleType,
       age, seating, cc, feet, excess, sumInsured, mgw, isPrivateCar
@@ -76,7 +73,9 @@ export async function GET(request: Request) {
       let userFriendlyMsg = errorMsg || "Premium calculation failed";
       
       if (errorMsg?.includes("No-Records")) {
-        if (errorMsg.includes("Configuration details")) {
+        if (errorMsg.includes("Missing Seating and CC")) {
+          userFriendlyMsg = "Seating capacity or engine capacity (CC/kW) is required to calculate the premium.";
+        } else if (errorMsg.includes("Configuration details")) {
           userFriendlyMsg = `No tariff configuration found for vehicle type "${vehicleClass}". Please contact system administrator.`;
         } else if (errorMsg.includes("rate for the above details")) {
           const details = [];

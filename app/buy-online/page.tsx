@@ -913,30 +913,29 @@ function TrailersAndOthersForm() {
 }
 
 function AccessoriesForm() {
-  const inputClass = "h-9 w-full border border-violet-200 bg-white px-2 text-sm text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
-  const labelClass = "text-xs font-semibold text-slate-600";
   const documents = ["Certificate", "Vignette", "Sch", "Inv", "Premium", "Com", "PSSA", "Acc. Gen", "ICAC", "MIE", "AML", "AMCCU", "MRA", "PSEA", "BOM", "EWF", "Pro Note", "Summary", "Policy-wording", "KYC", "Scarcity", "Proposal"];
   const actions = ["Insert & Save", "Edit & Save", "View", "Print", "Not approved", "Approve", "Insert 2 NTA", "Reports in PDF", "Exit"];
   const [accessories, setAccessories] = useState<Array<{ name: string; rate: number; category?: string }>>([]);
-  const [amounts, setAmounts] = useState<Record<string, number>>({});
+  // Amounts are keyed by accessory name so they stay with the right row when the category filter changes.
+  const [amounts, setAmounts] = useState<Record<string, string>>({});
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  
+
   useEffect(() => {
     fetch("/api/motor/accessories")
       .then((res) => res.ok ? res.json() : null)
       .then((data) => data?.accessories && setAccessories(data.accessories))
       .catch(() => undefined);
   }, []);
-  
-  const updateAmount = (index: number, value: string) => {
-    const amount = Number(value) || 0;
-    setAmounts(prev => ({ ...prev, [index]: amount }));
+
+  const updateAmount = (name: string, value: string) => {
+    setAmounts(prev => ({ ...prev, [name]: value }));
   };
-  
-  const getPremium = (index: number) => {
-    const rate = accessories[index]?.rate || 0;
-    const amount = amounts[index] || 0;
-    return (rate * amount / 100).toFixed(2);
+
+  // Premium = rate * amount / 100, rounded to 2 decimals.
+  const getPremium = (accessory: { name: string; rate: number }) => {
+    const rate = Number(accessory.rate) || 0;
+    const amount = Number(amounts[accessory.name]) || 0;
+    return Math.round(rate * amount) / 100;
   };
   
   const categories = useMemo(() => {
@@ -949,9 +948,8 @@ function AccessoriesForm() {
     return accessories.filter(a => (a.category || "General") === selectedCategory);
   }, [accessories, selectedCategory]);
   
-  const totalPremium = useMemo(() => {
-    return accessories.reduce((sum, _, index) => sum + parseFloat(getPremium(index) || "0"), 0);
-  }, [accessories, amounts]);
+  // Sum over all accessories (not only the visible category) so every entered amount counts.
+  const totalPremium = accessories.reduce((sum, accessory) => sum + getPremium(accessory), 0);
 
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
@@ -987,8 +985,11 @@ function AccessoriesForm() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAccessories.map((accessory, index) => (
-                    <tr key={accessory.name} className={index % 2 === 0 ? "bg-white" : "bg-violet-50/50"} onMouseEnter={(e) => e.currentTarget.classList.add("bg-violet-50")} onMouseLeave={(e) => e.currentTarget.classList.remove("bg-violet-50")}>
+                  {filteredAccessories.map((accessory, rowIndex) => {
+                    const index = accessories.indexOf(accessory);
+                    const premium = getPremium(accessory).toFixed(2);
+                    return (
+                    <tr key={accessory.name} className={rowIndex % 2 === 0 ? "bg-white" : "bg-violet-50/50"} onMouseEnter={(e) => e.currentTarget.classList.add("bg-violet-50")} onMouseLeave={(e) => e.currentTarget.classList.remove("bg-violet-50")}>
                       <td className="border-b border-r border-violet-100 px-3 py-2 font-medium text-slate-700">{accessory.name}</td>
                       <td className="border-b border-r border-violet-100 px-2 py-1.5">
                         <input
@@ -997,34 +998,35 @@ function AccessoriesForm() {
                           className="h-8 w-full border border-transparent bg-transparent px-2 outline-none focus:border-violet-300 focus:bg-white rounded text-xs"
                         />
                       </td>
-                      <td className="border-b border-r border-violet-100 px-3 py-2 text-center text-slate-600 font-mono">{accessory.rate.toFixed(2)}%</td>
+                      <td className="border-b border-r border-violet-100 px-3 py-2 text-center text-slate-600 font-mono">{(Number(accessory.rate) || 0).toFixed(2)}%</td>
                       <td className="border-b border-r border-violet-100 px-2 py-1.5 text-center">
                         <input
                           name={`accessoryAmount_${index}`}
                           type="number"
                           min="0"
                           step="0.01"
-                          value={amounts[index] || ""}
-                          onChange={(e) => updateAmount(index, e.target.value)}
+                          value={amounts[accessory.name] ?? ""}
+                          onChange={(e) => updateAmount(accessory.name, e.target.value)}
                           className="h-8 w-24 mx-auto border border-violet-200 bg-white px-2 text-center text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100 rounded"
                         />
-                        <input type="hidden" name={`accessoryPremium_${index}`} value={getPremium(index)} />
+                        <input type="hidden" name={`accessoryPremium_${index}`} value={premium} />
                       </td>
                       <td className="border-b border-violet-100 px-3 py-2 text-center">
                         <input
                           type="text"
                           name={`accessoryPremiumDisplay_${index}`}
-                          value={getPremium(index)}
+                          value={premium}
                           readOnly
                           className="h-8 w-24 mx-auto bg-slate-50 text-right text-sm font-medium px-2 outline-none rounded border border-slate-200"
                         />
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-            
+
             <div className="grid gap-4 sm:grid-cols-3 border-t border-violet-200 pt-4">
               <div className="sm:col-span-2"></div>
               <div className="bg-white border border-violet-200 rounded-lg p-4 text-right">
@@ -1033,17 +1035,6 @@ function AccessoriesForm() {
                 <input type="hidden" name="accessoriesTotalPremium" value={totalPremium.toFixed(2)} />
               </div>
             </div>
-          </div>
-          
-          <div className="mt-6 grid gap-4 sm:grid-cols-[1fr_1fr]">
-            <label className="grid gap-2">
-              <span className={labelClass}>Remarks for Accessories</span>
-              <textarea rows={3} className={inputClass} placeholder="Additional notes for accessories..." />
-            </label>
-            <label className="grid gap-2">
-              <span className={labelClass}>Special Discount %</span>
-              <input type="number" min="0" max="100" step="0.01" className={inputClass} placeholder="0.00" />
-            </label>
           </div>
         </div>
       </div>
@@ -1624,6 +1615,12 @@ function AttachedDocumentForm() {
   );
 }
 
+// Values written by a premium calculation; cleared when the inputs change so a stale premium is never shown or saved.
+const premiumOutputFields = ["premium", "basicRate", "basicAmt", "addCharge", "minPremium", "loadingPer", "tpPremium", "mgwRate", "excess", "youngExcess", "tpfExcess", "fixPremium", "isMinPremiumApplied", "isGoodsVehicle", "invoiceAmount", "documentCharge", "levy", "hitAndRun"];
+
+// usp_GetPremiumRateMotor overrides CC itself for these classes (TRAILER 2001; MOTOR TRADE 2000 or 5000), so the entered CC is not used.
+const ccOverriddenByTariff = (vehicleClass: string) => ["TRAILER", "MOTOR TRADE"].includes(vehicleClass.trim().toUpperCase());
+
 export default function BuyOnlinePage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [registration, setRegistration] = useState("");
@@ -1650,17 +1647,28 @@ export default function BuyOnlinePage() {
     if (!manufactureDate || !issueDate) return 0;
     const mfg = new Date(manufactureDate);
     const iss = new Date(issueDate);
-    const diffTime = Math.abs(iss.getTime() - mfg.getTime());
-    const diffYears = diffTime / (1000 * 60 * 60 * 24 * 365.25);
+    const diffYears = (iss.getTime() - mfg.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
     return Math.floor(diffYears * 100) / 100;
   };
 
+  const clearPremiumOutputs = useCallback(() => {
+    setPremiumCalculated(false);
+    setProposalDraft((prev) => {
+      if (premiumOutputFields.every((f) => !prev[f])) return prev;
+      const next = { ...prev };
+      premiumOutputFields.forEach((f) => { next[f] = ""; });
+      return next;
+    });
+  }, []);
+
   const calculatePremium = useCallback(async () => {
+    const vehicleClass = String(proposalDraft.vehicleClass || "").toUpperCase();
+    const ccOverridden = ccOverriddenByTariff(vehicleClass);
     const requiredFields = [
       "vehicleClass", "vehicleType", "fuelType", "sumInsured",
-      "manufactureDate", "issueDate", "seating", "cc", "vehicleStatus"
+      "manufactureDate", "issueDate", "seating", "vehicleStatus",
+      ...(ccOverridden ? [] : ["cc"]),
     ];
-    const vehicleClass = String(proposalDraft.vehicleClass || "").toUpperCase();
     if (/GOODS VEHICLE\(PRIVATE\)|GOODS VEHICLE\(PUBLIC\)/.test(vehicleClass)) {
       requiredFields.push("gvw");
     }
@@ -1671,29 +1679,42 @@ export default function BuyOnlinePage() {
     if (missing.length > 0) {
       console.log("[Premium] Missing fields for calculation:", missing);
       setPremiumError(`Missing required fields: ${missing.join(", ")}`);
-      return;
-    }
-    
-    const mgw = parseFloat(String(proposalDraft.gvw || "0"));
-    if (/GOODS VEHICLE\(PRIVATE\)|GOODS VEHICLE\(PUBLIC\)/.test(vehicleClass) && mgw <= 0) {
-      setPremiumError("Gross Vehicle Weight (GVW) must be greater than 0 for Goods Vehicles");
-      return;
-    }
-    
-    const trailerFeet = parseFloat(String(proposalDraft.trailerFeet || "0"));
-    if (/TANKER|TRAILER|TRACTOR/.test(vehicleClass) && trailerFeet <= 0) {
-      setPremiumError("Trailer Feet must be greater than 0 for Tanker/Trailer/Tractor");
+      clearPremiumOutputs();
       return;
     }
 
-    const cc = parseFloat(String(proposalDraft.cc || "0"));
-    if (cc <= 0) {
-      setPremiumError("Engine Capacity (CC/kW) must be greater than 0");
+    const mgw = parseFloat(String(proposalDraft.gvw || "0"));
+    if (/GOODS VEHICLE\(PRIVATE\)|GOODS VEHICLE\(PUBLIC\)/.test(vehicleClass) && mgw <= 0) {
+      setPremiumError("Gross Vehicle Weight (GVW) must be greater than 0 for Goods Vehicles");
+      clearPremiumOutputs();
       return;
     }
-    const maxCc = /TANKER|TRAILER|TRACTOR/.test(vehicleClass) ? 500 : 10000;
-    if (cc > maxCc) {
-      setPremiumError(`Engine Capacity (CC/kW) must be ${maxCc} or less (got ${cc})`);
+
+    const trailerFeet = parseFloat(String(proposalDraft.trailerFeet || "0"));
+    if (/TANKER|TRAILER|TRACTOR/.test(vehicleClass) && trailerFeet <= 0) {
+      setPremiumError("Trailer Feet must be greater than 0 for Tanker/Trailer/Tractor");
+      clearPremiumOutputs();
+      return;
+    }
+
+    if (!ccOverridden) {
+      const cc = parseFloat(String(proposalDraft.cc || "0"));
+      if (cc <= 0) {
+        setPremiumError("Engine Capacity (CC/kW) must be greater than 0");
+        clearPremiumOutputs();
+        return;
+      }
+      const maxCc = /TANKER|TRAILER|TRACTOR/.test(vehicleClass) ? 500 : 10000;
+      if (cc > maxCc) {
+        setPremiumError(`Engine Capacity (CC/kW) must be ${maxCc} or less (got ${cc})`);
+        clearPremiumOutputs();
+        return;
+      }
+    }
+
+    if (new Date(String(proposalDraft.manufactureDate)) > new Date(String(proposalDraft.issueDate))) {
+      setPremiumError("Date of manufacture cannot be after the issue date");
+      clearPremiumOutputs();
       return;
     }
 
@@ -1754,34 +1775,53 @@ export default function BuyOnlinePage() {
       } else {
         console.error("[Premium] Calculation failed:", data.errorMsg);
         setPremiumError(data.errorMsg || "Premium calculation failed");
+        clearPremiumOutputs();
       }
     } catch (error) {
       console.error("[Premium] Calculation error:", error);
       setPremiumError("Failed to calculate premium. Please try again.");
+      clearPremiumOutputs();
     } finally {
       setPremiumCalculating(false);
     }
-  }, [proposalDraft, policyCover]);
+  }, [proposalDraft, policyCover, clearPremiumOutputs]);
   useEffect(() => {
     const today = new Date();
     const isoDate = today.toISOString().slice(0, 10);
     setProposalDraft((prev) => ({ ...prev, issueDate: isoDate }));
   }, []);
 
+  // Recalculate whenever an input sent to usp_GetPremiumRateMotor changes (debounced while typing),
+  // so the premium on screen always matches the current details.
+  const premiumInputKey = JSON.stringify(
+    ["country", "issueDate", "coverRequired", "vehicleStatus", "vehicleClass", "vehicleType", "fuelType",
+      "manufactureDate", "seating", "cc", "trailerFeet", "compulsoryExcess", "sumInsured", "gvw"]
+      .map((f) => String(proposalDraft[f] ?? ""))
+      .concat(policyCover)
+  );
+  const lastPremiumInputKey = useRef<string | null>(null);
+
   useEffect(() => {
-    if (premiumCalculated) return;
-    const triggerFields = [
-      "vehicleClass", "vehicleType", "fuelType", "sumInsured",
-      "manufactureDate", "issueDate", "seating", "cc", "vehicleStatus"
-    ];
-    // coverRequired comes from policyCover state, not proposalDraft
-    const hasAllFields = triggerFields.every((f) => proposalDraft[f] && String(proposalDraft[f]).trim() !== "") 
-      && policyCover && policyCover.trim() !== "";
-    if (hasAllFields) {
-      console.log("[Premium] Auto-triggering calculation with:", { ...proposalDraft, coverRequired: policyCover });
-      calculatePremium();
-    }
-  }, [proposalDraft, policyCover, calculatePremium, premiumCalculated]);
+    if (lastPremiumInputKey.current === premiumInputKey) return;
+    const timer = setTimeout(() => {
+      lastPremiumInputKey.current = premiumInputKey;
+      const triggerFields = [
+        "vehicleClass", "vehicleType", "fuelType", "sumInsured",
+        "manufactureDate", "issueDate", "seating", "vehicleStatus",
+        ...(ccOverriddenByTariff(String(proposalDraft.vehicleClass || "")) ? [] : ["cc"]),
+      ];
+      // coverRequired comes from policyCover state, not proposalDraft
+      const hasAllFields = triggerFields.every((f) => proposalDraft[f] && String(proposalDraft[f]).trim() !== "")
+        && policyCover && policyCover.trim() !== "";
+      if (hasAllFields) {
+        console.log("[Premium] Auto-triggering calculation with:", { ...proposalDraft, coverRequired: policyCover });
+        calculatePremium();
+      } else {
+        clearPremiumOutputs();
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [premiumInputKey, proposalDraft, policyCover, calculatePremium, clearPremiumOutputs]);
 
 const detailsComplete = Boolean(registration.trim() && fullName.trim());
   const [emailPreviewOpen, setEmailPreviewOpen] = useState(false);
