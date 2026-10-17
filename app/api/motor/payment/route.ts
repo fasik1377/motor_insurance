@@ -3,6 +3,7 @@ import { getCurrentUserId, isSameOriginRequest } from "@/lib/auth";
 import { getDb, sql } from "@/lib/db";
 import { sendPolicyEmail } from "@/lib/email";
 import { AttachmentError, POLICY_DOCUMENTS_DIR, POLICY_MODULE, UPLOAD_FAILED_MESSAGE, policyFolderName, storeDocuments } from "@/lib/attachments";
+import { additionalRiskCovered, ratesFromColumns } from "@/lib/additional-risk";
 import { buildPolicyDocuments, type PolicyAttachment, type PolicyDocumentData } from "@/lib/policy-documents";
 
 type Row = Record<string, unknown>;
@@ -38,18 +39,22 @@ async function loadPolicyRecords(pool: Awaited<ReturnType<typeof getDb>>, policy
 
 export async function POST(request: NextRequest) {
   const userId = await getCurrentUserId();
-  if (!userId) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
-  if (!isSameOriginRequest(request)) return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
+  if (!userId) { console.warn("Payment rejected: not signed in"); return NextResponse.json({ error: "Your session has expired. Please sign in again." }, { status: 401 }); }
+  if (!isSameOriginRequest(request)) { console.warn("Payment rejected: invalid request origin"); return NextResponse.json({ error: "Invalid request origin." }, { status: 403 }); }
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+  const formDocs = (body?.documents && typeof body.documents === "object" ? body.documents : {}) as Row;
   const clientCode = typeof body?.clientCode === "string" ? body.clientCode.trim() : "";
   const policyNo = typeof body?.policyNo === "string" ? body.policyNo.trim() : "";
   const method = typeof body?.method === "string" ? body.method : "card";
-  const amount = Number(body?.amount || 0);
+  // Falls back to the invoice amount / premium shown in the Premium form.
+  const amount = asAmount(body?.amount) || asAmount(formDocs.invoiceAmount) || asAmount(formDocs.premium);
   const title = typeof body?.title === "string" ? body.title : "";
   const firstName = typeof body?.firstName === "string" ? body.firstName : "";
   const surname = typeof body?.surname === "string" ? body.surname : "";
   const email = typeof body?.email === "string" ? body.email : "";
-  if (!amount || !["card", "bank"].includes(method)) return NextResponse.json({ error: "Payment details are incomplete." }, { status: 400 });
+  if (!amount) { console.warn(`Payment rejected for policy ${policyNo || "(none)"}: no premium amount`); return NextResponse.json({ error: "The premium has not been calculated, so there is no amount to pay. Calculate the premium and try again." }, { status: 400 }); }
+  if (!["card", "bank"].includes(method)) { console.warn(`Payment rejected for policy ${policyNo || "(none)"}: invalid method`); return NextResponse.json({ error: "Select a payment method." }, { status: 400 }); }
+  console.info(`Payment started for policy ${policyNo || "(none)"}`);
   const invoiceClientCode = clientCode || "WEB";
   try {
     const pool = await getDb();
@@ -69,6 +74,7 @@ export async function POST(request: NextRequest) {
     const req = pool.request();
     const names = selected.map(([name], i) => { req.input(`v${i}`, selected[i][1]); return `[${name}]`; });
     await req.query(`INSERT INTO dbo.Invoice (${names.join(",")}) VALUES (${selected.map((_, i) => `@v${i}`).join(",")})`);
+    console.info(`Payment recorded for policy ${policyNo || "(none)"}: invoice ${invoiceNo}`);
 
     // Email the policy documents (Certificate, Debit Note, Schedule, Vignette) to the client.
     let emailSent = false;
@@ -76,7 +82,7 @@ export async function POST(request: NextRequest) {
     let storageMessage = "";
     if (policyNo) {
       try {
-        const docs = (body?.documents && typeof body.documents === "object" ? body.documents : {}) as Row;
+        const docs = formDocs;
         const { policy, client, certificateCode, clientCode: recordClientCode } = await loadPolicyRecords(pool, policyNo, clientCode);
         const policyOwner = asText(pick(policy, "Iuser"));
         if (!policy) {
@@ -129,9 +135,12 @@ export async function POST(request: NextRequest) {
             hitAndRun: asAmount(docs.hitAndRun),
             total: asAmount(fromPolicy(["InvAmount", "InvoiceAmount"], "invoiceAmount")) || amount,
           };
+          // Same text as usp_GetAdditionalRiskCovered, from the policy's saved Rate<n> columns.
+          data.additionalRisk = additionalRiskCovered({ rates: ratesFromColumns(policy), vehicleClass: data.vehicleClass, cover: data.cover, seating: Number(data.seating) || 0 });
           let attachments: PolicyAttachment[] = [];
           try {
             attachments = await buildPolicyDocuments(data);
+            console.info(`Policy ${policyNo}: ${attachments.length} PDF document(s) generated`);
           } catch (error) {
             console.error("Policy documents could not be generated", error);
           }
@@ -166,7 +175,8 @@ export async function POST(request: NextRequest) {
             emailMessage = emailResult.success
               ? `Policy documents (Certificate, Debit Note, Schedule, Vignette) were emailed to ${recipient}.`
               : `The policy documents could not be emailed (${emailResult.error || "email service error"}).`;
-            if (!emailResult.success) console.warn("Policy email failed to send:", emailResult.error);
+            if (emailResult.success) console.info(`Policy ${policyNo}: e-mail with ${attachments.length} attachment(s) sent`);
+            else console.warn(`Policy ${policyNo}: e-mail failed to send:`, emailResult.error);
           }
         }
       } catch (error) {
@@ -175,6 +185,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (policyNo && !emailSent) console.warn(`Policy ${policyNo}: no e-mail sent - ${emailMessage}`);
     // Validate clientCode after email is generated
     if (!clientCode) {
       return NextResponse.json({

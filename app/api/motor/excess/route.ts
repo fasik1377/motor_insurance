@@ -363,8 +363,9 @@ export async function GET(request: Request) {
     
     // 6c. Run the tariff lookup
     const excessParam = 0; // Per stored procedure note: @Excess = 0 for general path
-    // Feet: val(trailer feet) = 0 as per requirement
-    const feetParam = 0;
+    // Feet: Val(TxtTrailerFeet.Text) - the entered trailer feet, 0 when empty (usp_GetMotorExcess @TrailerFeet;
+    // for TRAILER the procedure uses @FeetDirectIssue, which is the same Trailer Ft. field here).
+    const feetParam = Math.trunc(Number(params.trailerFeet)) || 0;
     
     const tariffResult = await db.request()
       .input("pClass", vehicleClass)

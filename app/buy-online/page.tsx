@@ -1,36 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PREMIUM_COVERS, additionalRiskCovered, coverColumns, coverErrors, ratesFromColumns } from "@/lib/additional-risk";
 
 type PolicyCover = "" | "Comprehensive" | "Comprehensive AutoPlus" | "Third Party Fire & Theft" | "Third Party Only";
-
-const generalDownloads = [
-  { name: "Motor insurance proposal form", size: "81.92 KB", href: "/documents/motor-proposal-form.pdf" },
-  { name: "Motor claim form", size: "54.78 KB", href: "/documents/motor-claim-form.pdf" },
-  { name: "Safe driving — do's and don'ts", size: "37.82 KB", href: "/documents/motor-safety-guide.pdf" },
-];
-
-const policyDownloads: Record<Exclude<PolicyCover, "">, { name: string; size: string; href: string }[]> = {
-  Comprehensive: [
-    { name: "Comprehensive motor policy wording", size: "1.24 MB", href: "/documents/comprehensive-policy-wording.pdf" },
-    { name: "Comprehensive cover benefits guide", size: "420 KB", href: "/documents/comprehensive-benefits-guide.pdf" },
-    { name: "Comprehensive claims checklist", size: "196 KB", href: "/documents/comprehensive-claims-checklist.pdf" },
-  ],
-  "Comprehensive AutoPlus": [
-    { name: "Comprehensive AutoPlus motor policy wording", size: "1.24 MB", href: "/documents/comprehensive-autoplus-policy-wording.pdf" },
-    { name: "Comprehensive AutoPlus cover benefits guide", size: "420 KB", href: "/documents/comprehensive-autoplus-benefits-guide.pdf" },
-    { name: "Comprehensive AutoPlus claims checklist", size: "196 KB", href: "/documents/comprehensive-autoplus-claims-checklist.pdf" },
-  ],
-  "Third Party Fire & Theft": [
-    { name: "Third Party Fire & Theft policy wording", size: "980 KB", href: "/documents/third-party-fire-theft-wording.pdf" },
-    { name: "Fire and theft claims checklist", size: "184 KB", href: "/documents/fire-theft-claims-checklist.pdf" },
-  ],
-  "Third Party Only": [
-    { name: "Third Party Only policy wording", size: "860 KB", href: "/documents/third-party-only-wording.pdf" },
-    { name: "Revised motor third-party premium rates", size: "3.87 MB", href: "/documents/third-party-premium-rates.pdf" },
-    { name: "Third-party accident guide", size: "210 KB", href: "/documents/third-party-accident-guide.pdf" },
-  ],
-};
 
 const steps = [
   { label: "Detailed Quote", icon: "quote" },
@@ -208,6 +181,53 @@ function ClientDetailsForm({ onClientSelected, onSaved, onKycStatus, onClientCha
     }
   }, [profile, isNewClient, loaded]);
 
+  // Shows a client record from the database in the form (search by code, or the user's own record).
+  function applyLoadedClient(record: ClientRecord) {
+    // Apply UBO auto-merge for Individual category
+    const clientWithUbo = updateUboFromName(record);
+    setClient(clientWithUbo);
+    onKycStatus(missingFields(clientWithUbo));
+    onClientSelected(clientWithUbo);
+    setLoaded(true);
+    setIsNewClient(false);
+    if (checkedValue(clientWithUbo.HasKYC)) onSaved();
+  }
+
+  // Returning user: load the client record they already have (client code, passport / NID, address, ...).
+  // A first-time user gets no record back and keeps the new-client format filled from the profile.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/clients?mine=1")
+      .then((response) => response.ok ? response.json() : null)
+      .then((data: { client?: ClientRecord | null } | null) => {
+        if (cancelled || !data?.client) return;
+        applyLoadedClient(data.client);
+        setMessageError(false);
+        setMessage(`Your existing client record (code ${String(data.client.Code ?? "").trim()}) has been loaded.`);
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+    // Runs once when the KYC form opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Birth Date comes from the Profile page (and Gender when the record has none), also for a returning
+  // user's record, as long as the KYC is not completed yet.
+  useEffect(() => {
+    if (!profile || checkedValue(client.HasKYC)) return;
+    const dob = profile.DateOfBirth ? String(profile.DateOfBirth).slice(0, 10) : "";
+    const gender = profile.Gender === "Male" || profile.Gender === "Female" ? profile.Gender : "";
+    setClient((current) => {
+      let changed = false;
+      const next = { ...current };
+      if (dob && String(current.DOB ?? "").slice(0, 10) !== dob) { next.DOB = dob; changed = true; }
+      if (gender && !current.Gender) { next.Gender = gender; changed = true; }
+      return changed ? next : current;
+    });
+    // Re-applied when a client record is loaded (client.Code changes).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, client.HasKYC, client.Code]);
+
   async function findClient() {
     const code = value("Code").trim();
     if (!code) return;
@@ -219,14 +239,7 @@ function ClientDetailsForm({ onClientSelected, onSaved, onKycStatus, onClientCha
       const response = await fetch(`/api/clients?code=${encodeURIComponent(code)}`);
       const data = (await response.json()) as { client?: ClientRecord; error?: string };
       if (!response.ok || !data.client) throw new Error(data.error || "Client could not be loaded.");
-      // Apply UBO auto-merge for Individual category
-      const clientWithUbo = updateUboFromName(data.client);
-      setClient(clientWithUbo);
-      onKycStatus(missingFields(clientWithUbo));
-      onClientSelected(clientWithUbo);
-      setLoaded(true);
-      setIsNewClient(false);
-      if (checkedValue(clientWithUbo.HasKYC)) onSaved();
+      applyLoadedClient(data.client);
       setMessage(`Client ${code} loaded from SQL Server.`);
     } catch (error) {
       setLoaded(false);
@@ -255,6 +268,16 @@ function ClientDetailsForm({ onClientSelected, onSaved, onKycStatus, onClientCha
     const nationality = value("Nationality").toLowerCase();
     const category = value("Category");
     const nid = value("NID");
+    const passportNo = value("PassportNo").trim();
+
+    // Passport No.: at least 9 characters (letters, numbers or symbols) whenever it is entered,
+    // and required for individuals who are not Mauritian.
+    if (passportNo ? passportNo.length < 9 : category === "Individual" && nationality !== "mauritius") {
+      setErrors({ PassportNo: "Passport number must contain at least 9 characters (letters, numbers or symbols)." });
+      setMessageError(true);
+      setMessage("Passport number must contain at least 9 characters (letters, numbers or symbols).");
+      return;
+    }
     
     if (category === "Individual" && nationality === "mauritius") {
       if (!nid) {
@@ -311,34 +334,220 @@ const isReadOnly = loaded && checkedValue(client.HasKYC);
   const clientCodeReadOnly = loaded || !isNewClient;
   const canSave = isNewClient ? missingFields(client).length === 0 : (loaded && !isReadOnly);
 
+  const isIndividual = value("Category") === "Individual";
+  const isCompany = value("Category") === "Company";
+  // "" until the user chooses (a loaded record may have no residency value yet).
+  const residence = checked("Resident") ? "resident" : ["false", "0"].includes(value("Resident").toLowerCase()) ? "non-resident" : "";
+  const nationalityIsMauritius = value("Nationality").trim().toLowerCase() === "mauritius";
+  const profileDob = profile?.DateOfBirth ? String(profile.DateOfBirth).slice(0, 10) : "";
+  const dobLocked = isReadOnly || Boolean(profileDob);
+
+  // Resident -> Nationality "Mauritius"; Non Resident -> Nationality cleared for the user to enter.
+  const chooseResidence = (resident: boolean) => {
+    if (isReadOnly) return;
+    setField("Resident", resident);
+    setField("Nationality", resident ? "Mauritius" : "");
+  };
+
+  const fieldClass = (field: string, locked = false) =>
+    `h-10 w-full rounded-lg border bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#35126d] focus:ring-2 focus:ring-violet-100 ${errors[field] ? "border-rose-400 ring-2 ring-rose-100" : "border-violet-200"} ${locked ? "cursor-not-allowed bg-slate-50 text-slate-600" : ""}`;
+  const fieldLabel = (text: string, required = false, hint?: string) => (
+    <span className="mb-1.5 flex items-center justify-between gap-2 text-xs font-semibold text-slate-600">
+      <span>{text}{required ? <span className="text-rose-600"> *</span> : null}</span>
+      {hint ? <span className="text-[10px] font-medium uppercase tracking-wide text-violet-500">{hint}</span> : null}
+    </span>
+  );
+  const fieldError = (field: string) => errors[field] ? <span className="mt-1 block text-xs font-medium text-rose-600">{errors[field]}</span> : null;
+  const section = (title: string, subtitle: string, icon: React.ReactNode, children: React.ReactNode) => (
+    <section className="overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
+      <header className="flex items-center gap-3 border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-4 py-3">
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#35126d] text-white">{icon}</span>
+        <div>
+          <h4 className="text-sm font-bold text-[#35126d]">{title}</h4>
+          <p className="text-xs text-slate-500">{subtitle}</p>
+        </div>
+      </header>
+      <div className="grid gap-4 p-4 sm:grid-cols-2">{children}</div>
+    </section>
+  );
+  const choice = (name: string, label: string, isChecked: boolean, onSelect: () => void, disabled: boolean) => (
+    <label className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${isChecked ? "border-[#35126d] bg-[#35126d] text-white shadow-sm" : "border-violet-200 bg-white text-slate-600 hover:border-violet-300 hover:bg-violet-50"} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}>
+      <input type="radio" name={name} checked={isChecked} onChange={onSelect} disabled={disabled} className="sr-only" />
+      {label}
+    </label>
+  );
+  const icon = (path: string) => <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={path} /></svg>;
+
+  const statusBadge = isReadOnly
+    ? <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">KYC completed</span>
+    : loaded
+      ? <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">KYC not completed</span>
+      : <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700">New client</span>;
+
   return (
     <form onSubmit={saveKyc} className="border border-violet-200 bg-[#f7f5fb]">
-      <div className="space-y-3 p-4 sm:p-6">
-<div className="grid gap-3 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center">
-          <label htmlFor="client-code" className={labelClass}>Client Code</label><input id="client-code" name="clientCode" value={value("Code")} onChange={(event) => { if (!clientCodeReadOnly) setField("Code", event.target.value); }} onKeyDown={(event) => { if (event.key === "Enter" && !clientCodeReadOnly) findClient(); }} readOnly={clientCodeReadOnly} className={`${inputClass} ${clientCodeReadOnly ? "bg-slate-100 cursor-not-allowed" : ""}`} />
+      <div className="space-y-4 p-4 sm:p-6">
+        {/* Header: client code and KYC status */}
+        <div className="rounded-xl bg-gradient-to-r from-[#35126d] to-[#5b3aa4] p-4 text-white shadow-sm sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-200">Know Your Customer</p>
+              <h3 className="mt-1 text-lg font-bold">Client identification</h3>
+            </div>
+            {statusBadge}
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-[max-content_minmax(0,1fr)_max-content] sm:items-center">
+            <label htmlFor="client-code" className="text-xs font-semibold text-violet-100">Client Code</label>
+            <input id="client-code" name="clientCode" value={value("Code")} placeholder={clientCodeReadOnly ? "" : "Enter a client code and press Search"} onChange={(event) => { if (!clientCodeReadOnly) setField("Code", event.target.value); }} onKeyDown={(event) => { if (event.key === "Enter" && !clientCodeReadOnly) { event.preventDefault(); findClient(); } }} readOnly={clientCodeReadOnly} className={`h-10 w-full rounded-lg border border-white/30 px-3 font-mono text-sm outline-none ${clientCodeReadOnly ? "cursor-not-allowed bg-white/10 text-white" : "bg-white text-slate-800 focus:ring-2 focus:ring-violet-200"}`} />
+            {!clientCodeReadOnly ? <button type="button" onClick={findClient} disabled={busy || !value("Code").trim()} className="h-10 rounded-lg bg-white px-4 text-sm font-semibold text-[#35126d] transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60">Search</button> : null}
+          </div>
         </div>
 
-        {message ? <p role="status" className={`border px-3 py-2 text-sm font-medium ${messageError ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{message}</p> : null}
-        {Object.keys(errors).length > 0 ? <div role="alert" className="border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"><p className="font-semibold">Please correct the following:</p><ul className="mt-1 list-disc pl-5">{Object.values(errors).map((error) => <li key={error}>{error}</li>)}</ul></div> : null}
+        {message ? <p role="status" className={`rounded-lg border px-3 py-2 text-sm font-medium ${messageError ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{message}</p> : null}
+        {Object.keys(errors).length > 0 ? <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"><p className="font-semibold">Please correct the following:</p><ul className="mt-1 list-disc pl-5">{Object.values(errors).map((error) => <li key={error}>{error}</li>)}</ul></div> : null}
 
-        <div className="grid gap-3 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center">
-          <label className={labelClass}>Category</label>
-          <div className="flex flex-wrap gap-5 text-sm"><label className="flex items-center gap-2"><input type="radio" name="category" checked={value("Category") === "Company"} onChange={() => { if (!isReadOnly) setField("Category", "Company"); }} disabled={isReadOnly} className="accent-[#35126d]" /> Company</label><label className="flex items-center gap-2"><input type="radio" name="category" checked={value("Category") === "Individual"} onChange={() => { if (!isReadOnly) setField("Category", "Individual"); }} disabled={isReadOnly} className="accent-[#35126d]" /> Individual</label></div>
-        </div>
+        {section("Personal details", "Who the policy is for", icon("M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"), <>
+          <div className="sm:col-span-2">
+            {fieldLabel("Category", true)}
+            <div className="flex gap-2">
+              {choice("category", "Individual", isIndividual, () => { if (!isReadOnly) setField("Category", "Individual"); }, isReadOnly)}
+              {choice("category", "Company", isCompany, () => { if (!isReadOnly) setField("Category", "Company"); }, isReadOnly)}
+            </div>
+            {fieldError("Category")}
+          </div>
+          <label className="block">
+            {fieldLabel("Title", true)}
+            <select value={value("Title")} onChange={(event) => { if (!isReadOnly) setField("Title", event.target.value); }} disabled={isReadOnly} className={fieldClass("Title", isReadOnly)}><option value="">Select title</option><option>Mr.</option><option>Mrs.</option><option>Ms</option></select>
+            {fieldError("Title")}
+          </label>
+          <label className="block">
+            {fieldLabel(isCompany ? "Company Name" : "First Name", true)}
+            <input value={value("Name")} onChange={(event) => { if (!isReadOnly) setField("Name", event.target.value); }} readOnly={isReadOnly} className={fieldClass("Name", isReadOnly)} />
+            {fieldError("Name")}
+          </label>
+          <label className="block">
+            {fieldLabel("Surname", isIndividual)}
+            <input value={value("Surname")} onChange={(event) => { if (!isReadOnly) setField("Surname", event.target.value); }} readOnly={isReadOnly} className={fieldClass("Surname", isReadOnly)} />
+            {fieldError("Surname")}
+          </label>
+          <label className="block">
+            {fieldLabel("UBO (Ultimate beneficial owner)", isCompany, isIndividual ? "Auto" : undefined)}
+            <input value={value("UBO")} onChange={(event) => { if (!isReadOnly && isCompany) setField("UBO", event.target.value); }} readOnly={isReadOnly || isIndividual} className={fieldClass("UBO", isReadOnly || isIndividual)} />
+            {fieldError("UBO")}
+          </label>
+          <label className="block">
+            {fieldLabel("Birth Date", isIndividual, profileDob ? "From profile" : undefined)}
+            <input type="date" value={dateValue("DOB")} onChange={(event) => { if (!dobLocked) setField("DOB", event.target.value); }} readOnly={dobLocked} disabled={!isIndividual} className={fieldClass("DOB", dobLocked || !isIndividual)} />
+            {fieldError("DOB")}
+          </label>
+          <div>
+            {fieldLabel("Gender", isIndividual)}
+            <div className="flex gap-2">
+              {choice("gender", "Male", value("Gender") === "Male", () => { if (!isReadOnly) setField("Gender", "Male"); }, isReadOnly || !isIndividual)}
+              {choice("gender", "Female", value("Gender") === "Female", () => { if (!isReadOnly) setField("Gender", "Female"); }, isReadOnly || !isIndividual)}
+            </div>
+            {fieldError("Gender")}
+          </div>
+        </>)}
 
-        <div className="grid gap-3 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center"><label className={labelClass}>Name</label><div className="grid grid-cols-[max-content_1fr] gap-2"><select value={value("Title")} onChange={(event) => { if (!isReadOnly) setField("Title", event.target.value); }} disabled={isReadOnly} className={inputClass}><option value="">Title</option><option>Mr.</option><option>Mrs.</option><option>Ms</option></select><input value={value("Name")} onChange={(event) => { if (!isReadOnly) setField("Name", event.target.value); }} readOnly={isReadOnly} className={inputClass} /></div></div>
-        {[ ["Surname","Surname"], ["Address","Address"], ["City","City"] ].map(([label, field]) => <div key={field} className="grid gap-3 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center"><label className={labelClass}>{label}</label><input value={value(field)} onChange={(event) => { if (!isReadOnly) setField(field, event.target.value); }} readOnly={isReadOnly} className={inputClass} /></div>)}
-        <div className="grid gap-3 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center"><label className={labelClass}>UBO (Ultimate beneficial owner)</label><input value={value("UBO")} onChange={(event) => { if (!isReadOnly && value("Category") === "Company") setField("UBO", event.target.value); }} readOnly={isReadOnly || value("Category") === "Individual"} className={`${inputClass} ${value("Category") === "Individual" ? "bg-slate-100" : ""}`} /></div>
+        {section("Contact details", "How we reach the client", icon("M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"), <>
+          <label className="block">
+            {fieldLabel("Mobile", !value("TelRes") && !value("TelForegin"))}
+            <input value={value("Mobile")} placeholder="5XXXXXXX" onChange={(event) => { if (!isReadOnly) setField("Mobile", event.target.value); }} readOnly={isReadOnly} className={fieldClass("Mobile", isReadOnly)} />
+            {fieldError("Mobile")}
+          </label>
+          <label className="block">
+            {fieldLabel("Tel Res / Abroad", !value("Mobile"))}
+            <input value={value("TelRes") || value("TelForegin")} onChange={(event) => { if (!isReadOnly) setField("TelRes", event.target.value); }} readOnly={isReadOnly} className={fieldClass("TelRes", isReadOnly)} />
+            {fieldError("TelRes")}
+          </label>
+          <label className="block">
+            {fieldLabel("Tel Off")}
+            <input value={value("TelOff")} onChange={(event) => { if (!isReadOnly) setField("TelOff", event.target.value); }} readOnly={isReadOnly} className={fieldClass("TelOff", isReadOnly)} />
+            {fieldError("TelOff")}
+          </label>
+          <label className="block">
+            {fieldLabel("Fax")}
+            <input value={value("Fax")} onChange={(event) => { if (!isReadOnly) setField("Fax", event.target.value); }} readOnly={isReadOnly} className={fieldClass("Fax", isReadOnly)} />
+            {fieldError("Fax")}
+          </label>
+          <label className="block sm:col-span-2">
+            {fieldLabel("E-Mail")}
+            <input type="email" value={value("EMail")} onChange={(event) => { if (!isReadOnly) setField("EMail", event.target.value); }} readOnly={isReadOnly} className={fieldClass("EMail", isReadOnly)} />
+            {fieldError("EMail")}
+          </label>
+          <label className="block sm:col-span-2">
+            {fieldLabel("Address")}
+            <input value={value("Address")} onChange={(event) => { if (!isReadOnly) setField("Address", event.target.value); }} readOnly={isReadOnly} className={fieldClass("Address", isReadOnly)} />
+            {fieldError("Address")}
+          </label>
+          <label className="block">
+            {fieldLabel("City")}
+            <input value={value("City")} onChange={(event) => { if (!isReadOnly) setField("City", event.target.value); }} readOnly={isReadOnly} className={fieldClass("City", isReadOnly)} />
+            {fieldError("City")}
+          </label>
+        </>)}
 
-        {[ [["VAT","VAT"],["Tel Res / Abroad","TelRes"]], [["Tel Off","TelOff"],["Fax","Fax"]], [["Mobile","Mobile"],["Qualification","Qualification"]] ].map((pair) => <div key={pair[0][1]} className="grid gap-3 sm:grid-cols-[max-content_1fr_max-content_1fr] sm:items-center">{pair.map(([label, field]) => <span key={field} className="contents"><label className={labelClass}>{label}</label><input value={value(field) || (field === "TelRes" ? value("TelForegin") : "")} onChange={(event) => { if (!isReadOnly) setField(field, event.target.value); }} readOnly={isReadOnly} className={inputClass} /></span>)}</div>)}
-        <div className="grid gap-3 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center"><label className={labelClass}>E-Mail</label><input type="email" value={value("EMail")} onChange={(event) => { if (!isReadOnly) setField("EMail", event.target.value); }} readOnly={isReadOnly} className={inputClass} /></div>
+        {section("Residency & identity", "Residence, nationality and identity documents", icon("M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"), <>
+          <div className="sm:col-span-2">
+            {fieldLabel("Residence")}
+            <div className="flex gap-2">
+              {choice("residence", "Resident", residence === "resident", () => chooseResidence(true), isReadOnly)}
+              {choice("residence", "Non Resident", residence === "non-resident", () => chooseResidence(false), isReadOnly)}
+            </div>
+          </div>
+          <label className="block">
+            {fieldLabel("Nationality", isIndividual, residence === "resident" ? "Resident" : undefined)}
+            <input value={value("Nationality")} placeholder={residence === "non-resident" ? "Enter nationality" : ""} onChange={(event) => { if (!isReadOnly && residence !== "resident") setField("Nationality", event.target.value); }} readOnly={isReadOnly || residence === "resident"} className={fieldClass("Nationality", isReadOnly || residence === "resident")} />
+            {fieldError("Nationality")}
+          </label>
+          <label className="block">
+            {fieldLabel("Country Code")}
+            <input value={value("CountryCode")} onChange={(event) => { if (!isReadOnly) setField("CountryCode", event.target.value); }} readOnly={isReadOnly} className={fieldClass("CountryCode", isReadOnly)} />
+            {fieldError("CountryCode")}
+          </label>
+          <label className="block">
+            {fieldLabel("Passport No.", isIndividual && !nationalityIsMauritius, "Min 9 characters")}
+            <input value={value("PassportNo")} onChange={(event) => { if (!isReadOnly) setField("PassportNo", event.target.value); }} readOnly={isReadOnly} minLength={9} className={fieldClass("PassportNo", isReadOnly)} />
+            {fieldError("PassportNo")}
+          </label>
+          <label className="block">
+            {fieldLabel("NID", isIndividual && nationalityIsMauritius)}
+            <input disabled={isReadOnly || !isIndividual || !nationalityIsMauritius} value={value("NID")} placeholder={isIndividual && nationalityIsMauritius ? "14 characters" : "Mauritian nationals only"} onChange={(event) => { if (!isReadOnly) setField("NID", event.target.value); }} readOnly={isReadOnly} className={fieldClass("NID", isReadOnly || !isIndividual || !nationalityIsMauritius)} />
+            {fieldError("NID")}
+          </label>
+          <label className="block">
+            {fieldLabel("BRN", isCompany)}
+            <input disabled={isReadOnly || !isCompany} value={value("BRN")} placeholder={isCompany ? "" : "Companies only"} onChange={(event) => { if (!isReadOnly) setField("BRN", event.target.value); }} readOnly={isReadOnly} className={fieldClass("BRN", isReadOnly || !isCompany)} />
+            {fieldError("BRN")}
+          </label>
+          <label className="block">
+            {fieldLabel("VAT")}
+            <input value={value("VAT")} onChange={(event) => { if (!isReadOnly) setField("VAT", event.target.value); }} readOnly={isReadOnly} className={fieldClass("VAT", isReadOnly)} />
+            {fieldError("VAT")}
+          </label>
+        </>)}
 
-        <div className="grid gap-3 sm:grid-cols-[max-content_1fr_max-content_1fr] sm:items-center"><label className={labelClass}>Occupation</label><input value={value("Occupation")} onChange={(event) => { if (!isReadOnly) setField("Occupation", event.target.value); }} readOnly={isReadOnly} className={inputClass} /><div className="col-span-2 flex flex-wrap gap-4 text-sm"><label className="flex items-center gap-2"><input type="radio" name="residence" checked={checked("Resident")} onChange={() => { if (!isReadOnly) { setField("Resident", true); setField("Nationality", "Mauritius"); }} } disabled={isReadOnly} className="accent-[#35126d]" /> Resident</label><label className="flex items-center gap-2"><input type="radio" name="residence" checked={!checked("Resident")} onChange={() => { if (!isReadOnly) setField("Resident", false); }} disabled={isReadOnly} className="accent-[#35126d]" /> Non Resident</label></div></div>
-        <div className="grid gap-3 sm:grid-cols-[max-content_1fr_max-content_1fr] sm:items-center"><label className={labelClass}>Nationality</label><input value={value("Nationality")} onChange={(event) => { if (!isReadOnly && !checked("Resident")) setField("Nationality", event.target.value); }} readOnly={isReadOnly || checked("Resident")} className={`${inputClass} ${checked("Resident") ? "bg-slate-100" : ""}`} /><label className={labelClass}>Country Code</label><input value={value("CountryCode")} onChange={(event) => { if (!isReadOnly) setField("CountryCode", event.target.value); }} readOnly={isReadOnly} className={inputClass} /></div>
-        <div className="grid gap-3 sm:grid-cols-[max-content_1fr_max-content_1fr] sm:items-center"><label className={labelClass}>Passport No.</label><input value={value("PassportNo")} onChange={(event) => { if (!isReadOnly) setField("PassportNo", event.target.value); }} readOnly={isReadOnly} className={inputClass} minLength={9} /><label className={labelClass}>NID</label><input disabled={isReadOnly || (value("Category") !== "Individual" || value("Nationality").toLowerCase() !== "mauritius")} value={value("NID")} onChange={(event) => { if (!isReadOnly) setField("NID", event.target.value); }} readOnly={isReadOnly} className={inputClass} /></div>
-<div className="grid gap-3 sm:grid-cols-[max-content_1fr_max-content_1fr] sm:items-center"><label className={labelClass}>BRN</label><input disabled={isReadOnly || value("Category") !== "Company"} value={value("BRN")} onChange={(event) => { if (!isReadOnly) setField("BRN", event.target.value); }} readOnly={isReadOnly} className={inputClass} /><label className={labelClass}>Gender</label><div className="flex gap-4 text-sm"><label className="flex items-center gap-2"><input type="radio" name="gender" disabled={isReadOnly || value("Category") !== "Individual"} checked={value("Gender") === "Male"} onChange={() => { if (!isReadOnly) setField("Gender", "Male"); }} className="accent-[#35126d]" /> Male</label><label className="flex items-center gap-2"><input type="radio" name="gender" disabled={isReadOnly || value("Category") !== "Individual"} checked={value("Gender") === "Female"} onChange={() => { if (!isReadOnly) setField("Gender", "Female"); }} className="accent-[#35126d]" /> Female</label></div></div>
-        {loaded ? <p className="text-xs font-semibold text-violet-700">KYC record: {checked("HasKYC") ? "Available" : "Not available"}</p> : null}
-        <button type="submit" disabled={busy || !canSave} className="w-full bg-[#35126d] px-4 py-3 text-sm font-bold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-400">{busy ? "Saving..." : isReadOnly ? "KYC already completed" : "Save KYC"}</button>
+        {section("Occupation", "Profession and qualification", icon("M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"), <>
+          <label className="block">
+            {fieldLabel("Occupation")}
+            <input value={value("Occupation")} onChange={(event) => { if (!isReadOnly) setField("Occupation", event.target.value); }} readOnly={isReadOnly} className={fieldClass("Occupation", isReadOnly)} />
+            {fieldError("Occupation")}
+          </label>
+          <label className="block">
+            {fieldLabel("Qualification")}
+            <input value={value("Qualification")} onChange={(event) => { if (!isReadOnly) setField("Qualification", event.target.value); }} readOnly={isReadOnly} className={fieldClass("Qualification", isReadOnly)} />
+            {fieldError("Qualification")}
+          </label>
+        </>)}
+
+        {loaded ? (
+          checked("HasKYC")
+            ? <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">KYC record: Completed</p>
+            : <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">KYC record: Not completed yet. Fill in the missing details (Passport No / NID, Nationality, Address, Gender, Birth Date, ...) and click Save to complete the KYC.</p>
+        ) : null}
+        <p className="text-xs text-slate-500"><span className="text-rose-600">*</span> Required field</p>
+        <button type="submit" disabled={busy || !canSave} className="w-full rounded-xl bg-[#35126d] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-400">{busy ? "Saving..." : isReadOnly ? "KYC already completed" : "Save KYC"}</button>
       </div>
     </form>
   );
@@ -448,47 +657,124 @@ const setRequired = (field: keyof typeof values, value: string) => {
   const vehicleClassOptions = useMemo(() => {
     return [...new Set([...vehicleClasses, values.vehicleClass].filter(Boolean))];
   }, [vehicleClasses, values.vehicleClass]);
-const requiredSelect = (label: string, name: keyof typeof values, options: string[]) => (
-    <label className="grid gap-1.5 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center">
-      <span className={labelClass}>{label}<span className="text-rose-600"> *</span></span>
-      <select name={name} value={values[name]} onChange={(event) => setRequired(name, event.target.value)} className={inputClass}>
-        <option value="">Select {label.toLowerCase()}</option>{options.map((option) => <option key={option}>{option}</option>)}
-      </select>
-    </label>
+const fieldClass = (locked = false) =>
+    `h-10 w-full rounded-lg border border-violet-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-[#35126d] focus:ring-2 focus:ring-violet-100 ${locked ? "cursor-default bg-slate-50 text-slate-600" : ""}`;
+  const fieldLabel = (text: string, required = false, hint?: string) => (
+    <span className="mb-1.5 flex items-center justify-between gap-2 text-xs font-semibold text-slate-600">
+      <span>{text}{required ? <span className="text-rose-600"> *</span> : null}</span>
+      {hint ? <span className="text-[10px] font-medium uppercase tracking-wide text-violet-500">{hint}</span> : null}
+    </span>
   );
-  const documents = ["Certificate", "Vignette", "Sch", "Inv", "Premium", "Com", "PSSA", "Acc. Gen", "ICAC", "MIE", "AML", "AMCCU", "MRA", "PSEA", "BOM", "EWF", "Pro Note", "Summary", "Policy-wording", "KYC", "Scarcity", "Proposal"];
-  const actions = ["Insert & Save", "Edit & Save", "View", "Print", "Not approved", "Approve", "Insert 2 NTA", "Reports in PDF", "Exit"];
+  const section = (title: string, subtitle: string, iconPath: string, children: React.ReactNode, columns = "sm:grid-cols-2") => (
+    <section className="overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
+      <header className="flex items-center gap-3 border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-4 py-3">
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#35126d] text-white"><svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={iconPath} /></svg></span>
+        <div>
+          <h4 className="text-sm font-bold text-[#35126d]">{title}</h4>
+          <p className="text-xs text-slate-500">{subtitle}</p>
+        </div>
+      </header>
+      <div className={`grid gap-4 p-4 ${columns}`}>{children}</div>
+    </section>
+  );
+  const calendarIcon = <svg className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
+
+  // Summary of the period of cover shown in the header.
+  const coverDays = values.fromDate && toDate ? Math.round((new Date(toDate).getTime() - new Date(values.fromDate).getTime()) / 86400000) : 0;
+  const periodText = values.fromDate && toDate ? `${formatDateShort(new Date(values.fromDate))}  to  ${formatDateShort(new Date(toDate))}` : "";
+  const classificationDone = [values.vehicleType, values.fuelType, values.vehicleClass, values.vehicleStatus].filter(Boolean).length;
 
 return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
-      <div>
-<div className="space-y-3 p-4 sm:p-6 lg:border-r lg:border-violet-200">
-            <div className="space-y-3">
-              <label className="grid gap-1.5 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center"><span className={labelClass}>Policy No.</span><input name="policyNo" value={policyNo} readOnly className={`${inputClass} bg-slate-100`} /></label>
-              <label className="grid gap-1.5 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center"><span className={labelClass}>Country</span><select name="country" defaultValue="Mauritius" className={inputClass}><option>Mauritius</option><option>Rodrigues</option></select></label>
-              <div className="grid gap-3 sm:grid-cols-[max-content_1fr_max-content_1fr] sm:items-center">
-                <label className="grid gap-1.5 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center"><span className={labelClass}>Vehicle Type</span><select name="vehicleType" value={values.vehicleType} onChange={(e) => { setRequired("vehicleType", e.target.value); setRequired("vehicleClass", ""); }} className={inputClass}><option value="">Select vehicle type</option>{vehicleTypeOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
-                <label className="grid gap-1.5 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center"><span className={labelClass}>Fuel Type</span><select name="fuelType" value={values.fuelType} onChange={(e) => { setRequired("fuelType", e.target.value); setRequired("vehicleClass", ""); }} className={inputClass}><option value="">Select fuel type</option>{fuelTypes.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
+      <div className="space-y-4 p-4 sm:p-6">
+        {/* Header: policy number and period of cover */}
+        <div className="rounded-xl bg-gradient-to-r from-[#35126d] to-[#5b3aa4] p-4 text-white shadow-sm sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-200">Policy Details</p>
+              <h3 className="mt-1 text-lg font-bold">Cover, vehicle class and period</h3>
+            </div>
+            <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white">{classificationDone} / 4 classification fields</span>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold text-violet-100">Policy No.</span>
+              <input name="policyNo" value={policyNo} readOnly placeholder="Generated from the vehicle class and cover" className="h-10 w-full cursor-default rounded-lg border border-white/30 bg-white/10 px-3 font-mono text-sm text-white outline-none placeholder:text-violet-200" />
+            </label>
+            <div>
+              <span className="mb-1.5 block text-xs font-semibold text-violet-100">Period of cover</span>
+              <div className="flex h-10 items-center justify-between gap-2 rounded-lg border border-white/30 bg-white/10 px-3 text-sm">
+                <span className="font-mono">{periodText || "-"}</span>
+                {coverDays > 0 ? <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-[#35126d]">{coverDays} days</span> : null}
               </div>
-              <div className="grid gap-3 sm:grid-cols-[max-content_1fr_max-content_1fr] sm:items-center">
-                <label className="grid gap-1.5 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center"><span className={labelClass}>Vehicle Class</span><select name="vehicleClass" value={values.vehicleClass} onChange={(e) => setRequired("vehicleClass", e.target.value)} className={inputClass}><option value="">Select vehicle class</option>{vehicleClassOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
-                <label className="grid gap-1.5 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center">{requiredSelect("Vehicle Status", "vehicleStatus", ["NEW", "SECOND HAND", "RECON"])}</label>
-              </div>
-              <label className="grid gap-1.5 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center"><span className={labelClass}>Issue Date</span><input name="issueDate" value={values.issueDate} readOnly className={`${inputClass} bg-slate-100`} /><input type="hidden" name="issueDate" value={values.issueDate ? formatDateInput(new Date(values.issueDate)) : ""} /></label>
-<div className="grid gap-3 sm:grid-cols-[max-content_1fr_max-content_1fr] sm:items-center">
-                <label className="grid gap-1.5 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center"><span className={labelClass}>From Date</span><div className="relative"><input type="text" value={values.fromDate ? formatDateShort(new Date(values.fromDate)) : ""} readOnly className={`${inputClass} bg-slate-100 cursor-pointer`} /><input name="fromDate" type="date" value={values.fromDate} min={values.fromDate} onChange={(e) => { setFromDate(e.target.value); const d = new Date(e.target.value); setToDate(formatDateInput(new Date(d.getFullYear() + 1, d.getMonth(), d.getDate()))); setRequired("fromDate", e.target.value); setRequired("toDate", formatDateInput(new Date(d.getFullYear() + 1, d.getMonth(), d.getDate()))); }} className="absolute inset-0 opacity-0 cursor-pointer" /><svg className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 002 2v12a2 2 0 002 2z" /></svg></div></label>
-                <label className="grid gap-1.5 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center"><span className={labelClass}>To Date</span><div className="relative"><input type="text" value={toDate ? formatDateShort(new Date(toDate)) : ""} readOnly className={`${inputClass} bg-slate-100 cursor-pointer`} /><input name="toDate" type="date" value={toDate} min={values.fromDate} onChange={(e) => { setToDate(e.target.value); setRequired("toDate", e.target.value); }} className="absolute inset-0 opacity-0 cursor-pointer" /><svg className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 002 2v12a2 2 0 002 2z" /></svg></div></label>
-              </div>
-              <input type="hidden" name="clientCode" value={clientCode || ""} />
-              <div className="grid gap-3 sm:grid-cols-[max-content_1fr] sm:items-start"><label className={`${labelClass} flex items-center gap-2`}><input name="lien" type="checkbox" required checked={values.lien === "true"} onChange={(e) => setRequired("lien", String(e.target.checked))} className="accent-[#35126d]" /> Lien <span className="text-rose-600">*</span></label>{values.lien === "true" ? <div className="grid grid-cols-2 gap-2"><select name="lienType" required value={values.lienType} onChange={(e) => setRequired("lienType", e.target.value)} className={inputClass}><option value="No Lien">No Lien</option><option value="in favour of">in favour of</option><option value="on lease to">on lease to</option><option value="on account of">on account of</option><option value="on finance lease to">on finance lease to</option><option value="on lease (Financial)">on lease (Financial)</option><option value="on lease (Finance Lease) to">on lease (Finance Lease) to</option><option value="on financial lease to">on financial lease to</option><option value="on Operating lease to">on Operating lease to</option><option value="on lease (Financial) to">on lease (Financial) to</option></select>{values.lienType !== "No Lien" ? <select name="lienholder" required value={values.lienholder} onChange={(e) => setRequired("lienholder", e.target.value)} className={inputClass}><option value="">Select bank</option>{banks.map((bank) => <option key={bank.Code} value={bank.Name}>{bank.Name}</option>)}</select> : <input name="lienholder" value={values.lienholder} onChange={(e) => setRequired("lienholder", e.target.value)} placeholder="Lienholder" className={inputClass} />}</div> : null}</div>
             </div>
           </div>
-        <aside className="hidden">
-          <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
-          <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
-          <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] transition hover:bg-violet-100">{action}</button>)}</div>
-          <label className="mt-5 block text-xs font-bold uppercase tracking-wider text-red-600">Remarks<textarea rows={4} className={`mt-2 ${inputClass}`} /></label>
-        </aside>
+        </div>
+
+        {section("Vehicle classification", "Used for the tariff, excess and policy number", "M5 16l1.5-6h11l1.5 6M4 16h16v4h-3v-2H7v2H4zM7 13h.01M17 13h.01", <>
+          <label className="block">
+            {fieldLabel("Country")}
+            <select name="country" defaultValue="Mauritius" className={fieldClass()}><option>Mauritius</option><option>Rodrigues</option></select>
+          </label>
+          <label className="block">
+            {fieldLabel("Vehicle Status", true)}
+            <select name="vehicleStatus" value={values.vehicleStatus} onChange={(event) => setRequired("vehicleStatus", event.target.value)} className={fieldClass()}>
+              <option value="">Select vehicle status</option>{["NEW", "SECOND HAND", "RECON"].map((option) => <option key={option}>{option}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            {fieldLabel("Vehicle Type", true)}
+            <select name="vehicleType" value={values.vehicleType} onChange={(e) => { setRequired("vehicleType", e.target.value); setRequired("vehicleClass", ""); }} className={fieldClass()}><option value="">Select vehicle type</option>{vehicleTypeOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select>
+          </label>
+          <label className="block">
+            {fieldLabel("Fuel Type", true)}
+            <select name="fuelType" value={values.fuelType} onChange={(e) => { setRequired("fuelType", e.target.value); setRequired("vehicleClass", ""); }} className={fieldClass()}><option value="">Select fuel type</option>{fuelTypes.map((option) => <option key={option} value={option}>{option}</option>)}</select>
+          </label>
+          <label className="block sm:col-span-2">
+            {fieldLabel("Vehicle Class", true, !values.vehicleType || !values.fuelType ? "Select vehicle type and fuel type first" : `${vehicleClassOptions.length} available`)}
+            <select name="vehicleClass" value={values.vehicleClass} onChange={(e) => setRequired("vehicleClass", e.target.value)} className={fieldClass()}><option value="">Select vehicle class</option>{vehicleClassOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select>
+          </label>
+        </>)}
+
+        {section("Period of cover", "Issue date and the dates the policy is in force", "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", <>
+          <label className="block">
+            {fieldLabel("Issue Date", true, "Today")}
+            <input name="issueDate" value={values.issueDate} readOnly className={fieldClass(true)} /><input type="hidden" name="issueDate" value={values.issueDate ? formatDateInput(new Date(values.issueDate)) : ""} />
+          </label>
+          <label className="block">
+            {fieldLabel("From Date", true)}
+            <div className="relative"><input type="text" value={values.fromDate ? formatDateShort(new Date(values.fromDate)) : ""} readOnly className={`${fieldClass()} cursor-pointer pr-10`} /><input name="fromDate" type="date" value={values.fromDate} min={values.fromDate} onChange={(e) => { setFromDate(e.target.value); const d = new Date(e.target.value); setToDate(formatDateInput(new Date(d.getFullYear() + 1, d.getMonth(), d.getDate()))); setRequired("fromDate", e.target.value); setRequired("toDate", formatDateInput(new Date(d.getFullYear() + 1, d.getMonth(), d.getDate()))); }} className="absolute inset-0 cursor-pointer opacity-0" />{calendarIcon}</div>
+          </label>
+          <label className="block">
+            {fieldLabel("To Date", true, "1 year by default")}
+            <div className="relative"><input type="text" value={toDate ? formatDateShort(new Date(toDate)) : ""} readOnly className={`${fieldClass()} cursor-pointer pr-10`} /><input name="toDate" type="date" value={toDate} min={values.fromDate} onChange={(e) => { setToDate(e.target.value); setRequired("toDate", e.target.value); }} className="absolute inset-0 cursor-pointer opacity-0" />{calendarIcon}</div>
+          </label>
+        </>, "sm:grid-cols-3")}
+
+        <input type="hidden" name="clientCode" value={clientCode || ""} />
+
+        {section("Lien / hypothecation", "Is the vehicle financed or leased?", "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z", <>
+          <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-violet-200 bg-violet-50/50 px-3 py-2.5 sm:col-span-2">
+            <span className="text-sm font-semibold text-slate-700">Lien <span className="text-rose-600">*</span><span className="block text-xs font-normal text-slate-500">Tick to record the lien type and the lienholder</span></span>
+            <span className="relative inline-flex items-center">
+              <input name="lien" type="checkbox" required checked={values.lien === "true"} onChange={(e) => setRequired("lien", String(e.target.checked))} className="peer sr-only" />
+              <span className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-[#35126d] peer-focus-visible:ring-2 peer-focus-visible:ring-violet-300" />
+              <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition peer-checked:translate-x-5" />
+            </span>
+          </label>
+          {values.lien === "true" ? <>
+            <label className="block">
+              {fieldLabel("Lien Type", true)}
+              <select name="lienType" required value={values.lienType} onChange={(e) => setRequired("lienType", e.target.value)} className={fieldClass()}><option value="No Lien">No Lien</option><option value="in favour of">in favour of</option><option value="on lease to">on lease to</option><option value="on account of">on account of</option><option value="on finance lease to">on finance lease to</option><option value="on lease (Financial)">on lease (Financial)</option><option value="on lease (Finance Lease) to">on lease (Finance Lease) to</option><option value="on financial lease to">on financial lease to</option><option value="on Operating lease to">on Operating lease to</option><option value="on lease (Financial) to">on lease (Financial) to</option></select>
+            </label>
+            <label className="block">
+              {fieldLabel("Lienholder", true)}
+              {values.lienType !== "No Lien" ? <select name="lienholder" required value={values.lienholder} onChange={(e) => setRequired("lienholder", e.target.value)} className={fieldClass()}><option value="">Select bank</option>{banks.map((bank) => <option key={bank.Code} value={bank.Name}>{bank.Name}</option>)}</select> : <input name="lienholder" value={values.lienholder} onChange={(e) => setRequired("lienholder", e.target.value)} placeholder="Lienholder" className={fieldClass()} />}
+            </label>
+          </> : null}
+        </>)}
+
+        <p className="text-xs text-slate-500"><span className="text-rose-600">*</span> Required field</p>
       </div>
     </div>
   );
@@ -729,9 +1015,24 @@ function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange,
     });
   };
 
+  // Mandatory fields still missing for THIS vehicle (GVW only for goods vehicles, Trailer Ft. only for
+  // tanker / trailer / tractor; seating or CC/kW - usp_GetMotorExcess needs at least one; a compulsory excess must be found).
+  const missingVehicleFields = (values: Record<string, string>, cover: string) => {
+    const filled = (name: string) => Boolean(String(values[name] ?? "").trim());
+    const missing = ["vehicleNo", "make", "model", "engineNo", "chassisNo", "manufactureDate", "sumInsured", "pricePaid"].filter((name) => !filled(name));
+    if (!filled("seating") && !filled("cc")) missing.push("seating/cc");
+    if (/GOODS VEHICLE\(PRIVATE\)|GOODS VEHICLE\(PUBLIC\)/i.test(vehicleClass || "") && !(Number(values.gvw) > 0)) missing.push("gvw");
+    if (/TANKER|TRAILER|TRACTOR/i.test(vehicleClass || "") && !(Number(values.trailerFeet) > 0)) missing.push("trailerFeet");
+    if (filled("sumInsured") && !filled("compulsoryExcess")) missing.push("compulsoryExcess");
+    if (!cover) missing.push("coverRequired");
+    return missing;
+  };
+
   useEffect(() => {
-    onStatusChange(Object.values(requiredValues).filter((item): item is string => typeof item === "string" && !item.trim()).length + (policyCover ? 0 : 1));
-  }, [requiredValues, policyCover, onStatusChange]);
+    onStatusChange(missingVehicleFields(requiredValues, policyCover).length);
+    // missingVehicleFields only reads requiredValues, policyCover and vehicleClass.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requiredValues, policyCover, vehicleClass, onStatusChange]);
 
   const prevValuesRef = useRef<string>(JSON.stringify(requiredValues));
   useEffect(() => {
@@ -741,8 +1042,6 @@ function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange,
       onValuesChange(requiredValues);
     }
   }, [requiredValues, onValuesChange]);
-  const documents = ["Certificate", "Vignette", "Sch", "Inv", "Premium", "Com", "PSSA", "Acc. Gen", "ICAC", "MIE", "AML", "AMCCU", "MRA", "PSEA", "BOM", "EWF", "Pro Note", "Summary", "Policy-wording", "KYC", "Scarcity", "Proposal"];
-  const actions = ["Insert & Save", "Edit & Save", "View", "Print", "Not approved", "Approve", "Insert 2 NTA", "Reports in PDF", "Exit"];
 
   const formatRegNo = (value: string) => {
     const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -750,43 +1049,60 @@ function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange,
     return groups ? groups.join("-") : cleaned;
   };
 
-  const field = (label: string, name: string, type: "input" | "select" = "input", options?: string[], required?: boolean, readOnly?: boolean) => {
+  const isGoodsVehicle = /GOODS VEHICLE\(PRIVATE\)|GOODS VEHICLE\(PUBLIC\)/i.test(vehicleClass || "");
+  const isTankerTrailerTractor = /TANKER|TRAILER|TRACTOR/i.test(vehicleClass || "");
+  const maxCc = isTankerTrailerTractor ? 500 : 10000;
+
+  const fieldClass = (locked = false) =>
+    `h-10 w-full rounded-lg border border-violet-200 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#35126d] focus:ring-2 focus:ring-violet-100 ${locked ? "cursor-not-allowed bg-slate-50 text-slate-600" : ""}`;
+  const fieldLabel = (text: string, required = false, hint?: string) => (
+    <span className="mb-1.5 flex items-center justify-between gap-2 text-xs font-semibold text-slate-600">
+      <span>{text}{required ? <span className="text-rose-600"> *</span> : null}</span>
+      {hint ? <span className="text-[10px] font-medium uppercase tracking-wide text-violet-500">{hint}</span> : null}
+    </span>
+  );
+
+  const field = (label: string, name: string, type: "input" | "select" = "input", options?: string[], required?: boolean, readOnly?: boolean, hint?: string) => {
     // Special handling for excess fields with dynamic options
     let fieldOptions = options;
     if (name === "compulsoryExcess") fieldOptions = compulsoryExcessOptions;
     if (name === "youngDriverExcess") fieldOptions = youngDriverExcessOptions;
     if (name === "tpfExcess") fieldOptions = tpfExcessOptions;
-    
-    // Excess fields are calculated read-only values (from API)
+
+    // Excess fields are calculated read-only values (from usp_GetMotorExcess via /api/motor/excess)
     if (name === "totalLossExcess" || name === "youngDriverExcess" || name === "compulsoryExcess" || name === "additionalExcess") {
       const value = requiredValues[name] || "";
       const isFetching = fetchingExcess && !excessCalculated;
       return (
-        <label key={label} className="grid grid-cols-[max-content_1fr] items-center gap-2">
-          <span className={labelClass}>{label}</span>
-          <div className={`${inputClass} bg-slate-50 cursor-default font-mono text-slate-700 ${isFetching ? "animate-pulse" : ""}`}>
-            {isFetching ? (
-              <span className="text-slate-400">Calculating...</span>
-            ) : value ? (
-              Number(value).toLocaleString()
-            ) : (
-              <span className="text-slate-400">—</span>
-            )}
-          </div>
-        </label>
+        <div key={label} className="rounded-lg border border-violet-100 bg-gradient-to-br from-violet-50 to-white px-3 py-2.5">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+          <p className={`mt-1 font-mono text-lg font-bold ${value && Number(value) > 0 ? "text-[#35126d]" : "text-slate-400"} ${isFetching ? "animate-pulse" : ""}`}>
+            {isFetching ? <span className="text-sm font-medium text-slate-400">Calculating...</span> : value ? Number(value).toLocaleString() : "—"}
+          </p>
+        </div>
       );
     }
-    
+
     return (
-      <label key={label} className="grid grid-cols-[max-content_1fr] items-center gap-2">
-        <span className={labelClass}>{label}{required ? <span className="text-rose-600"> *</span> : null}</span>
-        {type === "select" ? <select name={name} value={requiredValues[name] || ""} onChange={(event) => updateRequired(name, event.target.value)} className={`${inputClass} ${readOnly ? "bg-slate-100 cursor-not-allowed" : ""}`} disabled={fetchingExcess || readOnly}><option value="">Select</option>{fieldOptions?.map((o) => <option key={o}>{o}</option>)}</select> : <input name={name} value={requiredValues[name] || ""} maxLength={name === "seating" ? 2 : undefined} inputMode={name === "seating" || name === "sumInsured" || name === "gvw" || name === "trailerFeet" ? "numeric" : undefined} onChange={(event) => { let value = event.target.value; if (name === "vehicleNo") value = formatRegNo(value); if (name === "seating") value = value.replace(/\D/g, "").slice(0, 2); if (name === "sumInsured" || name === "gvw" || name === "trailerFeet") value = value.replace(/[^0-9.]/g, ""); updateRequired(name, value); }} className={`${inputClass} ${readOnly ? "bg-slate-100 cursor-not-allowed" : ""}`} readOnly={readOnly} />}
+      <label key={label} className="block">
+        {fieldLabel(label, required, hint)}
+        {type === "select" ? <select name={name} value={requiredValues[name] || ""} onChange={(event) => updateRequired(name, event.target.value)} className={fieldClass(fetchingExcess || readOnly)} disabled={fetchingExcess || readOnly}><option value="">Select {label.toLowerCase()}</option>{fieldOptions?.map((o) => <option key={o}>{o}</option>)}</select> : <input name={name} value={requiredValues[name] || ""} maxLength={name === "seating" ? 2 : undefined} inputMode={name === "seating" || name === "sumInsured" || name === "gvw" || name === "trailerFeet" || name === "pricePaid" ? "numeric" : undefined} onChange={(event) => { let value = event.target.value; if (name === "vehicleNo") value = formatRegNo(value); if (name === "seating") value = value.replace(/\D/g, "").slice(0, 2); if (name === "sumInsured" || name === "gvw" || name === "trailerFeet" || name === "pricePaid") value = value.replace(/[^0-9.]/g, ""); updateRequired(name, value); }} className={`${fieldClass(readOnly)} ${name === "vehicleNo" || name === "engineNo" || name === "chassisNo" ? "font-mono uppercase" : ""}`} readOnly={readOnly} />}
       </label>
     );
   };
 
-  const isGoodsVehicle = /GOODS VEHICLE\(PRIVATE\)|GOODS VEHICLE\(PUBLIC\)/i.test(vehicleClass || "");
-  const isTankerTrailerTractor = /TANKER|TRAILER|TRACTOR/i.test(vehicleClass || "");
+  const section = (title: string, subtitle: string, iconPath: string, children: React.ReactNode, columns = "sm:grid-cols-2") => (
+    <section className="overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
+      <header className="flex items-center gap-3 border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-4 py-3">
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#35126d] text-white"><svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={iconPath} /></svg></span>
+        <div>
+          <h4 className="text-sm font-bold text-[#35126d]">{title}</h4>
+          <p className="text-xs text-slate-500">{subtitle}</p>
+        </div>
+      </header>
+      <div className={`grid gap-4 p-4 ${columns}`}>{children}</div>
+    </section>
+  );
 
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -799,100 +1115,83 @@ function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange,
     return `${day}-${month}-${year}`;
   };
 
-  const parseDisplayDate = (displayDate: string) => {
-    const match = displayDate.match(/^(\d{2})-([A-Za-z]{3})-(\d{4})$/);
-    if (!match) return "";
-    const [, day, monthStr, year] = match;
-    const month = monthNames.indexOf(monthStr.charAt(0).toUpperCase() + monthStr.slice(1).toLowerCase());
-    if (month === -1) return "";
-    return `${year}-${String(month + 1).padStart(2, "0")}-${day}`;
-  };
+  // Vehicle age at the policy start (used for the 10-year additional excess, Step 7).
+  const vehicleAgeYears = requiredValues.manufactureDate
+    ? Math.floor(((new Date(requiredValues.fromDate || issueDate || todayISO || Date.now()).getTime()) - new Date(requiredValues.manufactureDate).getTime()) / (365 * 86400000))
+    : null;
 
   const manufactureDateField = (
-    <label className="grid grid-cols-[max-content_1fr] items-center gap-2">
-      <span className={labelClass}>Year Mfg. & Date of Reg.<span className="text-rose-600"> *</span></span>
+    <label className="block">
+      {fieldLabel("Year Mfg. & Date of Reg.", true, vehicleAgeYears !== null && vehicleAgeYears >= 0 ? `${vehicleAgeYears} yr${vehicleAgeYears === 1 ? "" : "s"} old` : undefined)}
       <div className="relative">
-        <input
-          name="manufactureDate"
-          type="text"
-          value={formatDisplayDate(requiredValues.manufactureDate || "")}
-          placeholder="DD-Mon-YYYY"
-          maxLength={11}
-          onChange={(event) => {
-            const displayValue = event.target.value;
-            const isoValue = parseDisplayDate(displayValue);
-            if (isoValue && isoValue <= todayISO) {
-              updateManufactureDate(isoValue);
-            } else if (!isoValue || displayValue.length <= 11) {
-              updateManufactureDate(isoValue);
-            }
-          }}
-          onBlur={(event) => {
-            const displayValue = event.target.value;
-            const isoValue = parseDisplayDate(displayValue);
-            if (isoValue && isoValue <= todayISO) {
-              updateManufactureDate(isoValue);
-            } else {
-              event.currentTarget.value = formatDisplayDate(requiredValues.manufactureDate || "");
-            }
-          }}
-          className={`${inputClass} pr-10`}
-          readOnly
-        />
-        <input
-          type="date"
-          value={requiredValues.manufactureDate || ""}
-          max={todayISO}
-          onChange={(event) => updateManufactureDate(event.target.value)}
-          className="absolute inset-0 opacity-0 cursor-pointer"
-          tabIndex={-1}
-        />
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            const dateInput = e.currentTarget.previousElementSibling as HTMLInputElement;
-            dateInput?.focus();
-            dateInput?.click();
-          }}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#35126d] transition-colors"
-          aria-label="Open calendar"
-        >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 002 2v12a2 2 0 002 2z" />
-          </svg>
-        </button>
+        <input name="manufactureDate" type="text" value={formatDisplayDate(requiredValues.manufactureDate || "")} placeholder="DD-Mon-YYYY" readOnly className={`${fieldClass()} cursor-pointer pr-10`} />
+        <input type="date" value={requiredValues.manufactureDate || ""} max={todayISO} onChange={(event) => updateManufactureDate(event.target.value)} className="absolute inset-0 cursor-pointer opacity-0" tabIndex={-1} aria-label="Year of manufacture and date of registration" />
+        <svg className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
       </div>
     </label>
   );
 
+  const pending = missingVehicleFields(requiredValues, policyCover).length;
+  const coverOptions = covers.filter((cover) => cover.name === "COMPREHENSIVE" || cover.name === "COMPREHENSIVE AUTOPLUS");
+
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
-      <div>
-        <div className="p-4 sm:p-5 lg:border-r lg:border-violet-200">
-          <div className="grid gap-x-5 gap-y-3 sm:grid-cols-2">
-            <div className="space-y-3">{field("Reg No", "vehicleNo")}{field("Make", "make", "select", makes)}{field("Model", "model", "select", models)}{field("Eng No", "engineNo")}{field("Chassis No", "chassisNo")}</div>
-            <div className="space-y-3">{field("Colour", "colour")}{manufactureDateField}{field("Seating", "seating")}<label className="grid grid-cols-[max-content_1fr] items-center gap-2"><span className={labelClass}>CC / kW</span><input name="cc" inputMode="decimal" max={isTankerTrailerTractor ? 500 : 10000} onInput={e => { let v = e.currentTarget.value.replace(/[^0-9.]/g, ""); if (parseFloat(v) > (isTankerTrailerTractor ? 500 : 10000)) v = String(isTankerTrailerTractor ? 500 : 10000); e.currentTarget.value = v; updateRequired("cc", v); }} className={inputClass} /></label>{isTankerTrailerTractor && <label className="grid grid-cols-[max-content_1fr] items-center gap-2"><span className={labelClass}>Trailer Ft.</span><input name="trailerFeet" type="number" min="0" required={isTankerTrailerTractor} className={inputClass} /></label>}</div>
-            {isGoodsVehicle && <label className="grid grid-cols-[max-content_1fr] items-center gap-2"><span className={labelClass}>Gross Vehicle Weight</span><input name="gvw" type="number" required={isGoodsVehicle} className={inputClass} /></label>}
+      <div className="space-y-4 p-4 sm:p-6">
+        {/* Header: registration and vehicle class */}
+        <div className="rounded-xl bg-gradient-to-r from-[#35126d] to-[#5b3aa4] p-4 text-white shadow-sm sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-200">Vehicle Details</p>
+              <h3 className="mt-1 font-mono text-xl font-bold tracking-wider">{requiredValues.vehicleNo || "Registration No."}</h3>
+              <p className="mt-1 text-xs text-violet-100">{[requiredValues.make, requiredValues.model].filter(Boolean).join(" ") || "Make and model"}</p>
+            </div>
+            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${pending ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-700"}`}>{pending ? `${pending} mandatory field${pending === 1 ? "" : "s"} pending` : "All mandatory fields complete"}</span>
           </div>
-
-<fieldset className="mt-5 border-t border-violet-200 pt-4">
-            <legend className="pr-3 text-sm font-bold text-[#35126d]">Cover Details</legend>
-            <input type="hidden" name="calculateFromBasicTariff" value="true" />
-<div className="grid gap-x-5 gap-y-3 sm:grid-cols-2">
-                  <div className="space-y-3">
-                    <label className="grid gap-1.5 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center"><span className={labelClass}>Cover Required<span className="text-rose-600"> *</span></span><select name="coverRequired" value={policyCover} onChange={(event) => { if (!coverLocked) { onPolicyCoverChange(event.target.value as PolicyCover); onStatusChange(Object.values(requiredValues).filter((item): item is string => typeof item === "string" && !item.trim()).length + (event.target.value ? 0 : 1)); } }} className={inputClass} disabled={coverLocked}><option value="">Select cover</option>{covers.filter((cover) => cover.name === "COMPREHENSIVE" || cover.name === "COMPREHENSIVE AUTOPLUS").map((cover) => <option key={cover.name} value={cover.name === "COMPREHENSIVE" ? "Comprehensive" : cover.name === "COMPREHENSIVE AUTOPLUS" ? "Comprehensive AutoPlus" : cover.name}>{cover.name === "COMPREHENSIVE" ? "Comprehensive" : cover.name === "COMPREHENSIVE AUTOPLUS" ? "Comprehensive AutoPlus" : cover.name}</option>)}</select></label>
-                    {field("Young Driver Excess", "youngDriverExcess")}{field("Total Loss Excess", "totalLossExcess")}
-</div>
-                  <div className="space-y-3">{field("Sum Insured", "sumInsured", "input", undefined, true)}{field("Price Paid", "pricePaid", "input", undefined, true)}{field("Compulsory Excess", "compulsoryExcess")}{field("Additional Excess", "additionalExcess")}</div>
-</div>
-                {excessError ? <p role="alert" className="mt-3 border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">{excessError}</p> : null}
-          </fieldset>
+          <div className="mt-4 flex flex-wrap gap-2 text-xs">
+            {[["Type", vehicleType], ["Class", vehicleClass], ["Fuel", fuelType]].map(([label, text]) => <span key={label} className="rounded-full border border-white/25 bg-white/10 px-3 py-1"><span className="text-violet-200">{label}:</span> <span className="font-semibold">{text || "set in Policy Details"}</span></span>)}
+          </div>
         </div>
-        <aside className="hidden">
-          <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="vehicle-print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
-          <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] hover:bg-violet-100">{action}</button>)}</div>
-        </aside>
+
+        {section("Vehicle identification", "Registration, make, model and identification numbers", "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", <>
+          {field("Reg No", "vehicleNo", "input", undefined, true)}
+          {field("Colour", "colour")}
+          {field("Make", "make", "select", makes, true, false, !vehicleClass ? "Select the vehicle class first" : undefined)}
+          {field("Model", "model", "select", models, true, false, !requiredValues.make ? "Select the make first" : undefined)}
+          {field("Eng No", "engineNo", "input", undefined, true)}
+          {field("Chassis No", "chassisNo", "input", undefined, true)}
+        </>)}
+
+        {section("Specifications", "Used to find the tariff, excess and premium", "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z", <>
+          {manufactureDateField}
+          {field("Seating", "seating", "input", undefined, !requiredValues.cc, false, "Max 2 digits")}
+          <label className="block">
+            {fieldLabel("CC / kW", !requiredValues.seating, `Max ${maxCc.toLocaleString()}`)}
+            <input name="cc" inputMode="decimal" value={requiredValues.cc || ""} onChange={(event) => { let v = event.target.value.replace(/[^0-9.]/g, ""); if (parseFloat(v) > maxCc) v = String(maxCc); updateRequired("cc", v); }} className={fieldClass()} />
+          </label>
+          {isTankerTrailerTractor ? field("Trailer Ft.", "trailerFeet", "input", undefined, true, false, "Tanker / trailer / tractor") : null}
+          {isGoodsVehicle ? field("Gross Vehicle Weight", "gvw", "input", undefined, true, false, "Goods vehicles (MGW)") : null}
+          <p className="text-xs text-slate-500 sm:col-span-2">Enter the seating capacity or the CC / kW (at least one is needed to find the excess).</p>
+        </>)}
+
+        {section("Cover & excess", "Excesses are calculated automatically from the tariff", "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z", <>
+          <input type="hidden" name="calculateFromBasicTariff" value="true" />
+          <label className="block">
+            {fieldLabel("Cover Required", true, coverLocked ? "Set from the registration date" : undefined)}
+            <select name="coverRequired" value={policyCover} onChange={(event) => { if (!coverLocked) { onPolicyCoverChange(event.target.value as PolicyCover); onStatusChange(missingVehicleFields(requiredValues, event.target.value).length); } }} className={fieldClass(coverLocked)} disabled={coverLocked}><option value="">Select cover</option>{coverOptions.map((cover) => <option key={cover.name} value={cover.name === "COMPREHENSIVE" ? "Comprehensive" : cover.name === "COMPREHENSIVE AUTOPLUS" ? "Comprehensive AutoPlus" : cover.name}>{cover.name === "COMPREHENSIVE" ? "Comprehensive" : cover.name === "COMPREHENSIVE AUTOPLUS" ? "Comprehensive AutoPlus" : cover.name}</option>)}</select>
+          </label>
+          {field("Sum Insured", "sumInsured", "input", undefined, true, false, Number(requiredValues.sumInsured) > 10000000 ? "Above 10M: HO review" : undefined)}
+          {field("Price Paid", "pricePaid", "input", undefined, true)}
+          <div className="grid gap-3 sm:col-span-2 sm:grid-cols-4">
+            {field("Compulsory Excess", "compulsoryExcess")}
+            {field("Young Driver Excess", "youngDriverExcess")}
+            {field("Total Loss Excess", "totalLossExcess")}
+            {field("Additional Excess", "additionalExcess")}
+          </div>
+          <p className="text-xs text-slate-500 sm:col-span-2">Total Loss Excess applies from a sum insured of 3,000,000. Additional Excess applies to private cars over 10 years old of the listed makes.</p>
+          {excessError ? <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 sm:col-span-2">{excessError}</p> : null}
+        </>)}
+
+        <p className="text-xs text-slate-500"><span className="text-rose-600">*</span> Required field</p>
       </div>
     </div>
   );
@@ -986,90 +1285,109 @@ function AccessoriesForm() {
   // Sum over all accessories (not only the visible category) so every entered amount counts.
   const totalPremium = accessories.reduce((sum, accessory) => sum + getPremium(accessory), 0);
 
+  const itemsWithAmount = accessories.filter((accessory) => Number(amounts[accessory.name]) > 0).length;
+
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
-      <div>
-        <div className="p-4 sm:p-5 lg:border-r lg:border-violet-200">
-          <div className="mb-4 flex flex-wrap gap-2">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-full transition ${
-                  selectedCategory === cat
-                    ? "bg-[#35126d] text-white"
-                    : "bg-white text-slate-600 hover:bg-violet-50 border border-violet-200"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+      <div className="space-y-4 p-4 sm:p-6">
+        {/* Header: total accessories premium */}
+        <div className="rounded-xl bg-gradient-to-r from-[#35126d] to-[#5b3aa4] p-4 text-white shadow-sm sm:p-5">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-200">Accessories</p>
+              <h3 className="mt-1 text-lg font-bold">Optional equipment fitted to the vehicle</h3>
+              <p className="mt-1 text-xs text-violet-100">Enter the amount of each accessory; its premium is rate × amount ÷ 100.</p>
+            </div>
+            <div className="rounded-xl bg-white/10 px-4 py-3 text-right ring-1 ring-white/20">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-violet-200">Total Accessories Premium</p>
+              <p className="mt-0.5 font-mono text-2xl font-bold tabular-nums">{totalPremium.toFixed(2)}</p>
+              <p className="text-[11px] text-violet-200">{itemsWithAmount} item{itemsWithAmount === 1 ? "" : "s"} with an amount</p>
+            </div>
           </div>
-          
-          <div className="grid gap-4">
-            <div className="overflow-auto border border-violet-200 bg-white rounded-lg">
-              <table className="w-full min-w-[720px] border-collapse text-left text-xs">
-                <thead className="sticky top-0 z-10">
-                  <tr className="bg-violet-100 text-[#35126d]">
-                    <th className="border-r border-violet-200 px-3 py-2.5">Description</th>
-                    <th className="border-r border-violet-200 px-3 py-2.5">Make & Model</th>
-                    <th className="border-r border-violet-200 px-3 py-2.5 text-center">Rate (%)</th>
-                    <th className="border-r border-violet-200 px-3 py-2.5 text-center">Amount</th>
-                    <th className="px-3 py-2.5 text-center">Premium</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredAccessories.map((accessory, rowIndex) => {
-                    const index = accessories.indexOf(accessory);
-                    const premium = getPremium(accessory).toFixed(2);
-                    return (
-                    <tr key={accessory.name} className={rowIndex % 2 === 0 ? "bg-white" : "bg-violet-50/50"} onMouseEnter={(e) => e.currentTarget.classList.add("bg-violet-50")} onMouseLeave={(e) => e.currentTarget.classList.remove("bg-violet-50")}>
-                      <td className="border-b border-r border-violet-100 px-3 py-2 font-medium text-slate-700">{accessory.name}</td>
-                      <td className="border-b border-r border-violet-100 px-2 py-1.5">
-                        <input
-                          name={`accessoryMakeModel_${index}`}
-                          placeholder="Optional"
-                          className="h-8 w-full border border-transparent bg-transparent px-2 outline-none focus:border-violet-300 focus:bg-white rounded text-xs"
-                        />
-                      </td>
-                      <td className="border-b border-r border-violet-100 px-3 py-2 text-center text-slate-600 font-mono">{(Number(accessory.rate) || 0).toFixed(2)}%</td>
-                      <td className="border-b border-r border-violet-100 px-2 py-1.5 text-center">
-                        <input
-                          name={`accessoryAmount_${index}`}
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={amounts[accessory.name] ?? ""}
-                          onChange={(e) => updateAmount(accessory.name, e.target.value)}
-                          className="h-8 w-24 mx-auto border border-violet-200 bg-white px-2 text-center text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100 rounded"
-                        />
-                        <input type="hidden" name={`accessoryPremium_${index}`} value={premium} />
-                      </td>
-                      <td className="border-b border-violet-100 px-3 py-2 text-center">
-                        <input
-                          type="text"
-                          name={`accessoryPremiumDisplay_${index}`}
-                          value={premium}
-                          readOnly
-                          className="h-8 w-24 mx-auto bg-slate-50 text-right text-sm font-medium px-2 outline-none rounded border border-slate-200"
-                        />
-                      </td>
-                    </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+        </div>
 
-            <div className="grid gap-4 sm:grid-cols-3 border-t border-violet-200 pt-4">
-              <div className="sm:col-span-2"></div>
-              <div className="bg-white border border-violet-200 rounded-lg p-4 text-right">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Accessories Premium</p>
-                <p className="mt-1 text-2xl font-bold text-[#35126d] tabular-nums">{totalPremium.toFixed(2)}</p>
-                <input type="hidden" name="accessoriesTotalPremium" value={totalPremium.toFixed(2)} />
-              </div>
-            </div>
+        {/* Category filter */}
+        <div className="flex flex-wrap gap-2">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setSelectedCategory(cat)}
+              className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                selectedCategory === cat
+                  ? "bg-[#35126d] text-white shadow-sm"
+                  : "border border-violet-200 bg-white text-slate-600 hover:bg-violet-50"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        <div className="overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
+          <div className="max-h-[520px] overflow-auto">
+            <table className="w-full min-w-[720px] border-collapse text-left text-xs">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-[#35126d] text-white">
+                  <th className="px-4 py-3 font-semibold">Description</th>
+                  <th className="px-3 py-3 font-semibold">Make & Model</th>
+                  <th className="px-3 py-3 text-center font-semibold">Rate (%)</th>
+                  <th className="px-3 py-3 text-center font-semibold">Amount</th>
+                  <th className="px-4 py-3 text-right font-semibold">Premium</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAccessories.length === 0 ? (
+                  <tr><td colSpan={5} className="px-4 py-10 text-center text-sm text-slate-400">{accessories.length === 0 ? "Loading accessories..." : "No accessories in this category."}</td></tr>
+                ) : filteredAccessories.map((accessory, rowIndex) => {
+                  const index = accessories.indexOf(accessory);
+                  const premium = getPremium(accessory).toFixed(2);
+                  const hasAmount = Number(amounts[accessory.name]) > 0;
+                  return (
+                  <tr key={accessory.name} className={`border-t border-violet-50 transition hover:bg-violet-50/70 ${hasAmount ? "bg-emerald-50/60" : rowIndex % 2 === 0 ? "bg-white" : "bg-slate-50/50"}`}>
+                    <td className="px-4 py-2.5 font-medium text-slate-700">
+                      <span className="flex items-center gap-2">{hasAmount ? <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> : <span className="h-1.5 w-1.5 rounded-full bg-slate-200" />}{accessory.name}</span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        name={`accessoryMakeModel_${index}`}
+                        placeholder="Optional"
+                        className="h-8 w-full rounded-md border border-transparent bg-transparent px-2 text-xs outline-none transition hover:border-violet-200 focus:border-violet-300 focus:bg-white"
+                      />
+                    </td>
+                    <td className="px-3 py-2 text-center font-mono text-slate-600">{(Number(accessory.rate) || 0).toFixed(2)}%</td>
+                    <td className="px-3 py-2 text-center">
+                      <input
+                        name={`accessoryAmount_${index}`}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={amounts[accessory.name] ?? ""}
+                        onChange={(e) => updateAmount(accessory.name, e.target.value)}
+                        className="mx-auto h-8 w-28 rounded-md border border-violet-200 bg-white px-2 text-right text-sm outline-none transition focus:border-[#35126d] focus:ring-2 focus:ring-violet-100"
+                      />
+                      <input type="hidden" name={`accessoryPremium_${index}`} value={premium} />
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      <input
+                        type="text"
+                        name={`accessoryPremiumDisplay_${index}`}
+                        value={premium}
+                        readOnly
+                        className={`h-8 w-28 rounded-md border px-2 text-right font-mono text-sm font-semibold outline-none ${hasAmount ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-500"}`}
+                      />
+                    </td>
+                  </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex items-center justify-between gap-3 border-t border-violet-100 bg-violet-50/60 px-4 py-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Accessories Premium</span>
+            <span className="font-mono text-lg font-bold tabular-nums text-[#35126d]">{totalPremium.toFixed(2)}</span>
+            <input type="hidden" name="accessoriesTotalPremium" value={totalPremium.toFixed(2)} />
           </div>
         </div>
       </div>
@@ -1078,8 +1396,6 @@ function AccessoriesForm() {
 }
 
 function GeneralInformationForm() {
-  const inputClass = "h-9 w-full border border-violet-200 bg-white px-2 text-sm text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
-  const labelClass = "text-xs font-semibold text-slate-600";
   const [activeSection, setActiveSection] = useState<string>("declarations");
 
   const sections = [
@@ -1100,34 +1416,46 @@ function GeneralInformationForm() {
     { id: "q8", text: "Has any insurance company ever declined or refused to continue any insurance of yours?", section: "additional" },
   ];
 
+  const fieldClass = "h-10 w-full rounded-lg border border-violet-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
+
+  // Yes / No as toggle buttons (the radio inputs keep their names, so the answers are saved as before).
+  const yesNo = (name: string) => (
+    <div className="flex gap-2">
+      {["Yes", "No"].map((answer) => (
+        <label key={answer} className="cursor-pointer">
+          <input type="radio" name={name} value={answer} className="peer sr-only" />
+          <span className={`inline-flex min-w-[72px] items-center justify-center rounded-lg border px-4 py-1.5 text-xs font-semibold transition border-violet-200 bg-white text-slate-600 hover:bg-violet-50 ${answer === "Yes" ? "peer-checked:border-[#35126d] peer-checked:bg-[#35126d] peer-checked:text-white" : "peer-checked:border-slate-600 peer-checked:bg-slate-600 peer-checked:text-white"} peer-focus-visible:ring-2 peer-focus-visible:ring-violet-300`}>{answer}</span>
+        </label>
+      ))}
+    </div>
+  );
+
   const renderQuestion = (q: typeof questions[0], index: number) => {
     const isConditional = q.conditional && q.conditionalValue;
     return (
-      <div key={q.id} className={`space-y-3 p-4 border border-violet-100 bg-white rounded-lg transition ${isConditional ? "opacity-60" : ""}`}>
+      <div key={q.id} className="rounded-xl border border-violet-100 bg-white p-4 shadow-sm">
         <div className="flex items-start gap-3">
-          <span className="flex-shrink-0 w-6 text-center text-xs font-bold text-violet-600">{String.fromCharCode(97 + index)})</span>
-          <p className="flex-1 text-xs leading-5 text-slate-700 mt-0.5">{q.text}</p>
+          <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-violet-100 text-xs font-bold text-[#35126d]">{String.fromCharCode(97 + index)}</span>
+          <div className="flex-1">
+            <p className="text-sm leading-6 text-slate-700">{q.text}</p>
+            {isConditional ? <p className="mt-0.5 text-[11px] font-medium text-violet-500">Only if the previous answer is Yes</p> : null}
+          </div>
         </div>
         {q.id === "q3" ? (
-          <div className="ml-9 space-y-2">
-            <div className="grid grid-cols-[1fr_60px] gap-2 bg-violet-50 p-2 rounded">
-              <span className="text-[11px] font-semibold text-slate-600">Driver Name</span>
-              <span className="text-[11px] font-semibold text-slate-600">Age</span>
+          <div className="mt-3 space-y-2 pl-10">
+            <div className="grid grid-cols-[1fr_90px] gap-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <span>Driver Name</span>
+              <span>Age</span>
             </div>
-            <div className="grid grid-cols-[1fr_60px] gap-2">
-              <input type="text" name={`${q.id}_name_1`} placeholder="Driver name" className={inputClass} />
-              <input type="number" name={`${q.id}_age_1`} min="18" max="100" placeholder="Age" className={inputClass} />
-            </div>
-            <div className="grid grid-cols-[1fr_60px] gap-2">
-              <input type="text" name={`${q.id}_name_2`} placeholder="Driver name" className={inputClass} />
-              <input type="number" name={`${q.id}_age_2`} min="18" max="100" placeholder="Age" className={inputClass} />
-            </div>
+            {[1, 2].map((row) => (
+              <div key={row} className="grid grid-cols-[1fr_90px] gap-2">
+                <input type="text" name={`${q.id}_name_${row}`} placeholder="Driver name" className={fieldClass} />
+                <input type="number" name={`${q.id}_age_${row}`} min="18" max="100" placeholder="Age" className={fieldClass} />
+              </div>
+            ))}
           </div>
         ) : (
-          <div className="ml-9 flex items-center gap-6 text-xs">
-            <label className="flex items-center gap-1.5 cursor-pointer"><input type="radio" name={q.id} value="Yes" className="accent-[#35126d] h-4 w-4" /> Yes</label>
-            <label className="flex items-center gap-1.5 cursor-pointer"><input type="radio" name={q.id} value="No" className="accent-[#35126d] h-4 w-4" /> No</label>
-          </div>
+          <div className="mt-3 pl-10">{yesNo(q.id)}</div>
         )}
       </div>
     );
@@ -1135,95 +1463,95 @@ function GeneralInformationForm() {
 
   const accidentsSection = (
     <div className="space-y-4">
-      <p className="mb-3 text-xs leading-5 text-slate-700">Give details of accidents or claims (including pending prosecution, if any)</p>
-      <div className="overflow-x-auto border border-violet-200 rounded-lg">
-        <table className="w-full min-w-[680px] border-collapse text-left text-xs">
-          <thead>
-            <tr className="bg-violet-100 text-[#35126d]">
-              <th className="border-r border-violet-200 px-3 py-2.5">Driver Name</th>
-              <th className="border-r border-violet-200 px-3 py-2.5">Date of Accident</th>
-              <th className="border-r border-violet-200 px-3 py-2.5">Circumstances of Accident/Claim</th>
-              <th className="px-3 py-2.5">Loss/Cost (Rs.)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[1, 2].map((row) => (
-              <tr key={row} className={row % 2 === 0 ? "bg-violet-50/50" : "bg-white"}>
-                <td className="border-b border-r border-violet-100 px-3 py-2"><input type="text" name={`accident_driver_${row}`} className="w-full border border-transparent bg-transparent px-1 outline-none focus:border-violet-300 focus:bg-white text-xs" /></td>
-                <td className="border-b border-r border-violet-100 px-3 py-2"><input type="date" name={`accident_date_${row}`} className="w-full border border-transparent bg-transparent px-1 outline-none focus:border-violet-300 focus:bg-white text-xs" /></td>
-                <td className="border-b border-r border-violet-100 px-3 py-2"><textarea name={`accident_circumstances_${row}`} rows={2} className="w-full border border-transparent bg-transparent px-1 outline-none focus:border-violet-300 focus:bg-white text-xs resize-none" /></td>
-                <td className="border-b border-violet-100 px-3 py-2"><input type="number" name={`accident_cost_${row}`} min="0" step="0.01" className="w-full border border-transparent bg-transparent px-1 outline-none focus:border-violet-300 focus:bg-white text-xs text-right" /></td>
+      {questions.filter((q) => q.section === "accidents").map((q, idx) => renderQuestion(q, idx))}
+      <div className="overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
+        <p className="border-b border-violet-100 bg-violet-50/60 px-4 py-2.5 text-xs font-semibold text-slate-600">Give details of accidents or claims (including pending prosecution, if any)</p>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[680px] border-collapse text-left text-xs">
+            <thead>
+              <tr className="bg-[#35126d] text-white">
+                <th className="px-3 py-2.5 font-semibold">Driver Name</th>
+                <th className="px-3 py-2.5 font-semibold">Date of Accident</th>
+                <th className="px-3 py-2.5 font-semibold">Circumstances of Accident / Claim</th>
+                <th className="px-3 py-2.5 text-right font-semibold">Loss / Cost</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {[1, 2].map((row) => (
+                <tr key={row} className="border-t border-violet-50">
+                  <td className="px-3 py-2"><input type="text" name={`accident_driver_${row}`} placeholder="Name" className="h-9 w-full rounded-md border border-violet-100 bg-white px-2 text-xs outline-none focus:border-violet-300" /></td>
+                  <td className="px-3 py-2"><input type="date" name={`accident_date_${row}`} className="h-9 w-full rounded-md border border-violet-100 bg-white px-2 text-xs outline-none focus:border-violet-300" /></td>
+                  <td className="px-3 py-2"><textarea name={`accident_circumstances_${row}`} rows={2} placeholder="What happened" className="w-full resize-none rounded-md border border-violet-100 bg-white px-2 py-1.5 text-xs outline-none focus:border-violet-300" /></td>
+                  <td className="px-3 py-2"><input type="number" name={`accident_cost_${row}`} min="0" step="0.01" placeholder="0.00" className="h-9 w-full rounded-md border border-violet-100 bg-white px-2 text-right text-xs outline-none focus:border-violet-300" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
 
   const previousInsuranceSection = (
-    <div className="space-y-4">
-      <label className="grid grid-cols-[max-content_1fr] gap-3 items-start">
-        <span className="text-xs text-slate-700 mt-1">Name of the insurance company previously insured with</span>
-        <select className={inputClass}>
+    <div className="grid gap-4 rounded-xl border border-violet-100 bg-white p-4 shadow-sm sm:grid-cols-2">
+      <label className="block">
+        <span className="mb-1.5 block text-xs font-semibold text-slate-600">Insurance company previously insured with</span>
+        <select className={fieldClass}>
           <option value="">Select company</option>
           <option>Company A</option>
           <option>Company B</option>
           <option>Company C</option>
         </select>
       </label>
-      <label className="grid grid-cols-[max-content_1fr] gap-3 items-start">
-        <span className="text-xs text-slate-700 mt-1">Details of past claims (total claims for 5 years)</span>
-        <input className={inputClass} placeholder="Enter details" />
+      <label className="block">
+        <span className="mb-1.5 block text-xs font-semibold text-slate-600">Details of past claims (total claims for 5 years)</span>
+        <input className={fieldClass} placeholder="Enter details" />
       </label>
     </div>
   );
 
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
-      <div>
-        <div className="p-4 sm:p-5 lg:border-r lg:border-violet-200">
-          <div className="mb-4 border-b border-violet-200">
-            <nav className="flex flex-wrap gap-1" aria-label="General Information sections">
-              {sections.map((section) => (
-                <button
-                  key={section.id}
-                  type="button"
-                  onClick={() => setActiveSection(section.id)}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg transition ${
-                    activeSection === section.id
-                      ? "bg-[#35126d] text-white"
-                      : "text-slate-600 hover:bg-violet-50 hover:text-[#35126d]"
-                  }`}
-                >
-                  <span>{section.icon}</span> {section.title}
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          <div className="space-y-4">
-            {activeSection === "declarations" && (
-              <>
-                {questions.filter(q => q.section === "declarations").map((q, idx) => renderQuestion(q, idx))}
-              </>
-            )}
-            {activeSection === "accidents" && accidentsSection}
-            {activeSection === "previous" && previousInsuranceSection}
-            {activeSection === "additional" && (
-              <>
-                {questions.filter(q => q.section === "additional").map((q, idx) => renderQuestion(q, idx))}
-              </>
-            )}
-          </div>
-
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <label className="grid gap-2">
-              <span className={labelClass}>Remarks</span>
-              <textarea rows={3} className={inputClass} placeholder="Additional remarks..." />
-            </label>
-          </div>
+      <div className="space-y-4 p-4 sm:p-6">
+        {/* Header */}
+        <div className="rounded-xl bg-gradient-to-r from-[#35126d] to-[#5b3aa4] p-4 text-white shadow-sm sm:p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-200">General Information</p>
+          <h3 className="mt-1 text-lg font-bold">Driver history, vehicle use and declarations</h3>
+          <p className="mt-1 text-xs text-violet-100">Please answer every question truthfully; the answers form part of the proposal.</p>
         </div>
+
+        <nav className="flex flex-wrap gap-2 rounded-xl border border-violet-100 bg-white p-1.5 shadow-sm" aria-label="General Information sections">
+          {sections.map((section, index) => (
+            <button
+              key={section.id}
+              type="button"
+              onClick={() => setActiveSection(section.id)}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                activeSection === section.id
+                  ? "bg-[#35126d] text-white shadow-sm"
+                  : "text-slate-600 hover:bg-violet-50 hover:text-[#35126d]"
+              }`}
+            >
+              <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${activeSection === section.id ? "bg-white/20" : "bg-violet-100 text-[#35126d]"}`}>{index + 1}</span>
+              {section.title}
+            </button>
+          ))}
+        </nav>
+
+        {/* All sections stay on the page (only hidden), so answers are kept when switching tabs. */}
+        <div className={activeSection === "declarations" ? "space-y-3" : "hidden"}>
+          {questions.filter((q) => q.section === "declarations").map((q, idx) => renderQuestion(q, idx))}
+        </div>
+        <div className={activeSection === "accidents" ? "" : "hidden"}>{accidentsSection}</div>
+        <div className={activeSection === "previous" ? "" : "hidden"}>{previousInsuranceSection}</div>
+        <div className={activeSection === "additional" ? "space-y-3" : "hidden"}>
+          {questions.filter((q) => q.section === "additional").map((q, idx) => renderQuestion(q, idx))}
+        </div>
+
+        <label className="block rounded-xl border border-violet-100 bg-white p-4 shadow-sm">
+          <span className="mb-1.5 block text-xs font-semibold text-slate-600">Remarks</span>
+          <textarea rows={3} className="w-full rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" placeholder="Additional remarks..." />
+        </label>
       </div>
     </div>
   );
@@ -1265,21 +1593,44 @@ function CommonDetailsForm() {
   );
 }
 
-function PremiumForm({ values, calculating, onCalculate, error }: { values: Record<string, string | boolean>; calculating?: boolean; onCalculate?: () => void; error?: string }) {
+function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldChange }: { values: Record<string, string | boolean>; calculating?: boolean; onCalculate?: () => void; error?: string; cover?: string; onFieldChange?: (field: string, value: string | boolean) => void }) {
   const inputClass = "h-8 w-full border border-violet-200 bg-white px-2 text-xs text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
-  const documents = ["Certificate", "Vignette", "Sch", "Inv", "Premium", "Com", "PSSA", "Acc. Gen", "ICAC", "MIE", "AML", "AMCCU", "MRA", "PSEA", "BOM", "EWF", "Pro Note", "Summary", "Policy-wording", "KYC", "Scarcity", "Proposal"];
-  const actions = ["Insert & Save", "Edit & Save", "View", "Print", "Not approved", "Approve", "Insert 2 NTA", "Reports in PDF", "Exit"];
-  const leftGroups = [
-    ["Additional Cover", ["Passenger Risk", "Personal Accident", "PA (Conductor)", "PA (Employee)", "PA (Family Members)", "Auto Plus", "Driver Only", "Loss of Use", "Towing"]],
-    ["Add Extra Perils", ["Strike, Riot and Civil Commotion", "Cyclone"]],
-    ["Discounts", []],
-    ["Claim/Other Loading", []],
-  ];
-  const additionalCovers = ["Windscreen Extension", "Waiver of Excess", "Loss of Car Keys", "Airfreight Expenses", "Personal Belongings", "Damage by Rodents", "Accidental Misfuelling", "Enhanced Personal Accidental", "Funeral Expenses"];
+  // Optional covers (MotorMaster Rate<n> / Amt<n>); see lib/additional-risk.ts.
+  const seating = Number(values.seating) || 0;
+  const errors = Object.fromEntries(coverErrors(values, seating));
+  const selected = (rate: number) => values[`cover${rate}`] === true || values[`cover${rate}`] === "true";
+  const additionalRisk = additionalRiskCovered({ rates: ratesFromColumns(coverColumns(values)), vehicleClass: String(values.vehicleClass || ""), cover: String(cover || values.coverRequired || ""), seating });
+  const toggleCover = (rate: number, count: boolean, checked: boolean) => {
+    onFieldChange?.(`cover${rate}`, checked);
+    // A count cover starts at 1 person / day; clearing a cover clears its number and amount.
+    if (count) onFieldChange?.(`rate${rate}`, checked ? String(values[`rate${rate}`] || "1") : "");
+    if (!checked) onFieldChange?.(`amt${rate}`, "");
+  };
+  const coverInput = "h-7 w-full rounded-md border bg-white px-1.5 text-xs outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:border-transparent disabled:bg-slate-50 disabled:text-slate-300";
 
-  const optionTable = (title: string, rows: string[]) => {
-    if (!rows.length) return null;
-    return <div key={title} className="border border-violet-200"><div className="grid grid-cols-[1fr_52px_80px] bg-[#7766db] px-2 py-1.5 text-[11px] font-bold text-white"><span>{title}</span><span>No</span><span>Amount</span></div>{rows.map((row, index) => <div key={row} className={`grid grid-cols-[1fr_52px_80px] items-center border-t border-violet-100 px-2 py-1 ${index % 2 ? "bg-violet-50/50" : "bg-white"}`}><label className="flex items-center gap-2 text-xs"><input type="checkbox" className="accent-[#35126d]" />{row}</label><input type="number" className="h-6 w-11 border border-violet-100 bg-transparent px-1" aria-label={`${row} number`} /><input type="number" defaultValue="0" className="h-6 w-full border border-violet-100 bg-transparent px-1 text-right" aria-label={`${row} amount`} /></div>)}</div>;
+  const optionTable = (title: string) => {
+    const rows = PREMIUM_COVERS.filter((c) => c.group === title);
+    return (
+      <div key={title} className="overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
+        <div className="grid grid-cols-[1fr_64px_96px] gap-2 bg-[#35126d] px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-white"><span>{title}</span><span className="text-center">No</span><span className="text-right">Amount</span></div>
+        {rows.map((row) => {
+          const on = selected(row.rate);
+          const rowErrors = [errors[`rate${row.rate}`], errors[`amt${row.rate}`]].filter(Boolean);
+          return (
+            <div key={row.rate} className={`border-t border-violet-50 px-3 py-1.5 transition ${on ? "bg-violet-50/60" : "hover:bg-violet-50/40"}`}>
+              <div className="grid grid-cols-[1fr_64px_96px] items-center gap-2">
+                <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-700"><input type="checkbox" checked={on} onChange={(e) => toggleCover(row.rate, Boolean(row.count), e.target.checked)} className="h-4 w-4 accent-[#35126d]" /><span className={on ? "font-semibold text-[#35126d]" : ""}>{row.label}</span></label>
+                {row.count ? (
+                  <input type="number" min={1} step={1} disabled={!on} value={on ? String(values[`rate${row.rate}`] ?? "") : ""} onChange={(e) => onFieldChange?.(`rate${row.rate}`, e.target.value.replace(/[^0-9]/g, ""))} placeholder={on ? row.count : ""} title={row.count} className={`${coverInput} text-center ${errors[`rate${row.rate}`] ? "border-rose-300" : "border-violet-100"}`} aria-label={`${row.label} - number of ${row.count.toLowerCase()}`} />
+                ) : <span className="text-center text-xs text-slate-300">{on ? "1" : ""}</span>}
+                <input type="number" min={0} step="0.01" disabled={!on} value={on ? String(values[`amt${row.rate}`] ?? "") : ""} onChange={(e) => onFieldChange?.(`amt${row.rate}`, e.target.value)} placeholder={on ? "0.00" : ""} className={`${coverInput} text-right ${errors[`amt${row.rate}`] ? "border-rose-300" : "border-violet-100"}`} aria-label={`${row.label} amount`} />
+              </div>
+              {rowErrors.map((message) => <p key={message} role="alert" className="mt-1 text-[11px] font-medium text-rose-600">{message}</p>)}
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   const numericFields = new Set(["premium", "basicRate", "basicAmt", "addCharge", "minPremium", "loadingPer", "tpPremium", "mgwRate", "excess", "youngExcess", "tpfExcess", "fixPremium", "documentCharge", "levy", "hitAndRun", "invoiceAmount"]);
@@ -1296,35 +1647,82 @@ function PremiumForm({ values, calculating, onCalculate, error }: { values: Reco
     return isNaN(num) ? strVal : num.toFixed(2);
   };
 
+  // Calculated values (read-only inputs keep their names so they are saved with the policy).
+  const valueRow = ([label, name]: string[]) => (
+    <label key={name} className="flex items-center justify-between gap-3 border-t border-violet-50 px-3 py-2 first:border-t-0">
+      <span className="text-xs font-medium text-slate-600">{label}</span>
+      <input name={name} type={calculating ? "text" : "number"} step="0.01" value={getValue(name) as string} onChange={() => {}} readOnly className={`h-8 w-28 rounded-md border border-transparent bg-slate-50 px-2 text-right font-mono text-sm text-slate-800 outline-none ${calculating ? "animate-pulse text-slate-400" : ""}`} />
+    </label>
+  );
+  const valueGroup = (title: string, rows: string[][]) => (
+    <div className="overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
+      <p className="border-b border-violet-100 bg-violet-50/60 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-[#35126d]">{title}</p>
+      <div>{rows.map(valueRow)}</div>
+    </div>
+  );
+
   return (
     <div className="border border-violet-200 bg-[#f7f5fb]">
-
-      <div>
-        <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-2 lg:border-r lg:border-violet-200">
-          <div className="space-y-3">
-            {leftGroups.map(([title, rows]) => optionTable(title as string, rows as string[]))}
-          </div>
-
-          <div className="space-y-3">
-            {optionTable("Additional Cover", additionalCovers)}
-            <div className="flex flex-wrap gap-5 py-1 text-xs"><label className="flex items-center gap-1"><input type="radio" name="premium-period" defaultChecked className="accent-[#35126d]" disabled />Annual</label><label className="flex items-center gap-1"><input type="radio" name="premium-period" className="accent-[#35126d]" disabled />Pro Rata</label><label className="flex items-center gap-1"><input type="radio" name="premium-period" className="accent-[#35126d]" disabled />Short Period</label></div>
-            <div className="space-y-2">
-              <button type="button" onClick={onCalculate} disabled={calculating} className="h-9 bg-[#35126d] px-5 text-xs font-bold text-white hover:bg-violet-800 disabled:bg-slate-400">
-                {calculating ? "Calculating..." : "Calculate Premium"}
-              </button>
-              {error && <p className="text-xs text-rose-600 bg-rose-50 border border-rose-200 px-2 py-1 rounded">{error}</p>}
-              {[["Total Premium (Incl. Tow)", "premium"], ["Basic Rate", "basicRate"], ["Basic Amount", "basicAmt"], ["Additional Charge", "addCharge"], ["Min Premium", "minPremium"], ["Loading %", "loadingPer"], ["TP Premium", "tpPremium"], ["MGW Rate", "mgwRate"], ["Excess", "excess"], ["Young Driver Excess", "youngExcess"], ["TPF Excess", "tpfExcess"], ["Fix Premium", "fixPremium"], ["Doc. Charges", "documentCharge"], ["Levy Charge", "levy"], ["Hit & Run Charge", "hitAndRun"], ["Inv. Amount", "invoiceAmount"]].map(([label, name]) => <label key={label} className="grid grid-cols-[1fr_70px] items-center gap-2 text-xs font-semibold"><span>{label}</span><input name={name} type="number" step="0.01" value={getValue(name) as string} onChange={(e) => {}} className={inputClass} readOnly /></label>)}
+      <div className="space-y-4 p-4 sm:p-6">
+        {/* Header: total premium and invoice amount */}
+        <div className="rounded-xl bg-gradient-to-r from-[#35126d] to-[#5b3aa4] p-4 text-white shadow-sm sm:p-5">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-200">Premium</p>
+              <h3 className="mt-1 text-lg font-bold">Covers, charges and final premium</h3>
+              <p className="mt-1 text-xs text-violet-100">The premium is recalculated automatically when the policy or vehicle details change.</p>
             </div>
-            <label className="mt-3 flex items-center gap-2 text-xs font-semibold text-[#35126d]"><input name="premiumConfirmed" type="checkbox" className="accent-[#35126d]" /> I confirm the premium and charges are complete.</label>
+            <div className="flex flex-wrap gap-3">
+              <div className="rounded-xl bg-white/10 px-4 py-2.5 text-right ring-1 ring-white/20">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-violet-200">Total Premium</p>
+                <p className={`font-mono text-2xl font-bold tabular-nums ${calculating ? "animate-pulse" : ""}`}>{getValue("premium")}</p>
+              </div>
+              <div className="rounded-xl bg-white px-4 py-2.5 text-right text-[#35126d] shadow-sm">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-violet-500">Inv. Amount</p>
+                <p className={`font-mono text-2xl font-bold tabular-nums ${calculating ? "animate-pulse" : ""}`}>{getValue("invoiceAmount")}</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button type="button" onClick={onCalculate} disabled={calculating} className="inline-flex h-10 items-center gap-2 rounded-lg bg-white px-5 text-sm font-bold text-[#35126d] shadow-sm transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-70">
+              <svg className={`h-4 w-4 ${calculating ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              {calculating ? "Calculating..." : "Calculate Premium"}
+            </button>
+            <div className="flex flex-wrap gap-1 rounded-lg bg-white/10 p-1 text-xs ring-1 ring-white/20">
+              {["Annual", "Pro Rata", "Short Period"].map((period, index) => (
+                <label key={period} className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 ${index === 0 ? "bg-white text-[#35126d] font-semibold" : "text-violet-200"}`}>
+                  <input type="radio" name="premium-period" defaultChecked={index === 0} disabled className="sr-only" />{period}
+                </label>
+              ))}
+            </div>
           </div>
         </div>
 
-        <aside className="hidden">
-          <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
-          <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="premium-print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
-          <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] hover:bg-violet-100">{action}</button>)}</div>
-          <label className="mt-5 block text-xs font-bold uppercase tracking-wider text-red-600">Remarks<textarea rows={4} className={`mt-2 ${inputClass}`} /></label>
-        </aside>
+        {error ? <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">{error}</p> : null}
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          {/* Calculated premium breakdown */}
+          <div className="space-y-4">
+            {valueGroup("Premium", [["Total Premium (Incl. Tow)", "premium"], ["Basic Rate", "basicRate"], ["Basic Amount", "basicAmt"], ["Additional Charge", "addCharge"], ["Min Premium", "minPremium"], ["Fix Premium", "fixPremium"]])}
+            {valueGroup("Tariff details", [["Loading %", "loadingPer"], ["TP Premium", "tpPremium"], ["MGW Rate", "mgwRate"]])}
+            {valueGroup("Excesses", [["Excess", "excess"], ["Young Driver Excess", "youngExcess"], ["TPF Excess", "tpfExcess"]])}
+            {valueGroup("Charges", [["Doc. Charges", "documentCharge"], ["Levy Charge", "levy"], ["Hit & Run Charge", "hitAndRun"], ["Inv. Amount", "invoiceAmount"]])}
+          </div>
+
+          {/* Optional covers */}
+          <div className="space-y-4">
+            {["Additional Cover", "Add Extra Perils", "Additional Cover (Extensions)"].map(optionTable)}
+            {/* usp_GetAdditionalRiskCovered: the text printed on the policy schedule */}
+            <div className="overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
+              <p className="border-b border-violet-100 bg-violet-50/60 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-[#35126d]">Additional Risk Covered</p>
+              <p className="px-3 py-2.5 text-xs leading-5 text-slate-700">{additionalRisk || <span className="text-slate-400">No additional cover selected.</span>}</p>
+            </div>
+          </div>
+        </div>
+
+        <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-violet-200 bg-white px-4 py-3 text-sm font-semibold text-[#35126d] shadow-sm">
+          <input name="premiumConfirmed" type="checkbox" className="h-5 w-5 accent-[#35126d]" /> I confirm the premium and charges are complete.
+        </label>
       </div>
     </div>
   );
@@ -1349,375 +1747,150 @@ function documentFileError(file: File): string {
 const formatFileSize = (bytes: number) => bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
 function AttachedDocumentForm({ policyNo, documents: pendingDocuments, onDocumentsChange, stored, uploadMessage }: { policyNo: string; documents: PendingDocument[]; onDocumentsChange: (documents: PendingDocument[]) => void; stored: StoredDocumentList | null; uploadMessage: { text: string; error: boolean } | null }) {
-  const inputClass = "h-9 w-full border border-violet-200 bg-white px-2 text-sm text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
-  const labelClass = "text-xs font-semibold text-slate-600";
   // docType is the "Document Type" used in the stored file name; kyc documents go to the insured's KYC folder.
   const requiredDocuments = [
-    { id: "licence", name: "Driver's Licence", types: ["Licence"], docType: "Licence", kyc: false, required: true, accepted: "PDF, JPG, PNG (Max 5MB)" },
-    { id: "nid_passport", name: "NID / Passport", types: ["National ID / Passport"], docType: "NID Passport", kyc: true, required: true, accepted: "PDF, JPG, PNG (Max 5MB)" },
-    { id: "sale_deed", name: "Sale Deed / HorsePower", types: ["Sale Deed"], docType: "Sale Deed", kyc: false, required: true, accepted: "PDF, JPG, PNG (Max 5MB)" },
-    { id: "address_proof", name: "KYC / Address Proof", types: ["Address Proof"], docType: "Address Proof", kyc: true, required: true, accepted: "PDF, JPG, PNG (Max 5MB)" },
+    { id: "licence", name: "Driver's Licence", docType: "Licence", kyc: false },
+    { id: "nid_passport", name: "NID / Passport", docType: "NID Passport", kyc: true },
+    { id: "sale_deed", name: "Sale Deed / HorsePower", docType: "Sale Deed", kyc: false },
+    { id: "address_proof", name: "KYC / Address Proof", docType: "Address Proof", kyc: true },
   ];
-  const [selectedDocType, setSelectedDocType] = useState<string>("");
-  const uploadedFiles: Record<string, { name: string; size: string }> = Object.fromEntries(pendingDocuments.map((d) => [d.slot, { name: d.file.name, size: formatFileSize(d.file.size) }]));
-  const [documentChecks, setDocumentChecks] = useState<Record<string, boolean>>(() => Object.fromEntries(pendingDocuments.map((d) => [d.slot, true])));
+  const extraSlots = ["extra_1", "extra_2", "extra_3"];
   const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
-  const [extraNames, setExtraNames] = useState<Record<string, string>>(() => Object.fromEntries(pendingDocuments.filter((d) => d.slot.startsWith("extra_")).map((d) => [d.slot, d.docType])));
   const [dragActive, setDragActive] = useState<string | null>(null);
+  const bySlot = (slot: string) => pendingDocuments.find((d) => d.slot === slot);
+  const extras = pendingDocuments.filter((d) => d.slot.startsWith("extra_")).sort((a, b) => a.slot.localeCompare(b.slot));
+  const nextExtraSlot = extraSlots.find((slot) => !bySlot(slot));
+  const uploadedCount = requiredDocuments.filter((d) => bySlot(d.id)).length;
+  const allRequiredUploaded = uploadedCount === requiredDocuments.length;
 
   const setDocument = (slot: string, document: PendingDocument | null) => {
     onDocumentsChange([...pendingDocuments.filter((d) => d.slot !== slot), ...(document ? [document] : [])]);
   };
-  
-  // Auto-select checkboxes when Doc Type is selected
-  useEffect(() => {
-    if (selectedDocType) {
-      setDocumentChecks((prev) => {
-        const next = { ...prev };
-        requiredDocuments.forEach((doc) => {
-          if (doc.types.includes(selectedDocType)) {
-            next[doc.id] = true;
-          }
-        });
-        return next;
-      });
-    }
-  }, [selectedDocType]);
-  
-  const handleDocTypeChange = (value: string) => {
-    setSelectedDocType(value);
-  };
-  
-  const handleFileUpload = (docId: string, file: File) => {
+  // Validates the file (extension, type, 5 MB) and keeps it until the payment is confirmed.
+  const attach = (slot: string, file: File | undefined, docType: string, kyc: boolean) => {
     setDragActive(null);
-    const error = documentFileError(file);
-    setFileErrors((prev) => ({ ...prev, [docId]: error }));
-    if (error) return;
-    const doc = requiredDocuments.find((d) => d.id === docId);
-    if (!doc) return;
-    setDocument(docId, { slot: docId, docType: doc.docType, kyc: doc.kyc, file });
-    setDocumentChecks((prev) => ({ ...prev, [docId]: true }));
-  };
-
-  const handleExtraFile = (slot: string, file: File | undefined) => {
-    if (!file) { setDocument(slot, null); return; }
+    if (!file) return;
     const error = documentFileError(file);
     setFileErrors((prev) => ({ ...prev, [slot]: error }));
-    if (error) return;
-    setDocument(slot, { slot, docType: extraNames[slot]?.trim() || "OTHER", kyc: false, file });
+    if (!error) setDocument(slot, { slot, docType, kyc, file });
   };
-
-  const handleExtraName = (slot: string, name: string) => {
-    setExtraNames((prev) => ({ ...prev, [slot]: name }));
-    const existing = pendingDocuments.find((d) => d.slot === slot);
-    if (existing) setDocument(slot, { ...existing, docType: name.trim() || "OTHER" });
+  const remove = (slot: string) => { setDocument(slot, null); setFileErrors((prev) => ({ ...prev, [slot]: "" })); };
+  const renameExtra = (slot: string, name: string) => {
+    const existing = bySlot(slot);
+    if (existing) setDocument(slot, { ...existing, docType: name.trim() ? name : "OTHER" });
   };
-  
-  const handleDragOver = (e: React.DragEvent, docId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(docId);
-  };
-  
-  const handleDragLeave = (e: React.DragEvent, docId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (dragActive === docId) setDragActive(null);
-  };
-  
-  const handleDrop = (e: React.DragEvent, docId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const file = e.dataTransfer.files[0];
-    if (file) handleFileUpload(docId, file);
-    setDragActive(null);
-  };
-  
-  const handleCheckChange = (docId: string, checked: boolean) => {
-    setDocumentChecks((prev) => ({ ...prev, [docId]: checked }));
-  };
-  
-  const isDocRequired = (docId: string) => {
-    const doc = requiredDocuments.find(d => d.id === docId);
-    return doc?.required || false;
-  };
-  
-  const allRequiredUploaded = requiredDocuments
-    .filter(d => d.required)
-    .every(d => documentChecks[d.id] && uploadedFiles[d.id]);
-  
-  const requiredUploadedCount = requiredDocuments
-    .filter(d => d.required && uploadedFiles[d.id])
-    .length;
-  const requiredTotalCount = requiredDocuments.filter(d => d.required).length;
-  
-  const getStatusIcon = (doc: typeof requiredDocuments[0]) => {
-    const hasFile = !!uploadedFiles[doc.id];
-    const isChecked = documentChecks[doc.id];
-    if (hasFile && isChecked) return <span className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg></span>;
-    if (hasFile) return <span className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center text-amber-600"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg></span>;
-    if (doc.required) return <span className="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">!</span>;
-    return <span className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">○</span>;
-  };
+  const dropProps = (slot: string, onFile: (file: File) => void) => ({
+    onDragOver: (e: React.DragEvent) => { e.preventDefault(); setDragActive(slot); },
+    onDragLeave: (e: React.DragEvent) => { e.preventDefault(); if (dragActive === slot) setDragActive(null); },
+    onDrop: (e: React.DragEvent) => { e.preventDefault(); const file = e.dataTransfer.files[0]; setDragActive(null); if (file) onFile(file); },
+  });
+  const fileInput = (slot: string, onFile: (file: File | undefined) => void) => (
+    <input id={`file_${slot}`} type="file" accept={ACCEPTED_DOCUMENT_EXTENSIONS.join(",")} className="sr-only" onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = ""; }} />
+  );
+  const icon = (path: string, className = "h-5 w-5") => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={path} /></svg>;
+  const FILE_PATH = "M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z";
+  const UPLOAD_PATH = "M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12";
+  const CHECK_PATH = "M5 13l4 4L19 7";
+  const buttonClass = "inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition";
 
   return (
-    <div className="border border-violet-200 bg-[#f7f5fb]">
-      <div>
-        <div className="p-4 sm:p-5 lg:border-r lg:border-violet-200">
-          {/* Document number (policy number) - the documents are stored under it on the server */}
-          <div className="mb-5 grid gap-2 border border-violet-200 bg-white p-3 sm:grid-cols-[max-content_1fr] sm:items-center">
-            <span className="text-xs font-semibold text-slate-600">Document No (Policy No)</span>
-            <input readOnly value={policyNo || ""} placeholder="Assigned when the policy is saved" className="h-9 w-full border border-violet-200 bg-slate-50 px-2 font-mono text-sm text-slate-800 outline-none" />
-            <p className="text-xs text-slate-500 sm:col-span-2">The documents are uploaded to the server when the payment is confirmed: policy documents to the policy folder, and NID / Passport and Address Proof to the insured&apos;s KYC folder.</p>
-          </div>
-
-          {/* Progress Header */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-slate-800">Document Upload</h3>
-              <span className="text-xs font-semibold text-violet-600 bg-violet-50 px-2.5 py-1 rounded-full">
-                {requiredUploadedCount} / {requiredTotalCount} Required
-              </span>
-            </div>
-            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-[#35126d] to-violet-500 transition-all duration-300"
-                style={{ width: `${(requiredUploadedCount / requiredTotalCount) * 100}%` }}
-              />
-            </div>
-            <p className="mt-2 text-xs text-slate-500">Upload all required documents to proceed with policy confirmation</p>
-          </div>
-
-          {/* Document Type Filter */}
-          <div className="mb-6 p-4 bg-white border border-violet-200 rounded-xl">
-            <label className="block text-xs font-semibold text-slate-600 mb-2">Filter by Document Type</label>
-            <div className="flex flex-wrap gap-2">
-              {["All", "Licence", "National ID / Passport", "Sale Deed", "Address Proof"].map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => handleDocTypeChange(type === "All" ? "" : type)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
-                    selectedDocType === (type === "All" ? "" : type)
-                      ? "bg-[#35126d] text-white shadow-sm"
-                      : "bg-white text-slate-600 hover:bg-violet-50 border border-violet-200"
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Upload Grid */}
-          <div className="space-y-3">
-            {requiredDocuments
-              .filter(doc => !selectedDocType || doc.types.includes(selectedDocType))
-              .map((doc, index) => (
-                <div
-                  key={doc.id}
-                  className={`group relative bg-white rounded-xl border-2 transition-all duration-200 ${
-                    uploadedFiles[doc.id] 
-                      ? "border-emerald-200 bg-emerald-50" 
-                      : dragActive === doc.id 
-                        ? "border-[#35126d] bg-violet-50" 
-                        : "border-violet-100 hover:border-violet-300"
-                  }`}
-                  onDragOver={(e) => handleDragOver(e, doc.id)}
-                  onDragLeave={(e) => handleDragLeave(e, doc.id)}
-                  onDrop={(e) => handleDrop(e, doc.id)}
-                >
-                  <input
-                    type="file"
-                    id={`file_${doc.id}`}
-                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileUpload(doc.id, file);
-                      e.target.value = "";
-                    }}
-                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                    disabled={false}
-                  />
-                  <div className="p-4 flex items-center gap-4">
-                    {/* Status Icon */}
-                    <div className="flex-shrink-0">{getStatusIcon(doc)}</div>
-                    
-                    {/* Document Icon & Info */}
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-violet-50 flex items-center justify-center">
-                      {doc.id === "licence" && (
-                        <svg className="w-5 h-5 text-[#35126d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      )}
-                      {doc.id === "nid_passport" && (
-                        <svg className="w-5 h-5 text-[#35126d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 8V4a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2h-4l-4 4H6a2 2 0 01-2-2V8z" />
-                        </svg>
-                      )}
-                      {doc.id === "sale_deed" && (
-                        <svg className="w-5 h-5 text-[#35126d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10l4-8" />
-                        </svg>
-                      )}
-                      {doc.id === "address_proof" && (
-                        <svg className="w-5 h-5 text-[#35126d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-                        </svg>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-slate-800 truncate">{doc.name}</span>
-                        {doc.required && (
-                          <span className="px-2 py-0.5 text-[10px] font-bold text-rose-600 bg-rose-50 rounded-full">Required</span>
-                        )}
-                      </div>
-                      <div className="mt-1 flex items-center gap-3 text-xs text-slate-500">
-                        <span>{doc.accepted}</span>
-                        {uploadedFiles[doc.id] && (
-                          <span className="text-emerald-600 font-medium flex items-center gap-1">
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                            {uploadedFiles[doc.id].name} ({uploadedFiles[doc.id].size})
-                          </span>
-                        )}
-                      </div>
-                      {fileErrors[doc.id] ? <p role="alert" className="mt-1 text-xs font-medium text-rose-600">{fileErrors[doc.id]}</p> : null}
-                    </div>
-                    
-                    {/* Checkbox */}
-                    <div className="flex-shrink-0 flex items-center">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={documentChecks[doc.id] || false}
-                          onChange={(e) => { e.stopPropagation(); handleCheckChange(doc.id, e.target.checked); }}
-                          disabled={!uploadedFiles[doc.id] && doc.required}
-                          className={`h-4 w-4 accent-[#35126d] rounded border-2 ${!uploadedFiles[doc.id] && doc.required ? "opacity-40 cursor-not-allowed border-slate-200" : "border-violet-300"}`}
-                        />
-                        <span className="text-[11px] text-slate-500 hidden sm:block">Confirm</span>
-                      </label>
-                    </div>
-                    
-                    {/* Upload Label Overlay */}
-                    {!uploadedFiles[doc.id] && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="text-center p-8 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-dashed border-violet-200">
-                          <svg className="w-8 h-8 mx-auto text-violet-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                          <p className="text-sm font-medium text-violet-600">Drag & drop or click to upload</p>
-                          <p className="text-xs text-violet-400 mt-1">{doc.accepted}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-          </div>
-
-          {/* Additional Documents */}
-          <div className="mt-6">
-            <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-              Additional Documents (Optional)
-            </h4>
-            <div className="space-y-2">
-              {[1, 2, 3].map((row) => {
-                const slot = `extra_${row}`;
-                const attached = pendingDocuments.find((d) => d.slot === slot);
-                return (
-                <div key={row} className="bg-white border border-violet-100 rounded-xl p-3">
-                  <div className="flex items-center gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-medium text-slate-500">{requiredDocuments.length + row}</span>
-                  <input type="text" placeholder="Document name (Document Type)" value={extraNames[slot] ?? ""} onChange={(e) => handleExtraName(slot, e.target.value)} className="flex-1 text-sm border border-violet-200 bg-white px-3 py-2 rounded-lg outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" />
-                  <label className="flex-shrink-0 cursor-pointer">
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" className="sr-only" onChange={(e) => { handleExtraFile(slot, e.target.files?.[0]); e.target.value = ""; }} />
-                    <span className="px-4 py-2 text-sm font-medium text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-colors border border-violet-200">{attached ? "Replace" : "Attach"}</span>
-                  </label>
-                  {attached ? <button type="button" onClick={() => handleExtraFile(slot, undefined)} className="flex-shrink-0 text-xs font-medium text-rose-600 hover:underline">Remove</button> : null}
-                  </div>
-                  {attached ? <p className="mt-2 pl-11 text-xs font-medium text-emerald-600">{attached.file.name} ({formatFileSize(attached.file.size)})</p> : null}
-                  {fileErrors[slot] ? <p role="alert" className="mt-2 pl-11 text-xs font-medium text-rose-600">{fileErrors[slot]}</p> : null}
-                </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Confirmation Section */}
-          <div className="mt-6 bg-white border-2 rounded-xl overflow-hidden">
-            <div className={`px-5 py-4 border-b ${allRequiredUploaded ? "border-emerald-200 bg-emerald-50" : "border-violet-200"}`}>
-              <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${allRequiredUploaded ? "bg-emerald-100 text-emerald-600" : "bg-violet-100 text-violet-600"}`}>
-                  {allRequiredUploaded ? (
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">Confirm Documents</p>
-                  <p className="text-xs text-slate-500">
-                    {allRequiredUploaded ? "All required documents uploaded and confirmed" : "Upload all required documents to enable confirmation"}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="p-5 space-y-4">
-              <button
-                type="button"
-                className="w-full bg-[#35126d] px-5 py-3 text-sm font-bold text-white hover:bg-violet-800 transition-colors rounded-lg flex items-center justify-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                Update Documents Selection
-              </button>
-              <label className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${allRequiredUploaded ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-50 text-slate-500 border border-slate-200 cursor-not-allowed"}`}>
-                <input
-                  name="documentsConfirmed"
-                  type="checkbox"
-                  checked={allRequiredUploaded}
-                  onChange={(e) => setDocumentChecks((prev) => {
-                    const next = { ...prev };
-                    requiredDocuments.forEach(d => { if (d.required) next[d.id] = e.target.checked; });
-                    return next;
-                  })}
-                  disabled={!allRequiredUploaded}
-                  className="h-5 w-5 accent-[#35126d]"
-                />
-                <span className="text-sm font-semibold">I confirm all required documents are uploaded</span>
-              </label>
-              {!allRequiredUploaded && (
-                <div className="flex items-center gap-2 text-xs text-rose-600 bg-rose-50 px-3 py-2 rounded-lg">
-                  <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-                  Please upload all required documents before confirming.
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Upload result and documents stored for this policy (GetDocList) */}
-          {uploadMessage ? <p role={uploadMessage.error ? "alert" : "status"} className={`mt-6 border px-3 py-2 text-xs font-medium ${uploadMessage.error ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{uploadMessage.text}</p> : null}
-          {stored && (stored.policyDocuments.length > 0 || stored.kycDocuments.length > 0) ? (
-            <div className="mt-6 overflow-auto border border-violet-200 bg-white">
-              <table className="w-full min-w-[560px] border-collapse text-left text-xs">
-                <thead><tr className="bg-violet-100 text-[#35126d]"><th className="border-r border-violet-200 px-3 py-2">Folder</th><th className="border-r border-violet-200 px-3 py-2">File Name</th><th className="px-3 py-2">Full Path</th></tr></thead>
-                <tbody>
-                  {[...stored.policyDocuments.map((d) => ({ ...d, folder: "Policy" })), ...stored.kycDocuments.map((d) => ({ ...d, folder: "KYC" }))].map((d) => (
-                    <tr key={`${d.folder}-${d.fullPath}`} className="border-t border-violet-100"><td className="border-r border-violet-100 px-3 py-2 font-semibold text-slate-600">{d.folder}</td><td className="border-r border-violet-100 px-3 py-2 text-slate-700">{d.fileName}</td><td className="px-3 py-2 font-mono text-slate-500">{d.fullPath}</td></tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : null}
-
-          {/* Remarks */}
-          <div className="mt-6">
-            <label className="grid gap-2">
-              <span className={labelClass}>Remarks</span>
-              <textarea rows={3} className={inputClass} placeholder="Additional remarks for attached documents..." />
-            </label>
-          </div>
+    <div className="space-y-4 rounded-2xl border border-violet-200 bg-[#f7f5fb] p-4 sm:p-5">
+      {/* Summary: documents are stored on the server under the policy number once the payment is confirmed */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="text-base font-bold text-[#35126d]">Upload your documents</h3>
+          <p className="mt-0.5 text-xs text-slate-500">PDF, JPG, PNG, DOC or DOCX, up to 5 MB each. Click a row or drop a file on it.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {policyNo ? <span className="rounded-full bg-white px-3 py-1 font-mono text-xs font-semibold text-[#35126d] ring-1 ring-violet-200">{policyNo}</span> : null}
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${allRequiredUploaded ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-white text-slate-600 ring-violet-200"}`}>{uploadedCount} of {requiredDocuments.length} required</span>
         </div>
       </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-violet-100"><div className={`h-full rounded-full transition-all duration-300 ${allRequiredUploaded ? "bg-emerald-500" : "bg-[#5b3aa4]"}`} style={{ width: `${(uploadedCount / requiredDocuments.length) * 100}%` }} /></div>
+
+      {/* Required documents */}
+      <ul className="space-y-2">
+        {requiredDocuments.map((doc) => {
+          const attached = bySlot(doc.id);
+          const onFile = (file: File | undefined) => attach(doc.id, file, doc.docType, doc.kyc);
+          return (
+            <li key={doc.id} {...dropProps(doc.id, onFile)} className={`rounded-xl border bg-white px-4 py-3 transition ${dragActive === doc.id ? "border-[#5b3aa4] bg-violet-50 ring-2 ring-violet-100" : attached ? "border-emerald-200" : "border-slate-200 hover:border-violet-300"}`}>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${attached ? "bg-emerald-100 text-emerald-600" : "bg-violet-50 text-[#5b3aa4]"}`}>{icon(attached ? CHECK_PATH : FILE_PATH)}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-800">{doc.name}{doc.kyc ? <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-700 ring-1 ring-sky-200">KYC</span> : null}</p>
+                  <p className={`truncate text-xs ${attached ? "font-medium text-emerald-700" : "text-slate-400"}`}>{attached ? `${attached.file.name} · ${formatFileSize(attached.file.size)}` : "No file chosen"}</p>
+                </div>
+                {fileInput(doc.id, onFile)}
+                {attached ? (
+                  <div className="flex items-center gap-2">
+                    <label htmlFor={`file_${doc.id}`} className={`${buttonClass} text-[#412484] ring-1 ring-violet-200 hover:bg-violet-50`}>Replace</label>
+                    <button type="button" onClick={() => remove(doc.id)} className={`${buttonClass} text-rose-600 hover:bg-rose-50`}>Remove</button>
+                  </div>
+                ) : (
+                  <label htmlFor={`file_${doc.id}`} className={`${buttonClass} bg-[#35126d] text-white hover:bg-[#2b0f5a]`}>{icon(UPLOAD_PATH, "h-4 w-4")} Choose file</label>
+                )}
+              </div>
+              {fileErrors[doc.id] ? <p role="alert" className="mt-2 text-xs font-medium text-rose-600">{fileErrors[doc.id]}</p> : null}
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* Optional extra documents (up to three); the name is used as the Document Type */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Other documents <span className="font-normal normal-case tracking-normal text-slate-400">(optional, up to {extraSlots.length})</span></p>
+        {extras.map((doc) => (
+          <div key={doc.slot} className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">{icon(CHECK_PATH)}</span>
+              <div className="min-w-0 flex-1">
+                <input aria-label="Document name" placeholder="Document name" value={doc.docType === "OTHER" ? "" : doc.docType} onChange={(e) => renameExtra(doc.slot, e.target.value)} className="h-8 w-full max-w-xs rounded-lg border border-slate-200 bg-slate-50 px-2 text-sm text-slate-800 outline-none focus:border-[#5b3aa4] focus:bg-white focus:ring-2 focus:ring-violet-100" />
+                <p className="mt-1 truncate text-xs font-medium text-emerald-700">{doc.file.name} · {formatFileSize(doc.file.size)}</p>
+              </div>
+              <button type="button" onClick={() => remove(doc.slot)} className={`${buttonClass} text-rose-600 hover:bg-rose-50`}>Remove</button>
+            </div>
+            {fileErrors[doc.slot] ? <p role="alert" className="mt-2 text-xs font-medium text-rose-600">{fileErrors[doc.slot]}</p> : null}
+          </div>
+        ))}
+        {nextExtraSlot ? (
+          <div {...dropProps(nextExtraSlot, (file) => attach(nextExtraSlot, file, "OTHER", false))}>
+            {fileInput(nextExtraSlot, (file) => attach(nextExtraSlot, file, "OTHER", false))}
+            <label htmlFor={`file_${nextExtraSlot}`} className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-4 text-sm font-semibold transition ${dragActive === nextExtraSlot ? "border-[#5b3aa4] bg-violet-50 text-[#35126d]" : "border-violet-200 bg-white/60 text-[#5b3aa4] hover:border-violet-400 hover:bg-white"}`}>
+              {icon("M12 4v16m8-8H4", "h-4 w-4")} Add another document
+            </label>
+            {fileErrors[nextExtraSlot] ? <p role="alert" className="mt-2 text-xs font-medium text-rose-600">{fileErrors[nextExtraSlot]}</p> : null}
+          </div>
+        ) : null}
+      </div>
+
+      {/* Kept for the saved proposal payload: true once every required document is chosen */}
+      <input name="documentsConfirmed" type="checkbox" checked={allRequiredUploaded} readOnly className="sr-only" tabIndex={-1} aria-hidden="true" />
+      <p className={`flex items-start gap-2 rounded-xl px-3 py-2 text-xs ${allRequiredUploaded ? "bg-emerald-50 text-emerald-700" : "bg-white text-slate-500 ring-1 ring-slate-200"}`}>
+        {icon(allRequiredUploaded ? CHECK_PATH : "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z", "h-4 w-4 shrink-0")}
+        {allRequiredUploaded ? "All required documents are ready. They are uploaded to the server when the payment is confirmed." : "The files are uploaded to the server when the payment is confirmed: policy documents to the policy folder, NID / Passport and Address Proof to the insured's KYC folder."}
+      </p>
+
+      {/* Upload result and documents stored for this policy (GetDocList) */}
+      {uploadMessage ? <p role={uploadMessage.error ? "alert" : "status"} className={`rounded-xl border px-3 py-2 text-xs font-medium ${uploadMessage.error ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{uploadMessage.text}</p> : null}
+      {stored && (stored.policyDocuments.length > 0 || stored.kycDocuments.length > 0) ? (
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Stored on the server</p>
+          <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
+            {[...stored.policyDocuments.map((d) => ({ ...d, folder: "Policy" })), ...stored.kycDocuments.map((d) => ({ ...d, folder: "KYC" }))].map((d) => (
+              <li key={`${d.folder}-${d.fullPath}`} className="flex items-center gap-3 px-4 py-2 text-xs" title={d.fullPath}>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${d.folder === "KYC" ? "bg-sky-50 text-sky-700" : "bg-violet-50 text-[#412484]"}`}>{d.folder}</span>
+                <span className="min-w-0 flex-1 truncate text-slate-700">{d.fileName}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <label className="grid gap-1.5">
+        <span className="text-xs font-semibold text-slate-600">Remarks <span className="font-normal text-slate-400">(optional)</span></span>
+        <textarea rows={2} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#5b3aa4] focus:ring-2 focus:ring-violet-100" placeholder="Anything we should know about these documents?" />
+      </label>
     </div>
   );
 }
@@ -1779,52 +1952,41 @@ export default function BuyOnlinePage() {
   const calculatePremium = useCallback(async () => {
     const vehicleClass = String(proposalDraft.vehicleClass || "").toUpperCase();
     const ccOverridden = ccOverriddenByTariff(vehicleClass);
-    const requiredFields = [
-      "vehicleClass", "vehicleType", "fuelType", "sumInsured",
-      "manufactureDate", "issueDate", "seating", "vehicleStatus",
-      ...(ccOverridden ? [] : ["cc"]),
-    ];
-    if (/GOODS VEHICLE\(PRIVATE\)|GOODS VEHICLE\(PUBLIC\)/.test(vehicleClass)) {
-      requiredFields.push("gvw");
-    }
-    if (/TANKER|TRAILER|TRACTOR/.test(vehicleClass)) {
-      requiredFields.push("trailerFeet");
-    }
+    // Inputs used by usp_GetPremiumRateMotor. The sum insured is needed for comprehensive cover
+    // (premium = rate x sum insured / 100); third party uses the tariff TP premium.
+    const isComprehensive = /COMP/i.test(String(proposalDraft.coverRequired || policyCover));
+    const fieldLabels: Record<string, string> = { vehicleClass: "vehicle class", vehicleType: "vehicle type", vehicleStatus: "vehicle status", issueDate: "issue date", manufactureDate: "year of manufacture", sumInsured: "sum insured", gvw: "gross vehicle weight", trailerFeet: "trailer feet" };
+    const requiredFields = ["vehicleClass", "vehicleType", "vehicleStatus", "issueDate", "manufactureDate", ...(isComprehensive ? ["sumInsured"] : [])];
+    if (/GOODS VEHICLE\(PRIVATE\)|GOODS VEHICLE\(PUBLIC\)/.test(vehicleClass)) requiredFields.push("gvw");
+    if (/TANKER|TRAILER|TRACTOR/.test(vehicleClass)) requiredFields.push("trailerFeet");
     const missing = requiredFields.filter((f) => !proposalDraft[f] || String(proposalDraft[f]).trim() === "");
     if (missing.length > 0) {
-      console.log("[Premium] Missing fields for calculation:", missing);
-      setPremiumError(`Missing required fields: ${missing.join(", ")}`);
+      setPremiumError(`Enter the ${missing.map((f) => fieldLabels[f] || f).join(", ")} to calculate the premium.`);
       clearPremiumOutputs();
       return;
     }
-
-    const mgw = parseFloat(String(proposalDraft.gvw || "0"));
-    if (/GOODS VEHICLE\(PRIVATE\)|GOODS VEHICLE\(PUBLIC\)/.test(vehicleClass) && mgw <= 0) {
-      setPremiumError("Gross Vehicle Weight (GVW) must be greater than 0 for Goods Vehicles");
+    if (isComprehensive && !(Number(proposalDraft.sumInsured) > 0)) {
+      setPremiumError("The sum insured must be greater than 0 for comprehensive cover.");
       clearPremiumOutputs();
       return;
     }
-
-    const trailerFeet = parseFloat(String(proposalDraft.trailerFeet || "0"));
-    if (/TANKER|TRAILER|TRACTOR/.test(vehicleClass) && trailerFeet <= 0) {
-      setPremiumError("Trailer Feet must be greater than 0 for Tanker/Trailer/Tractor");
+    if (/GOODS VEHICLE\(PRIVATE\)|GOODS VEHICLE\(PUBLIC\)/.test(vehicleClass) && !(Number(proposalDraft.gvw) > 0)) {
+      setPremiumError("The gross vehicle weight (GVW) must be greater than 0 for goods vehicles.");
       clearPremiumOutputs();
       return;
     }
-
-    if (!ccOverridden) {
-      const cc = parseFloat(String(proposalDraft.cc || "0"));
-      if (cc <= 0) {
-        setPremiumError("Engine Capacity (CC/kW) must be greater than 0");
-        clearPremiumOutputs();
-        return;
-      }
-      const maxCc = /TANKER|TRAILER|TRACTOR/.test(vehicleClass) ? 500 : 10000;
-      if (cc > maxCc) {
-        setPremiumError(`Engine Capacity (CC/kW) must be ${maxCc} or less (got ${cc})`);
-        clearPremiumOutputs();
-        return;
-      }
+    if (/TANKER|TRAILER|TRACTOR/.test(vehicleClass) && !(Number(proposalDraft.trailerFeet) > 0)) {
+      setPremiumError("The trailer feet must be greater than 0 for tanker / trailer / tractor.");
+      clearPremiumOutputs();
+      return;
+    }
+    // Same rule as the procedure: seating OR CC / kW is enough (TRAILER / MOTOR TRADE use a fixed CC).
+    const seats = Number(String(proposalDraft.seating ?? "").replace(/[^0-9]/g, "")) || 0;
+    const ccValue = Number(String(proposalDraft.cc ?? "").replace(/[^0-9.]/g, "")) || 0;
+    if (!ccOverridden && seats <= 0 && ccValue <= 0) {
+      setPremiumError("Missing Seating and CC: enter the seating capacity or the CC / kW in Vehicle Details.");
+      clearPremiumOutputs();
+      return;
     }
 
     if (new Date(String(proposalDraft.manufactureDate)) > new Date(String(proposalDraft.issueDate))) {
@@ -1849,8 +2011,8 @@ export default function BuyOnlinePage() {
         vehicleClass: String(proposalDraft.vehicleClass || ""),
         vehicleType: String(proposalDraft.vehicleType || ""),
         age: String(age),
-        seating: String(proposalDraft.seating || "0"),
-        cylCapacity: String(proposalDraft.cc || "0"),
+        seating: String(seats),
+        cylCapacity: String(ccValue),
         trailerFeet: String(proposalDraft.trailerFeet || "0"),
         excess: String(proposalDraft.compulsoryExcess || "0"),
         sumInsured: String(proposalDraft.sumInsured || "0"),
@@ -1944,13 +2106,12 @@ const detailsComplete = Boolean(registration.trim() && fullName.trim());
   const kycValue = (field: string) => kycClient[field] == null ? "" : String(kycClient[field]).trim();
   const draftValue = (field: string) => proposalDraft[field] == null ? "" : String(proposalDraft[field]).trim();
 
-  useEffect(() => {
-    console.log("[Payment] emailPreviewOpen changed:", emailPreviewOpen, "emailPreviewData:", emailPreviewData);
-  }, [emailPreviewOpen, emailPreviewData]);
+  // Outcome of the last payment attempt, shown inside the email preview dialog.
+  const [paymentResult, setPaymentResult] = useState<{ ok: boolean; recorded: boolean; lines: string[] } | null>(null);
+  const payableAmount = Number(String(proposalDraft.invoiceAmount || proposalDraft.premium || "").replace(/,/g, "")) || 0;
 
   const showEmailPreview = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    console.log("[Payment] showEmailPreview called, policyNo:", policyNo);
     if (!policyNo) {
       setPaymentError(true);
       setPaymentMessage("Policy number not found. Please save the policy first (Attached Document section).");
@@ -1969,15 +2130,19 @@ const detailsComplete = Boolean(registration.trim() && fullName.trim());
       setPaymentMessage("Enter the client's e-mail address in the KYC form so the policy documents can be sent.");
       return;
     }
+    // The payment route rejects a zero amount, so stop here with a clear reason instead.
+    if (!payableAmount) {
+      setPaymentError(true);
+      setPaymentMessage("The premium has not been calculated yet. Open the Premium section, calculate the premium and save it, then try again.");
+      return;
+    }
 
-    console.log("[Payment] Opening email preview with:", { policyNo, clientCode, fullName, email });
+    setPaymentError(false);
+    setPaymentMessage("");
+    setPaymentResult(null);
     setEmailPreviewData({ policyNo, clientCode, fullName, email, title, firstName, surname });
     setPaymentOpen(false);
-    // Use timeout to ensure state updates are processed
-    setTimeout(() => {
-      setEmailPreviewOpen(true);
-      console.log("[Payment] Email preview should be open now");
-    }, 0);
+    setEmailPreviewOpen(true);
   };
 
   // Uploads the documents chosen in the Attached Document form (after the payment is confirmed),
@@ -2016,7 +2181,7 @@ const detailsComplete = Boolean(registration.trim() && fullName.trim());
 
   const submitPayment = async () => {
     if (!emailPreviewData) return;
-    setEmailPreviewOpen(false);
+    setPaymentResult(null);
     setPaymentMessage(""); setPaymentError(false); setSaving(true);
     try {
       // Data shown in the KYC, Policy Details, Vehicle Details and Premium forms. The server prefers the
@@ -2037,7 +2202,7 @@ const detailsComplete = Boolean(registration.trim() && fullName.trim());
         ...payment,
         clientCode: emailPreviewData.clientCode === "WEB" ? "" : emailPreviewData.clientCode,
         policyNo: emailPreviewData.policyNo,
-        amount: proposalDraft.invoiceAmount || proposalDraft.premium,
+        amount: payableAmount,
         title: emailPreviewData.title,
         firstName: emailPreviewData.firstName,
         surname: emailPreviewData.surname,
@@ -2045,23 +2210,21 @@ const detailsComplete = Boolean(registration.trim() && fullName.trim());
         documents,
       }) });
       const data = await response.json() as { error?: string; message?: string; clientCode?: string; paymentProcessed?: boolean; invoiceNo?: number; emailSent?: boolean; emailMessage?: string; storageMessage?: string };
-      if (!response.ok) {
-        if (data.paymentProcessed) {
-          // Payment confirmed: push the attached documents to the server as well.
-          const upload = await uploadPendingDocuments(emailPreviewData.policyNo, "");
-          setPaymentError(true);
-          setPaymentMessage(`${data.error} Payment was processed (Invoice: ${data.invoiceNo}). Please select a client in KYC. ${data.storageMessage || ""} ${data.emailMessage || ""} ${upload.text}`.replace(/\s+/g, " ").trim());
-        } else {
-          throw new Error(data.error || "Payment could not be submitted.");
-        }
-      } else {
-        setPaymentOpen(false);
-        // Payment confirmed: push the attached documents to the server (policy folder / KYC folder).
-        const upload = await uploadPendingDocuments(emailPreviewData.policyNo, data.clientCode || (emailPreviewData.clientCode === "WEB" ? "" : emailPreviewData.clientCode));
-        setPaymentError(data.emailSent === false || upload.failed);
-        setPaymentMessage(`${data.message || "Payment submitted successfully."} Client code: ${data.clientCode || emailPreviewData.clientCode}. ${data.storageMessage || ""} ${data.emailMessage || ""} ${upload.text}`.replace(/\s+/g, " ").trim());
-      }
-    } catch (error) { setPaymentError(true); setPaymentMessage(error instanceof Error ? error.message : "Payment could not be submitted."); }
+      if (!response.ok && !data.paymentProcessed) throw new Error(data.error || "Payment could not be submitted.");
+      // Payment confirmed: push the attached documents to the server (policy folder / KYC folder).
+      const code = response.ok ? data.clientCode || (emailPreviewData.clientCode === "WEB" ? "" : emailPreviewData.clientCode) : "";
+      const upload = await uploadPendingDocuments(emailPreviewData.policyNo, code);
+      setPaymentResult({
+        ok: response.ok && data.emailSent === true && !upload.failed,
+        recorded: true,
+        lines: [
+          response.ok ? `Payment recorded (Invoice No. ${data.invoiceNo}).` : `Payment recorded (Invoice No. ${data.invoiceNo}), but: ${data.error}`,
+          data.emailMessage || "No policy email was sent.",
+          data.storageMessage || "",
+          upload.text,
+        ].filter(Boolean),
+      });
+    } catch (error) { setPaymentResult({ ok: false, recorded: false, lines: [error instanceof Error ? error.message : "Payment could not be submitted."] }); }
     finally { setSaving(false); }
   };
 
@@ -2075,7 +2238,6 @@ const detailsComplete = Boolean(registration.trim() && fullName.trim());
 
   const completedSectionCount = visibleSections.filter((section) => savedSections.has(section.title)).length;
   const allSectionsSaved = completedSectionCount === visibleSections.length;
-  const availableDownloads = policyCover ? [...policyDownloads[policyCover], ...generalDownloads] : generalDownloads;
 
   const saveProposal = async () => {
     const root = document.getElementById("new-business-fields");
@@ -2086,6 +2248,10 @@ const detailsComplete = Boolean(registration.trim() && fullName.trim());
       if ((field.type === "radio" || field.type === "checkbox") && !field.checked) return;
       payload[field.name] = field.type === "checkbox" ? field.checked : field.value;
     });
+    // Link the policy to the client saved in the KYC form (MotorMaster.ClientCode), so the client,
+    // the policy documents and later visits can find each other.
+    const kycCode = kycValue("Code");
+    if (kycCode && kycCode.toUpperCase() !== "WEB") payload.clientCode = kycCode;
     setSaving(true); setSaveMessage(""); setSaveError(false);
     try {
       const response = await fetch("/api/motor/new-business", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
@@ -2120,25 +2286,21 @@ const saveCurrentSection = async () => {
     setSaveMessage(""); setSaveError(false);
     // Read the live controls before validating. Vehicle fields are controlled
     // inside their form component and React state updates may be asynchronous.
-    const currentDraft: Record<string, string | boolean> = { ...proposalDraft };
+    // The calculated premium fields are read-only displays ("0.00" / "Calculating..."), so they are never
+    // copied back from the screen: doing so wiped the invoice amount and the payment had no amount to charge.
+    const domValues: Record<string, string | boolean> = {};
     const root = document.getElementById("new-business-fields");
     root?.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("[name]").forEach((field) => {
-      if (!field.name || (field.type === "radio" || field.type === "checkbox") && !field.checked) return;
-      currentDraft[field.name] = field.type === "checkbox" ? field.checked : field.value;
+      const checked = (field as HTMLInputElement).checked;
+      if (!field.name || (field.type === "radio" || field.type === "checkbox") && !checked) return;
+      if (premiumOutputFields.includes(field.name)) return;
+      domValues[field.name] = field.type === "checkbox" ? checked : field.value;
     });
-    setProposalDraft(currentDraft);
-    
-    // For Premium section, ensure calculation is complete
-    if (openSection === "Premium" && !premiumCalculated) {
-      await calculatePremium();
-      // Re-read draft after calculation
-      const updatedDraft = { ...proposalDraft };
-      root?.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("[name]").forEach((field) => {
-        if (!field.name || (field.type === "radio" || field.type === "checkbox") && !field.checked) return;
-        updatedDraft[field.name] = field.type === "checkbox" ? field.checked : field.value;
-      });
-      setProposalDraft(updatedDraft);
-    }
+    const currentDraft: Record<string, string | boolean> = { ...proposalDraft, ...domValues };
+    setProposalDraft((prev) => ({ ...prev, ...domValues }));
+
+    // For Premium section, ensure calculation is complete (it stores its results in the draft itself).
+    if (openSection === "Premium" && !premiumCalculated) await calculatePremium();
     
     const missing = (sectionRequirements[openSection] || []).filter(([name]) => {
       const value = currentDraft[name];
@@ -2147,6 +2309,19 @@ const saveCurrentSection = async () => {
     if (openSection === "Vechicle Details" && String(currentDraft.coverRequired || "").toUpperCase().includes("COMP") && Number(currentDraft.sumInsured || 0) <= 0) {
       missing.push(["sumInsured", "Enter the sum insured for comprehensive cover."]);
     }
+    // Inputs usp_GetMotorExcess needs to find the excess for this vehicle.
+    if (openSection === "Vechicle Details") {
+      const filled = (name: string) => String(currentDraft[name] ?? "").trim() !== "";
+      const vehicleClassName = String(currentDraft.vehicleClass || "").toUpperCase();
+      if (!filled("manufactureDate")) missing.push(["manufactureDate", "Enter the year of manufacture and date of registration."]);
+      if (!(Number(currentDraft.pricePaid) > 0)) missing.push(["pricePaid", "Enter the price paid for the vehicle."]);
+      if (!filled("seating") && !filled("cc")) missing.push(["seating", "Enter the seating capacity or the CC / kW."]);
+      if (/GOODS VEHICLE\(PRIVATE\)|GOODS VEHICLE\(PUBLIC\)/.test(vehicleClassName) && !(Number(currentDraft.gvw) > 0)) missing.push(["gvw", "Enter the gross vehicle weight for goods vehicles."]);
+      if (/TANKER|TRAILER|TRACTOR/.test(vehicleClassName) && !(Number(currentDraft.trailerFeet) > 0)) missing.push(["trailerFeet", "Enter the trailer feet for tanker / trailer / tractor."]);
+      if (Number(currentDraft.sumInsured) > 10000000) missing.push(["sumInsured", "Sum insured above 10,000,000 must be referred to Head Office for review (HO REVIEW-10M)."]);
+      else if (Number(currentDraft.sumInsured) > 0 && !filled("compulsoryExcess")) missing.push(["compulsoryExcess", "The compulsory excess could not be found for these details. See the message under Cover & excess."]);
+    }
+    if (openSection === "Premium") missing.push(...coverErrors(currentDraft, Number(currentDraft.seating) || 0));
     // Skip validation for Attached Document - allow proceeding to payment without all documents
     if (missing.length && openSection !== "Attached Document") { setSaveError(true); setSaveMessage(missing.map(([, message]) => message).join(" ")); return; }
     if (openSection === "Attached Document") {
@@ -2224,7 +2399,7 @@ const saveCurrentSection = async () => {
                         {section.title === "KYC" ? <span className="self-start bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-100 sm:self-auto">{kycMissing.length ? `${kycMissing.length} mandatory field${kycMissing.length === 1 ? "" : "s"} pending` : "Complete"}</span> : section.title === "Policy Details" ? <span className={`self-start px-3 py-1.5 text-xs font-bold ring-1 sm:self-auto ${policyMissing ? "bg-red-50 text-red-700 ring-red-100" : "bg-emerald-50 text-emerald-700 ring-emerald-100"}`}>{policyMissing ? `${policyMissing} mandatory fields pending` : "Complete"}</span> : section.title === "Vechicle Details" ? <span className={`self-start px-3 py-1.5 text-xs font-bold ring-1 sm:self-auto ${vehicleMissing ? "bg-red-50 text-red-700 ring-red-100" : "bg-emerald-50 text-emerald-700 ring-emerald-100"}`}>{vehicleMissing ? `${vehicleMissing} mandatory fields pending` : "Complete"}</span> : section.pending ? <span className="self-start bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-100 sm:self-auto">{section.pending}</span> : <span className="self-start bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 sm:self-auto">Ready to complete</span>}
                       </div>
 <div className="overflow-x-auto p-3 sm:p-4">
-                        {section.title === "KYC" ? <ClientDetailsForm onKycStatus={setKycMissing} onClientSelected={(client) => setProposalDraft((current) => ({ ...current, clientCode: String(client.Code || ""), title: String(client.Title || ""), firstName: String(client.Name || ""), surname: String(client.Surname || ""), email: String(client.EMail || "") }))} onSaved={() => markSectionSaved("KYC")} onClientChange={setKycClient} /> : section.title === "Policy Details" ? <MotorProposalForm clientCode={String(proposalDraft.clientCode || "")} onStatusChange={setPolicyMissing} coverRequired={policyCover} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} /> : section.title === "Vechicle Details" ? <VehicleProposalForm policyCover={policyCover} onPolicyCoverChange={setPolicyCover} onStatusChange={setVehicleMissing} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} vehicleClass={proposalDraft.vehicleClass} vehicleType={proposalDraft.vehicleType} fuelType={proposalDraft.fuelType} issueDate={proposalDraft.issueDate} country={String(proposalDraft.country || "Mauritius")} /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm /> : section.title === "Premium" ? <PremiumForm values={proposalDraft as Record<string, string | boolean>} calculating={premiumCalculating} onCalculate={calculatePremium} error={premiumError} /> : <AttachedDocumentForm policyNo={policyNo} documents={pendingDocuments} onDocumentsChange={setPendingDocuments} stored={storedDocuments} uploadMessage={documentUploadMessage} />}
+                        {section.title === "KYC" ? <ClientDetailsForm onKycStatus={setKycMissing} onClientSelected={(client) => setProposalDraft((current) => ({ ...current, clientCode: String(client.Code || ""), title: String(client.Title || ""), firstName: String(client.Name || ""), surname: String(client.Surname || ""), email: String(client.EMail || "") }))} onSaved={() => markSectionSaved("KYC")} onClientChange={setKycClient} /> : section.title === "Policy Details" ? <MotorProposalForm clientCode={String(proposalDraft.clientCode || "")} onStatusChange={setPolicyMissing} coverRequired={policyCover} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} /> : section.title === "Vechicle Details" ? <VehicleProposalForm policyCover={policyCover} onPolicyCoverChange={setPolicyCover} onStatusChange={setVehicleMissing} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} vehicleClass={proposalDraft.vehicleClass} vehicleType={proposalDraft.vehicleType} fuelType={proposalDraft.fuelType} issueDate={proposalDraft.issueDate} country={String(proposalDraft.country || "Mauritius")} /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm /> : section.title === "Premium" ? <PremiumForm values={proposalDraft as Record<string, string | boolean>} calculating={premiumCalculating} onCalculate={calculatePremium} error={premiumError} cover={policyCover || String(proposalDraft.coverRequired || "")} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} /> : <AttachedDocumentForm policyNo={policyNo} documents={pendingDocuments} onDocumentsChange={setPendingDocuments} stored={storedDocuments} uploadMessage={documentUploadMessage} />}
                         {section.title !== "KYC" ? <div className="mt-4 flex justify-end border-t border-violet-100 pt-4"><button type="button" disabled={saving} onClick={() => void saveCurrentSection()} className="bg-[#35126d] px-6 py-3 text-sm font-bold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-400">{saving ? "Saving..." : section.title === "Attached Document" ? "Save policy and continue" : "Save and continue"}</button></div> : null}
                       </div>
                     </section>
@@ -2247,41 +2422,97 @@ const saveCurrentSection = async () => {
           </div>
         </section>
 
-        <aside className="self-start overflow-hidden border border-violet-100 bg-white shadow-[0_12px_35px_rgba(53,18,109,0.06)] lg:sticky lg:top-3">
-          <div className="border-b border-violet-100 bg-gradient-to-br from-violet-50 to-white px-4 py-4">
-            <div className="flex items-center gap-4">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center bg-white text-[#5b3aa4] shadow-sm ring-1 ring-violet-100">
-                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 19h14" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              </span>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-500">Resources</p>
-                <h2 className="mt-1 text-xl font-semibold text-slate-900">Policy downloads</h2>
-              </div>
-            </div>
-            <p className="mt-2 text-sm leading-5 text-slate-500">Forms, policy documents and helpful motor insurance guides.</p>
-            <div className={`mt-4 flex items-center gap-2 px-3 py-2 text-xs font-semibold ${policyCover ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100" : "bg-amber-50 text-amber-700 ring-1 ring-amber-100"}`}>
-              <span className={`h-2 w-2 rounded-full ${policyCover ? "bg-emerald-500" : "bg-amber-500"}`} />
-              {policyCover || "Select a cover in Vehicle Details"}
-            </div>
+        <aside className="self-start overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-[0_12px_35px_rgba(53,18,109,0.08)] lg:sticky lg:top-3">
+          {/* Promotional card: benefits of buying motor cover online */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-[#35126d] via-[#4a2894] to-[#6f4bb6] px-5 pb-6 pt-5 text-white">
+            <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-white/10 blur-xl" />
+            <div className="pointer-events-none absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-fuchsia-400/20 blur-2xl" />
+            <span className="relative inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-100 ring-1 ring-white/25">
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor"><path d="M12 2l2.9 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 7.1-1.01L12 2z" /></svg>
+              Trusted since 1935
+            </span>
+            <h2 className="relative mt-3 text-2xl font-bold leading-tight">Drive with confidence,<br />wherever the road takes you.</h2>
+            <p className="relative mt-2 text-sm leading-5 text-violet-100">Buy your motor policy online and get your documents in your inbox the moment you pay.</p>
+            <svg viewBox="0 0 120 48" className="relative mt-4 h-14 w-auto text-white/90" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M8 34h6m78 0h18v-8c0-3-2-5-5-6l-14-4-12-9c-2-1-4-2-6-2H38c-3 0-5 1-7 3l-9 9-9 2c-3 1-5 3-5 6v9h6" />
+              <path d="M32 34h44" /><circle cx="23" cy="35" r="8" /><circle cx="85" cy="35" r="8" /><path d="M42 16h30l-8-7H48z" />
+            </svg>
           </div>
-          <ul className="space-y-1 p-2">
-            {availableDownloads.map((item, index) => (
-              <li key={item.href}>
-                <a href={item.href} download className="group flex items-start gap-3 px-3 py-2.5 transition hover:bg-violet-50">
-                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center bg-slate-50 text-[10px] font-bold text-[#5b3aa4] ring-1 ring-slate-200 transition group-hover:bg-white group-hover:ring-violet-200">PDF</span>
-                  <span className="min-w-0 flex-1"><span className="block text-sm leading-5 text-slate-600 transition group-hover:text-[#412484]">{item.name}</span><span className="mt-0.5 block text-[11px] text-slate-400">{item.size}{policyCover && index < policyDownloads[policyCover].length ? " · Selected cover" : " · General"}</span></span>
-                  <svg viewBox="0 0 24 24" className="mt-1 h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-y-0.5 group-hover:text-violet-500" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 4v11m0 0 4-4m-4 4-4-4M5 20h14" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                </a>
+
+          <ul className="space-y-1 p-3">
+            {[
+              ["M13 10V3L4 14h7v7l9-11h-7z", "Instant policy documents", "Certificate, schedule, debit note and vignette e-mailed as PDFs."],
+              ["M9 17a2 2 0 11-4 0 2 2 0 014 0zm10 0a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10h10zm0 0h5l3-3v-3h-5l-3-4", "24/7 towing service", "Breakdown or accident? Call KOUKOU TOWING on 86100."],
+              ["M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z", "Extend your cover", "Windscreen, waiver of excess, loss of car keys, Auto Plus and more."],
+            ].map(([icon, title, text]) => (
+              <li key={title} className="flex items-start gap-3 rounded-xl px-3 py-2.5 transition hover:bg-violet-50/70">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-100 to-violet-200 text-[#412484]">
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={icon} /></svg>
+                </span>
+                <span className="min-w-0"><span className="block text-sm font-semibold text-slate-800">{title}</span><span className="mt-0.5 block text-xs leading-5 text-slate-500">{text}</span></span>
               </li>
             ))}
           </ul>
-          <div className="border-t border-slate-100 bg-slate-50/70 px-6 py-4">
-            <p className="text-xs leading-5 text-slate-400">{policyCover ? `Showing documents for ${policyCover}, plus general motor forms.` : "Choose your cover to reveal its policy wording and claims guidance."}</p>
+
+          <div className="mx-3 mb-3 flex items-center gap-3 rounded-xl border border-violet-100 bg-gradient-to-r from-violet-50 to-white px-4 py-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#35126d] text-white">
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Need help with your policy?</span>
+              <a href="tel:+2302081442" className="block text-sm font-bold text-[#35126d] hover:underline">(+230) 208 1442</a>
+            </span>
           </div>
         </aside>
       </div>
 {paymentMessage ? <p role={paymentError ? "alert" : "status"} className={`fixed bottom-4 right-4 z-50 border px-4 py-3 text-sm font-semibold ${paymentError ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{paymentMessage}</p> : null}
-      {console.log("[Render] emailPreviewOpen:", emailPreviewOpen, "emailPreviewData:", emailPreviewData) || (emailPreviewOpen && emailPreviewData ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"><div className="w-full max-w-2xl bg-white p-6 shadow-xl"><h2 className="text-xl font-semibold text-[#35126d] mb-4">Policy Email Preview</h2><div className="border border-violet-200 rounded-lg p-4 mb-4 bg-violet-50"><p className="text-sm font-semibold text-[#35126d]">Policy Confirmation Email</p><p className="text-xs text-slate-600 mt-1">This email will be sent to the client upon payment confirmation, with the Certificate of Insurance, Debit Note (Invoice), Policy Schedule and Insurance Vignette attached as PDF files.</p></div><div className="space-y-3 text-sm"><div><span className="font-semibold text-slate-700">To:</span> <span className="text-slate-600">{emailPreviewData.fullName}</span></div><div><span className="font-semibold text-slate-700">Email:</span> <span className="text-slate-600">{emailPreviewData.email || "Not provided"}</span></div><div><span className="font-semibold text-slate-700">Policy No:</span> <span className="font-mono text-[#35126d]">{emailPreviewData.policyNo}</span></div><div><span className="font-semibold text-slate-700">Client Code:</span> <span className="font-mono text-[#35126d]">{emailPreviewData.clientCode}</span></div></div><div className="mt-6 flex justify-end gap-3"><button type="button" onClick={() => setEmailPreviewOpen(false)} className="border px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button><button type="button" onClick={submitPayment} disabled={saving} className="bg-[#35126d] px-5 py-2 text-sm font-semibold text-white">{saving ? "Submitting..." : "Send Email & Submit Payment"}</button></div></div></div> : null)}
+      {emailPreviewOpen && emailPreviewData ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+          <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="bg-gradient-to-r from-[#35126d] to-[#5b3aa4] px-6 py-4 text-white">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-violet-200">Payment confirmation</p>
+              <h2 className="mt-1 text-lg font-bold">Send policy documents by e-mail</h2>
+            </div>
+            <div className="space-y-4 p-6 text-sm">
+              <dl className="grid grid-cols-[110px_1fr] gap-x-3 gap-y-2 rounded-xl border border-violet-100 bg-violet-50/60 p-4">
+                <dt className="font-semibold text-slate-500">To</dt><dd className="font-semibold text-slate-800">{emailPreviewData.fullName}</dd>
+                <dt className="font-semibold text-slate-500">E-mail</dt><dd className="break-all text-slate-800">{emailPreviewData.email}</dd>
+                <dt className="font-semibold text-slate-500">Policy No</dt><dd className="font-mono text-[#35126d]">{emailPreviewData.policyNo}</dd>
+                <dt className="font-semibold text-slate-500">Client Code</dt><dd className="font-mono text-[#35126d]">{emailPreviewData.clientCode}</dd>
+                <dt className="font-semibold text-slate-500">Amount</dt><dd className="font-mono font-semibold text-slate-800">{payableAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</dd>
+              </dl>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Attached as PDF</p>
+                <ul className="mt-2 grid grid-cols-2 gap-2">
+                  {["Certificate of Insurance", "Debit Note (Invoice)", "Policy Schedule", "Insurance Vignette"].map((name) => (
+                    <li key={name} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700">
+                      <svg className="h-4 w-4 shrink-0 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                      {name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {saving ? <p role="status" className="flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 font-medium text-[#35126d]"><span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-violet-300 border-t-[#35126d]" /> Recording the payment, generating the documents and sending the e-mail…</p> : null}
+              {paymentResult ? (
+                <div role={paymentResult.ok ? "status" : "alert"} className={`rounded-xl border px-4 py-3 ${paymentResult.ok ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-900"}`}>
+                  <p className="font-semibold">{paymentResult.ok ? "Done. The policy documents were sent." : paymentResult.recorded ? "The payment was recorded, but please check the points below." : "The payment was not submitted."}</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-5 text-xs">{paymentResult.lines.map((line) => <li key={line}>{line}</li>)}</ul>
+                </div>
+              ) : null}
+            </div>
+            <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
+              {paymentResult?.recorded ? (
+                <button type="button" onClick={() => setEmailPreviewOpen(false)} className="rounded-xl bg-[#35126d] px-5 py-2 text-sm font-semibold text-white hover:bg-[#2b0f5a]">Close</button>
+              ) : (
+                <>
+                  <button type="button" onClick={() => setEmailPreviewOpen(false)} disabled={saving} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Cancel</button>
+                  <button type="button" onClick={submitPayment} disabled={saving} className="rounded-xl bg-[#35126d] px-5 py-2 text-sm font-semibold text-white hover:bg-[#2b0f5a] disabled:bg-slate-300">{saving ? "Sending…" : paymentResult ? "Try again" : "Send Email & Submit Payment"}</button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
       {paymentOpen ? <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/50 p-4"><form onSubmit={(e) => { e.preventDefault(); showEmailPreview(e); }} className="w-full max-w-lg space-y-4 bg-white p-6 shadow-xl"><h2 className="text-xl font-semibold text-[#35126d]">Complete payment</h2><select value={payment.method} onChange={e => setPayment({...payment, method:e.target.value})} className="w-full border p-3"><option value="card">Credit or debit card</option><option value="bank">Internet banking</option></select><input required placeholder="Name on card" value={payment.name} onChange={e=>setPayment({...payment,name:e.target.value})} className="w-full border p-3" /><input required placeholder="Card number" value={payment.cardNumber} onChange={e=>setPayment({...payment,cardNumber:e.target.value})} className="w-full border p-3" /><div className="grid grid-cols-2 gap-3"><input required placeholder="MM/YY" value={payment.expiry} onChange={e=>setPayment({...payment,expiry:e.target.value})} className="border p-3" /><input required placeholder="CVV" value={payment.cvv} onChange={e=>setPayment({...payment,cvv:e.target.value})} className="border p-3" /></div><div className="flex justify-end gap-3"><button type="button" onClick={()=>setPaymentOpen(false)} className="border px-4 py-2">Cancel</button><button type="button" onClick={(e) => { e.preventDefault(); showEmailPreview(e); }} disabled={saving} className="bg-[#35126d] px-5 py-2 font-semibold text-white">{saving ? "Submitting..." : "Continue to Email Preview"}</button></div></form></div> : null}
     </main>
   );

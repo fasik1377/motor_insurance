@@ -136,7 +136,7 @@ export default function Home() {
               LOGIN
             </Link>
             <button type="button" onClick={() => setMobileMenuOpen((open) => !open)} className="inline-flex h-11 w-11 items-center justify-center border border-white/15 bg-white/10 text-white transition hover:bg-white/20 lg:hidden">
-              <span className="text-xl">{mobileMenuOpen ? "?" : "?"}</span>
+              <span className="flex h-6 w-6 items-center justify-center">{mobileMenuOpen ? <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg> : <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>}</span>
             </button>
           </div>
         </div>
@@ -206,49 +206,33 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="grid gap-3 grid-cols-2 md:grid-cols-5 items-center">
-                        <div className="group flex flex-col items-center justify-center gap-3 border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
-                          <div className="flex h-12 w-12 items-center justify-center bg-white/10 text-white">
-                            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                              <path d="M12 2 6 5v5a6 6 0 0 0 12 0V5l-6-3Z" />
-                              <path d="M9 12h6m-3-3v6" />
-                            </svg>
+                        <div className="group flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-200 via-violet-300 to-fuchsia-300 text-[#27105f] shadow-lg shadow-violet-950/40 ring-1 ring-white/50 transition duration-500 group-hover:-rotate-6 group-hover:scale-110">
+                            <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27" /></svg>
                           </div>
                           <div className="font-semibold text-sm">Health</div>
                         </div>
-                        <div className="group flex flex-col items-center justify-center gap-3 border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
-                          <div className="flex h-12 w-12 items-center justify-center bg-white/10 text-white">
-                            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                              <circle cx="12" cy="12" r="5" />
-                              <path d="M12 7v-2m0 12v2m5-5h2m-12 0H5" />
-                            </svg>
+                        <div className="group flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-200 via-violet-300 to-fuchsia-300 text-[#27105f] shadow-lg shadow-violet-950/40 ring-1 ring-white/50 transition duration-500 group-hover:-rotate-6 group-hover:scale-110">
+                            <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" /><circle cx="7" cy="17" r="2" /><path d="M9 17h6" /><circle cx="17" cy="17" r="2" /></svg>
                           </div>
                           <div className="font-semibold text-sm">Motor</div>
                         </div>
-                        <div className="group flex flex-col items-center justify-center gap-3 border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
-                          <div className="flex h-12 w-12 items-center justify-center bg-white/10 text-white">
-                            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                              <path d="m2 12 8 3 3-3-3-3-8 3Z" />
-                              <path d="M10 15V8l7 4-7 3Z" />
-                            </svg>
+                        <div className="group flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-200 via-violet-300 to-fuchsia-300 text-[#27105f] shadow-lg shadow-violet-950/40 ring-1 ring-white/50 transition duration-500 group-hover:-rotate-6 group-hover:scale-110">
+                            <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" /></svg>
                           </div>
                           <div className="font-semibold text-sm">Travel</div>
                         </div>
-                        <div className="group flex flex-col items-center justify-center gap-3 border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
-                          <div className="flex h-12 w-12 items-center justify-center bg-white/10 text-white">
-                            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                              <path d="M3 12 12 4l9 8v8a1 1 0 0 1-1 1h-5V14H9v7H4a1 1 0 0 1-1-1v-7Z" />
-                            </svg>
+                        <div className="group flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-200 via-violet-300 to-fuchsia-300 text-[#27105f] shadow-lg shadow-violet-950/40 ring-1 ring-white/50 transition duration-500 group-hover:-rotate-6 group-hover:scale-110">
+                            <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5" /></svg>
                           </div>
                           <div className="font-semibold text-sm">Home</div>
                         </div>
-                        <div className="group flex flex-col items-center justify-center gap-3 border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
-                          <div className="flex h-12 w-12 items-center justify-center bg-white/10 text-white">
-                            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                              <rect x="4" y="4" width="6" height="6" rx="1.2" />
-                              <rect x="14" y="4" width="6" height="6" rx="1.2" />
-                              <rect x="4" y="14" width="6" height="6" rx="1.2" />
-                              <rect x="14" y="14" width="6" height="6" rx="1.2" />
-                            </svg>
+                        <div className="group flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-center text-white shadow-xl shadow-black/20 transition duration-500 hover:-translate-y-1 hover:scale-105">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-200 via-violet-300 to-fuchsia-300 text-[#27105f] shadow-lg shadow-violet-950/40 ring-1 ring-white/50 transition duration-500 group-hover:-rotate-6 group-hover:scale-110">
+                            <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2" /><rect x="13.5" y="3.5" width="7" height="7" rx="2" /><rect x="3.5" y="13.5" width="7" height="7" rx="2" /><path d="M17 13.5v7M13.5 17h7" /></svg>
                           </div>
                           <div className="font-semibold text-sm">All Products</div>
                         </div>
@@ -316,8 +300,8 @@ export default function Home() {
             <div className="flex flex-col justify-between gap-4">
               <div className="grid gap-4">
                 <div className="flex gap-4 border border-slate-200 bg-slate-50 p-6">
-                  <div className="mt-1 flex h-12 w-12 items-center justify-center text-[#35126d]">
-                    <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true"><path d="M12 2l7 4v5c0 5.25-3.75 9.88-7 11-3.25-1.12-7-5.75-7-11V6l7-4z" /></svg>
+                  <div className="mt-1 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#35126d] to-[#7c5cd6] text-white shadow-lg shadow-violet-900/25 ring-4 ring-violet-100">
+                    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path d="m9 12 2 2 4-4" /></svg>
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-950">Safety</h3>
@@ -326,8 +310,8 @@ export default function Home() {
                 </div>
 
                 <div className="flex gap-4 border border-slate-200 bg-slate-50 p-6">
-                  <div className="mt-1 flex h-12 w-12 items-center justify-center text-[#35126d]">
-                    <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true"><path d="M12 17.27L18.18 21 16.54 13.97 22 9.24l-7.19-.62L12 2 9.19 8.62 2 9.24l5.46 4.73L5.82 21z" /></svg>
+                  <div className="mt-1 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#35126d] to-[#7c5cd6] text-white shadow-lg shadow-violet-900/25 ring-4 ring-violet-100">
+                    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="6" /><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11" /></svg>
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-950">Reputation</h3>
@@ -336,8 +320,8 @@ export default function Home() {
                 </div>
 
                 <div className="flex gap-4 border border-slate-200 bg-slate-50 p-6">
-                  <div className="mt-1 flex h-12 w-12 items-center justify-center text-[#35126d]">
-                    <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true"><path d="M4 6h16v2H4V6zm0 4h16v2H4v-2zm0 4h16v2H4v-2z" /></svg>
+                  <div className="mt-1 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#35126d] to-[#7c5cd6] text-white shadow-lg shadow-violet-900/25 ring-4 ring-violet-100">
+                    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m12 2 10 5-10 5L2 7l10-5Z" /><path d="m2 17 10 5 10-5" /><path d="m2 12 10 5 10-5" /></svg>
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-950">Range of Products</h3>
@@ -346,8 +330,8 @@ export default function Home() {
                 </div>
 
                 <div className="flex gap-4 border border-slate-200 bg-slate-50 p-6">
-                  <div className="mt-1 flex h-12 w-12 items-center justify-center text-[#35126d]">
-                    <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true"><path d="M4 4h16v14H4V4zm2 2v10h12V6H6zm2 2h8v2H8V8z" /></svg>
+                  <div className="mt-1 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#35126d] to-[#7c5cd6] text-white shadow-lg shadow-violet-900/25 ring-4 ring-violet-100">
+                    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2" /><path d="M9 22v-4h6v4" /><path d="M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01" /></svg>
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-950">Network of Offices</h3>
@@ -356,8 +340,8 @@ export default function Home() {
                 </div>
 
                 <div className="flex gap-4 border border-slate-200 bg-slate-50 p-6">
-                  <div className="mt-1 flex h-12 w-12 items-center justify-center text-[#35126d]">
-                    <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 3.75 3 6.85 7 11 4-4.15 7-7.25 7-11 0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z" /></svg>
+                  <div className="mt-1 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#35126d] to-[#7c5cd6] text-white shadow-lg shadow-violet-900/25 ring-4 ring-violet-100">
+                    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m11 17 2 2a1 1 0 1 0 3-3" /><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4" /><path d="m21 3 1 11h-2" /><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3" /><path d="M3 4h8" /></svg>
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-950">Trustworthiness</h3>
@@ -367,7 +351,7 @@ export default function Home() {
               </div>
               <Link href="#" className="group mt-2 inline-flex items-center justify-between bg-[#35126d] px-7 py-5 text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-violet-800">
                 Explore our coverage
-                <span className="text-2xl transition-transform group-hover:translate-x-2">?</span>
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 transition-transform group-hover:translate-x-2"><svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>
               </Link>
             </div>
           </div>
@@ -569,7 +553,7 @@ export default function Home() {
               <div className="border border-white/10 bg-[#35126d] p-6 shadow-2xl shadow-black/30">
                 <div className="space-y-5">
                   <div className="flex items-start gap-3">
-                    <span className="mt-1 inline-flex h-10 w-10 items-center justify-center border border-white/15 bg-white/5 text-white">
+                    <span className="mt-1 inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-300 to-fuchsia-300 text-[#27105f] shadow-lg shadow-black/30 ring-1 ring-white/40">
                       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z" /></svg>
                     </span>
                     <div>
@@ -579,7 +563,7 @@ export default function Home() {
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <span className="mt-1 inline-flex h-10 w-10 items-center justify-center border border-white/15 bg-white/5 text-white">
+                    <span className="mt-1 inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-300 to-fuchsia-300 text-[#27105f] shadow-lg shadow-black/30 ring-1 ring-white/40">
                       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.21 11.72 11.72 0 003.68.59 1 1 0 011 1v3.5a1 1 0 01-1 1A17 17 0 013 6a1 1 0 011-1h3.5a1 1 0 011 1 11.72 11.72 0 00.59 3.68 1 1 0 01-.21 1.11l-2.2 2.2z" /></svg>
                     </span>
                     <div>
@@ -589,7 +573,7 @@ export default function Home() {
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <span className="mt-1 inline-flex h-10 w-10 items-center justify-center border border-white/15 bg-white/5 text-white">
+                    <span className="mt-1 inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-300 to-fuchsia-300 text-[#27105f] shadow-lg shadow-black/30 ring-1 ring-white/40">
                       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z" /></svg>
                     </span>
                     <div>

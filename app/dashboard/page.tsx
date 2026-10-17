@@ -247,21 +247,21 @@ export default function DashboardPage() {
       case "about":
         return (
           <div className="p-4 sm:p-5 space-y-6">
-            <div className="border border-slate-200 bg-white p-6">
-              <h2 className="text-2xl font-bold text-slate-950 mb-4">About Us</h2>
+            <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-2xl font-bold text-[#35126d]">About Us</h2>
               <div className="space-y-4 text-slate-700">
                 <p>New India Assurance Co. Ltd. is a leading general insurance company with a strong presence in Mauritius. We have been providing reliable insurance solutions for decades, helping individuals and businesses protect what matters most.</p>
                 <p>Our mission is to deliver comprehensive insurance coverage with exceptional customer service, innovative products, and competitive pricing. We believe in building long-term relationships based on trust, transparency, and mutual benefit.</p>
                 <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="border border-violet-100 bg-violet-50 p-4 rounded-lg">
+                  <div className="rounded-xl border border-violet-100 bg-gradient-to-br from-violet-50 to-white p-5 shadow-sm">
                     <h3 className="font-semibold text-[#35126d] mb-2">Our Vision</h3>
                     <p className="text-sm">To be the preferred insurance partner in Mauritius, recognized for excellence in service and innovation.</p>
                   </div>
-                  <div className="border border-violet-100 bg-violet-50 p-4 rounded-lg">
+                  <div className="rounded-xl border border-violet-100 bg-gradient-to-br from-violet-50 to-white p-5 shadow-sm">
                     <h3 className="font-semibold text-[#35126d] mb-2">Our Mission</h3>
-                    <p className="text-sm">To provide comprehensive insurance solutions that protect our customers' assets and give them peace of mind.</p>
+                    <p className="text-sm">To provide comprehensive insurance solutions that protect our customers&apos; assets and give them peace of mind.</p>
                   </div>
-                  <div className="border border-violet-100 bg-violet-50 p-4 rounded-lg">
+                  <div className="rounded-xl border border-violet-100 bg-gradient-to-br from-violet-50 to-white p-5 shadow-sm">
                     <h3 className="font-semibold text-[#35126d] mb-2">Our Values</h3>
                     <p className="text-sm">Integrity, Customer Focus, Innovation, Excellence, and Teamwork guide everything we do.</p>
                   </div>
@@ -273,8 +273,8 @@ export default function DashboardPage() {
       case "products":
         return (
           <div className="p-4 sm:p-5 space-y-6">
-            <div className="border border-slate-200 bg-white p-6">
-              <h2 className="text-2xl font-bold text-slate-950 mb-4">Our Products</h2>
+            <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-2xl font-bold text-[#35126d]">Our Products</h2>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {[
                   { name: "Comprehensive Motor", desc: "Full coverage for your vehicle including own damage, third party, theft, and fire.", icon: "car" },
@@ -284,8 +284,8 @@ export default function DashboardPage() {
                   { name: "Two Wheeler", desc: "Affordable coverage for motorcycles and scooters.", icon: "motorcycle" },
                   { name: "Personal Accident", desc: "Financial protection against accidental death and disability.", icon: "shield" },
                 ].map((product) => (
-                  <div key={product.name} className="border border-violet-100 bg-white p-5 rounded-lg hover:border-violet-300 hover:shadow-md transition">
-                    <div className="w-10 h-10 mb-3 bg-violet-50 rounded-lg flex items-center justify-center">
+                  <div key={product.name} className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg">
+                    <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-violet-100 to-violet-50 ring-1 ring-violet-100">
                       {product.icon === "car" && (
                         <svg className="w-6 h-6 text-[#35126d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M5 16l1.5-6h11l1.5 6M4 16h16v4h-3v-2H7v2H4zM7 13h.01M17 13h.01" />
@@ -328,26 +328,26 @@ export default function DashboardPage() {
       case "claims":
         return (
           <div className="p-4 sm:p-5 space-y-6">
-            <div className="border border-slate-200 bg-white p-6">
-              <h2 className="text-2xl font-bold text-slate-950 mb-4">Register a Claim</h2>
+            <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-2xl font-bold text-[#35126d]">Register a Claim</h2>
               <div className="space-y-4">
                 <p className="text-slate-700">To register a claim, please provide the following information:</p>
                 <div className="space-y-4 max-w-2xl">
                   <div className="grid gap-2 sm:grid-cols-[max-content_1fr]">
                     <label className="text-sm font-medium text-slate-700">Policy Number</label>
-                    <input type="text" placeholder="Enter your policy number" className="border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" />
+                    <input type="text" placeholder="Enter your policy number" className="h-10 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#35126d] focus:ring-4 focus:ring-violet-100" />
                   </div>
                   <div className="grid gap-2 sm:grid-cols-[max-content_1fr]">
                     <label className="text-sm font-medium text-slate-700">Vehicle Registration</label>
-                    <input type="text" placeholder="Enter vehicle registration number" className="border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" />
+                    <input type="text" placeholder="Enter vehicle registration number" className="h-10 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#35126d] focus:ring-4 focus:ring-violet-100" />
                   </div>
                   <div className="grid gap-2 sm:grid-cols-[max-content_1fr]">
                     <label className="text-sm font-medium text-slate-700">Date of Incident</label>
-                    <input type="date" className="border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" />
+                    <input type="date" className="h-10 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#35126d] focus:ring-4 focus:ring-violet-100" />
                   </div>
                   <div className="grid gap-2 sm:grid-cols-[max-content_1fr]">
                     <label className="text-sm font-medium text-slate-700">Type of Claim</label>
-                    <select className="border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100">
+                    <select className="h-10 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#35126d] focus:ring-4 focus:ring-violet-100">
                       <option value="">Select claim type</option>
                       <option value="own-damage">Own Damage</option>
                       <option value="third-party">Third Party</option>
@@ -357,9 +357,9 @@ export default function DashboardPage() {
                   </div>
                   <div className="grid gap-2 sm:grid-cols-[max-content_1fr]">
                     <label className="text-sm font-medium text-slate-700">Description</label>
-                    <textarea rows={4} placeholder="Describe the incident..." className="border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" />
+                    <textarea rows={4} placeholder="Describe the incident..." className="h-10 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#35126d] focus:ring-4 focus:ring-violet-100" />
                   </div>
-                  <button className="bg-[#35126d] px-6 py-3 text-sm font-semibold text-white transition hover:bg-violet-800">Submit Claim</button>
+                  <button className="rounded-xl bg-gradient-to-r from-[#35126d] to-[#5b3aa4] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-violet-900/20 transition hover:from-[#2b0f5a] hover:to-[#4c2f8f]">Submit Claim</button>
                 </div>
               </div>
             </div>
@@ -368,8 +368,8 @@ export default function DashboardPage() {
       case "contact":
         return (
           <div className="p-4 sm:p-5 space-y-6">
-            <div className="border border-slate-200 bg-white p-6">
-              <h2 className="text-2xl font-bold text-slate-950 mb-4">Contact Us</h2>
+            <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-2xl font-bold text-[#35126d]">Contact Us</h2>
               <div className="grid gap-6 sm:grid-cols-2">
                 <div>
                   <h3 className="font-semibold text-slate-950 mb-3">Get in Touch</h3>
@@ -386,15 +386,15 @@ export default function DashboardPage() {
                   <div className="space-y-4 max-w-md">
                     <div className="grid gap-2 sm:grid-cols-[max-content_1fr]">
                       <label className="text-sm font-medium text-slate-700">Name</label>
-                      <input type="text" placeholder="Your name" className="border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" />
+                      <input type="text" placeholder="Your name" className="h-10 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#35126d] focus:ring-4 focus:ring-violet-100" />
                     </div>
                     <div className="grid gap-2 sm:grid-cols-[max-content_1fr]">
                       <label className="text-sm font-medium text-slate-700">Email</label>
-                      <input type="email" placeholder="your@email.com" className="border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" />
+                      <input type="email" placeholder="your@email.com" className="h-10 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#35126d] focus:ring-4 focus:ring-violet-100" />
                     </div>
                     <div className="grid gap-2 sm:grid-cols-[max-content_1fr]">
                       <label className="text-sm font-medium text-slate-700">Subject</label>
-                      <select className="border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100">
+                      <select className="h-10 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#35126d] focus:ring-4 focus:ring-violet-100">
                         <option value="">Select subject</option>
                         <option value="general">General Inquiry</option>
                         <option value="claims">Claims</option>
@@ -404,9 +404,9 @@ export default function DashboardPage() {
                     </div>
                     <div className="grid gap-2 sm:grid-cols-[max-content_1fr]">
                       <label className="text-sm font-medium text-slate-700">Message</label>
-                      <textarea rows={4} placeholder="Your message..." className="border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" />
+                      <textarea rows={4} placeholder="Your message..." className="h-10 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#35126d] focus:ring-4 focus:ring-violet-100" />
                     </div>
-                    <button className="bg-[#35126d] px-6 py-3 text-sm font-semibold text-white transition hover:bg-violet-800">Send Message</button>
+                    <button className="rounded-xl bg-gradient-to-r from-[#35126d] to-[#5b3aa4] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-violet-900/20 transition hover:from-[#2b0f5a] hover:to-[#4c2f8f]">Send Message</button>
                   </div>
                 </div>
               </div>
@@ -416,27 +416,27 @@ export default function DashboardPage() {
       case "support":
         return (
           <div className="p-4 sm:p-5 space-y-6">
-            <div className="border border-slate-200 bg-white p-6">
-              <h2 className="text-2xl font-bold text-slate-950 mb-4">Support Ticket</h2>
+            <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-2xl font-bold text-[#35126d]">Support Ticket</h2>
               <div className="space-y-4 max-w-2xl">
                 <p className="text-slate-700">Create a support ticket for any issues or questions you may have.</p>
                 <div className="space-y-4">
                   <div className="grid gap-2 sm:grid-cols-[max-content_1fr]">
                     <label className="text-sm font-medium text-slate-700">Subject</label>
-                    <input type="text" placeholder="Brief description of the issue" className="border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" />
+                    <input type="text" placeholder="Brief description of the issue" className="h-10 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#35126d] focus:ring-4 focus:ring-violet-100" />
                   </div>
                   <div className="grid gap-2 sm:grid-cols-[max-content_1fr]">
                     <label className="text-sm font-medium text-slate-700">Priority</label>
-                    <select className="border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100">
+                    <select defaultValue="medium" className="h-10 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#35126d] focus:ring-4 focus:ring-violet-100">
                       <option value="low">Low</option>
-                      <option value="medium" defaultValue>Medium</option>
+                      <option value="medium">Medium</option>
                       <option value="high">High</option>
                       <option value="urgent">Urgent</option>
                     </select>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-[max-content_1fr]">
                     <label className="text-sm font-medium text-slate-700">Category</label>
-                    <select className="border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100">
+                    <select className="h-10 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#35126d] focus:ring-4 focus:ring-violet-100">
                       <option value="">Select category</option>
                       <option value="technical">Technical Issue</option>
                       <option value="billing">Billing</option>
@@ -447,9 +447,9 @@ export default function DashboardPage() {
                   </div>
                   <div className="grid gap-2 sm:grid-cols-[max-content_1fr]">
                     <label className="text-sm font-medium text-slate-700">Description</label>
-                    <textarea rows={5} placeholder="Describe the issue in detail..." className="border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" />
+                    <textarea rows={5} placeholder="Describe the issue in detail..." className="h-10 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#35126d] focus:ring-4 focus:ring-violet-100" />
                   </div>
-                  <button className="bg-[#35126d] px-6 py-3 text-sm font-semibold text-white transition hover:bg-violet-800">Create Ticket</button>
+                  <button className="rounded-xl bg-gradient-to-r from-[#35126d] to-[#5b3aa4] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-violet-900/20 transition hover:from-[#2b0f5a] hover:to-[#4c2f8f]">Create Ticket</button>
                 </div>
               </div>
             </div>
@@ -458,8 +458,8 @@ export default function DashboardPage() {
       case "notifications":
         return (
           <div className="p-4 sm:p-5 space-y-6">
-            <div className="border border-slate-200 bg-white p-6">
-              <h2 className="text-2xl font-bold text-slate-950 mb-4">Notifications</h2>
+            <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-2xl font-bold text-[#35126d]">Notifications</h2>
               <div className="space-y-4">
                 <div className="border border-amber-100 bg-amber-50/70 p-4 rounded-lg">
                   <div className="flex items-start gap-3">
@@ -484,7 +484,7 @@ export default function DashboardPage() {
                     </span>
                     <div>
                       <p className="font-semibold text-slate-950">Claim Update</p>
-                      <p className="mt-1 text-sm text-slate-600">Your claim #1087 is currently under review. We'll notify you once a decision is made.</p>
+                      <p className="mt-1 text-sm text-slate-600">Your claim #1087 is currently under review. We&apos;ll notify you once a decision is made.</p>
                       <p className="mt-2 text-xs text-slate-400">1 week ago</p>
                     </div>
                   </div>
@@ -524,8 +524,8 @@ export default function DashboardPage() {
       case "expert":
         return (
           <div className="p-4 sm:p-5 space-y-6">
-            <div className="border border-slate-200 bg-white p-6">
-              <h2 className="text-2xl font-bold text-slate-950 mb-4">Talk to an Expert</h2>
+            <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-2xl font-bold text-[#35126d]">Talk to an Expert</h2>
               <div className="space-y-4">
                 <p className="text-slate-700">Our insurance experts are available to help you choose the right coverage, answer questions about your policy, or assist with claims.</p>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -548,7 +548,7 @@ export default function DashboardPage() {
                     </div>
                     <h3 className="font-semibold text-slate-950 mb-2">Live Chat</h3>
                     <p className="text-sm text-slate-600 mb-2">Chat with our support team online</p>
-                    <button className="bg-[#35126d] px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-800">Start Chat</button>
+                    <button className="rounded-xl bg-gradient-to-r from-[#35126d] to-[#5b3aa4] px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:from-[#2b0f5a] hover:to-[#4c2f8f]">Start Chat</button>
                   </div>
                 </div>
                 <div className="border-t border-slate-200 pt-4">
@@ -556,11 +556,11 @@ export default function DashboardPage() {
                   <div className="space-y-3 max-w-md">
                     <div className="grid gap-2 sm:grid-cols-[max-content_1fr]">
                       <label className="text-sm font-medium text-slate-700">Preferred Date</label>
-                      <input type="date" className="border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" />
+                      <input type="date" className="h-10 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#35126d] focus:ring-4 focus:ring-violet-100" />
                     </div>
                     <div className="grid gap-2 sm:grid-cols-[max-content_1fr]">
                       <label className="text-sm font-medium text-slate-700">Preferred Time</label>
-                      <select className="border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100">
+                      <select className="h-10 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#35126d] focus:ring-4 focus:ring-violet-100">
                         <option value="">Select time</option>
                         <option value="morning">Morning (9am-12pm)</option>
                         <option value="afternoon">Afternoon (12pm-3pm)</option>
@@ -569,11 +569,11 @@ export default function DashboardPage() {
                     </div>
                     <div className="grid gap-2 sm:grid-cols-[max-content_1fr]">
                       <label className="text-sm font-medium text-slate-700">Phone Number</label>
-                      <input type="tel" placeholder="Your contact number" className="border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" />
+                      <input type="tel" placeholder="Your contact number" className="h-10 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#35126d] focus:ring-4 focus:ring-violet-100" />
                     </div>
                     <div className="grid gap-2 sm:grid-cols-[max-content_1fr]">
                       <label className="text-sm font-medium text-slate-700">Topic</label>
-                      <select className="border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100">
+                      <select className="h-10 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#35126d] focus:ring-4 focus:ring-violet-100">
                         <option value="">Select topic</option>
                         <option value="new-policy">New Policy Quote</option>
                         <option value="renewal">Policy Renewal</option>
@@ -581,7 +581,7 @@ export default function DashboardPage() {
                         <option value="general">General Inquiry</option>
                       </select>
                     </div>
-                    <button className="bg-[#35126d] px-6 py-3 text-sm font-semibold text-white transition hover:bg-violet-800">Schedule Callback</button>
+                    <button className="rounded-xl bg-gradient-to-r from-[#35126d] to-[#5b3aa4] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-violet-900/20 transition hover:from-[#2b0f5a] hover:to-[#4c2f8f]">Schedule Callback</button>
                   </div>
                 </div>
               </div>
@@ -600,114 +600,95 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eef0ff] font-sans text-slate-900">
-      <main className="flex min-h-screen w-full items-start gap-0 p-2 sm:p-3">
-        <aside className="hidden w-[270px] shrink-0 md:block">
-          <div className="border border-slate-200 bg-white p-3 shadow-sm">
-            <div className="mb-4 bg-slate-50 p-3">
-              <div className="flex h-16 w-full items-center justify-center bg-white py-3">
-                <img src="/images/logo.png" alt="New India Assurance logo" className="h-12 object-contain" />
-              </div>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#f4efff_0,_#f5f7fb_42%,_#eef1f7_100%)] font-sans text-slate-900">
+      <main className="flex min-h-screen w-full items-start gap-3 p-2 sm:p-3">
+        <aside className="sticky top-3 hidden w-[280px] shrink-0 md:block">
+          <div className="overflow-hidden rounded-2xl border border-white bg-white shadow-[0_18px_50px_rgba(53,18,109,0.10)]">
+            <div className="flex h-20 items-center justify-center border-b border-violet-100 bg-gradient-to-br from-white to-violet-50 px-4">
+              <img src="/images/logo.png" alt="New India Assurance logo" className="h-12 object-contain" />
             </div>
 
-            <div className="space-y-3">
-              <div className="border border-slate-200 bg-slate-50 p-3">
-                <label htmlFor="sector" className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">Sector</label>
-                <select id="sector" value={sector} onChange={(event) => setSector(event.target.value)} className="mt-3 w-full border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-violet-600 focus:ring-2 focus:ring-violet-100">
+            <div className="space-y-3 p-4">
+              <div className="rounded-xl bg-gradient-to-br from-[#35126d] to-[#5b3aa4] p-4 text-white shadow-md">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-violet-200">Get covered</p>
+                <p className="mt-1 text-sm font-semibold leading-5">Buy or renew your motor insurance online in minutes.</p>
+              </div>
+
+              <div className="rounded-xl border border-violet-100 bg-slate-50/70 p-3">
+                <label htmlFor="sector" className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Sector</label>
+                <select id="sector" value={sector} onChange={(event) => setSector(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-violet-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-violet-600 focus:ring-2 focus:ring-violet-100">
                   <option value="" disabled>Select sector</option>
                   <option value="motor">Motor Insurance</option>
                 </select>
               </div>
 
-            {/*<div className="border border-slate-200 bg-slate-50 p-3">
-                <label htmlFor="product-policy" className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">Product or Policy</label>
-                <select id="product-policy" value={product} onChange={(event) => setProduct(event.target.value)} className="mt-3 w-full border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-violet-600 focus:ring-2 focus:ring-violet-100">
-                  <option value="" disabled>Select product or policy</option>
-                  <option value="comprehensive">Comprehensive Cover</option>
-                  <option value="third-party">Third Party Liability</option>
-                  <option value="commercial">Commercial Vehicle</option>
-                  <option value="two-wheeler">Two Wheeler Cover</option>
-                </select>
-              </div>*/}
-
-              <div className="border border-slate-200 bg-white p-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">Online services</p>
-                <div className="mt-4 space-y-4">
-                  <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-800">
-                    <input
-                      type="checkbox"
-                      checked={onlineService === "buy"}
-                      onChange={() => setOnlineService((current) => current === "buy" ? "" : "buy")}
-                      className="h-5 w-5 accent-violet-600"
-                    />
-                    Buy Online
-                  </label>
-                  <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-800">
-                    <input
-                      type="checkbox"
-                      checked={onlineService === "renew"}
-                      onChange={() => setOnlineService((current) => current === "renew" ? "" : "renew")}
-                      className="h-5 w-5 accent-violet-600"
-                    />
-                    Renew Online
-                  </label>
+              <div className="rounded-xl border border-violet-100 bg-white p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Online services</p>
+                <div className="mt-3 grid gap-2">
+                  {([["buy", "Buy Online", "M12 4v16m8-8H4"], ["renew", "Renew Online", "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"]] as const).map(([service, label, path]) => (
+                    <label key={service} className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-sm font-medium transition ${onlineService === service ? "border-[#35126d] bg-violet-50 text-[#35126d]" : "border-slate-200 text-slate-700 hover:border-violet-300 hover:bg-violet-50/50"}`}>
+                      <input
+                        type="checkbox"
+                        checked={onlineService === service}
+                        onChange={() => setOnlineService((current) => current === service ? "" : service)}
+                        className="h-4 w-4 accent-violet-600"
+                      />
+                      <span className={`flex h-7 w-7 items-center justify-center rounded-md ${onlineService === service ? "bg-[#35126d] text-white" : "bg-violet-100 text-[#35126d]"}`}><svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={path} /></svg></span>
+                      {label}
+                    </label>
+                  ))}
                 </div>
               </div>
-            </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <button type="button" disabled={!canContinue} onClick={handleGo} className="bg-[#35126d] px-4 py-3.5 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300">
-                Go
-              </button>
-              <button type="button" className="border border-violet-600 bg-white px-3 py-3.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50">
-                Get Quote
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" disabled={!canContinue} onClick={handleGo} className="h-11 rounded-xl bg-gradient-to-r from-[#35126d] to-[#5b3aa4] px-4 text-sm font-semibold uppercase tracking-[0.12em] text-white shadow-md shadow-violet-900/20 transition hover:from-[#2b0f5a] hover:to-[#4c2f8f] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:shadow-none">
+                  Go
+                </button>
+                <button type="button" className="h-11 rounded-xl border border-violet-300 bg-white px-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50">
+                  Get Quote
+                </button>
+              </div>
+              {!canContinue ? <p className="text-center text-[11px] text-slate-400">Select Motor Insurance and Buy Online to continue.</p> : null}
             </div>
           </div>
         </aside>
 
-        <section className="flex-1 min-w-0">
-          <header className="relative z-30 border border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur sm:px-5">
+        <section className="min-w-0 flex-1 space-y-3">
+          <header className="relative z-30 rounded-2xl border border-white bg-white/95 px-3 py-2.5 shadow-[0_10px_30px_rgba(53,18,109,0.08)] backdrop-blur sm:px-4">
             <div className="flex items-center justify-between gap-4">
               <nav className="flex min-w-0 items-center gap-1" aria-label="Main navigation">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex h-10 items-center px-3 text-xs font-semibold transition ${
+                    className={`flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition ${
                       activeTab === tab.id
-                        ? "bg-[#412484] text-white shadow-md shadow-violet-900/15"
+                        ? "bg-gradient-to-r from-[#35126d] to-[#5b3aa4] text-white shadow-md shadow-violet-900/20"
                         : "text-slate-600 hover:bg-violet-50 hover:text-[#412484]"
-                    } ${tab.id === "home" ? "hidden xl:flex" : "xl:flex"}`}
+                    } hidden xl:flex`}
                     aria-current={activeTab === tab.id ? "page" : undefined}
                   >
+                    <TabIcon name={tab.icon} className="h-4 w-4" />
                     {tab.label}
                   </button>
                 ))}
 
-                <details className="group relative">
-                  <summary className="flex h-10 cursor-pointer list-none items-center gap-2 px-3 text-xs font-semibold text-slate-600 transition hover:bg-violet-50 hover:text-[#412484] [&::-webkit-details-marker]:hidden">
-                    More 
-                    <svg className="w-4 h-4 transition group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <details className="group relative xl:hidden">
+                  <summary className="flex h-10 cursor-pointer list-none items-center gap-2 rounded-xl px-3 text-xs font-semibold text-slate-600 transition hover:bg-violet-50 hover:text-[#412484] [&::-webkit-details-marker]:hidden">
+                    Menu
+                    <svg className="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </summary>
-                  <div className="absolute left-0 top-[calc(100%+0.6rem)] w-56 overflow-hidden border border-slate-200 bg-white p-2 shadow-[0_18px_50px_rgba(30,20,70,0.16)]">
-                    {[
-                      ["About Us", "about", "xl:hidden"],
-                      ["Products", "products", "xl:hidden"],
-                      ["Register a claim", "claims", "xl:hidden"],
-                      ["Contact Us", "contact", "xl:hidden"],
-                      ["Support Ticket", "support", ""],
-                      ["Notification", "notifications", ""],
-                      ["Talk to Expert", "expert", ""],
-                    ].map(([item, tabId, responsiveClass]) => (
+                  <div className="absolute left-0 top-[calc(100%+0.6rem)] w-60 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_50px_rgba(30,20,70,0.16)]">
+                    {tabs.map((tab) => (
                       <button
-                        key={item}
-                        onClick={() => setActiveTab(tabId as typeof activeTab)}
-                        className={`flex w-full items-center px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-violet-50 hover:text-[#412484] ${responsiveClass}`}
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition hover:bg-violet-50 hover:text-[#412484] ${activeTab === tab.id ? "bg-violet-50 text-[#412484]" : "text-slate-600"}`}
                       >
-                        {item}
+                        <TabIcon name={tab.icon} className="h-4 w-4" />
+                        {tab.label}
                       </button>
                     ))}
                   </div>
@@ -715,20 +696,20 @@ export default function DashboardPage() {
               </nav>
 
               <details className="group relative shrink-0">
-                <summary className="flex cursor-pointer list-none items-center gap-3 p-1.5 pr-2 transition hover:bg-slate-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-violet-100 [&::-webkit-details-marker]:hidden">
+                <summary className="flex cursor-pointer list-none items-center gap-3 rounded-xl p-1.5 pr-2 transition hover:bg-slate-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-violet-100 [&::-webkit-details-marker]:hidden">
                   <span className="hidden text-right sm:block">
                     <span className="block text-xs font-semibold text-slate-800">{displayName}</span>
                     <span className="mt-0.5 block text-[10px] text-slate-400">My account</span>
                   </span>
-                  <span className="flex h-10 w-10 items-center justify-center overflow-hidden border-2 border-white bg-violet-100 shadow-md ring-1 ring-slate-200">
-                    <img src="/images/car_white.jpg" alt={`${displayName} profile`} className="h-full w-full object-cover" />
+                  <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-[#35126d] to-[#5b3aa4] text-sm font-bold text-white shadow-md ring-2 ring-white">
+                    {([profile.FirstName, profile.Surname].map((part) => part?.charAt(0) || "").join("").toUpperCase()) || <img src="/images/car_white.jpg" alt={`${displayName} profile`} className="h-full w-full object-cover" />}
                   </span>
-                  <svg className="w-4 h-4 text-slate-400 transition group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4 text-slate-400 transition group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </summary>
-                <div className="absolute right-0 top-[calc(100%+0.6rem)] w-64 overflow-hidden border border-slate-200 bg-white p-2 shadow-[0_20px_60px_rgba(30,20,70,0.18)]">
-                  <div className="mb-2 bg-gradient-to-br from-[#412484] to-[#6f4bb6] px-4 py-3 text-white">
+                <div className="absolute right-0 top-[calc(100%+0.6rem)] w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_20px_60px_rgba(30,20,70,0.18)]">
+                  <div className="mb-2 rounded-xl bg-gradient-to-br from-[#412484] to-[#6f4bb6] px-4 py-3 text-white">
                     <p className="text-sm font-semibold">{displayName}</p>
                     <p className="mt-0.5 text-xs text-violet-100">Your account</p>
                   </div>
@@ -738,8 +719,8 @@ export default function DashboardPage() {
                     ["KYC", "#kyc", "kyc"],
                     ["SETTINGS", "#settings", "settings"],
                   ].map(([item, href, icon]) => (
-                    <Link key={item} href={href} className="flex items-center gap-3 px-3 py-2.5 text-xs font-semibold tracking-wide text-slate-600 transition hover:bg-violet-50 hover:text-[#412484]">
-                      <span className="flex h-8 w-8 items-center justify-center bg-slate-50 text-[#5b3aa4]">
+                    <Link key={item} href={href} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold tracking-wide text-slate-600 transition hover:bg-violet-50 hover:text-[#412484]">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-[#5b3aa4]">
                         <UserMenuIcon name={icon} />
                       </span>
                       {item}
@@ -752,7 +733,29 @@ export default function DashboardPage() {
             </div>
           </header>
 
+          {/* Welcome banner */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#35126d] via-[#4a2894] to-[#6f4bb6] px-5 py-5 text-white shadow-[0_18px_50px_rgba(53,18,109,0.20)] sm:px-6">
+            <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+            <div className="relative flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-violet-200">Welcome back</p>
+                <h2 className="mt-1 text-xl font-bold sm:text-2xl">{displayName}</h2>
+                <p className="mt-1 text-sm text-violet-100">{primaryPolicy ? `Policy ${primaryPolicy.policyNumber || ""} is active on your account.` : "Manage your motor policies, claims and documents in one place."}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => { setSector("motor"); setOnlineService("buy"); setHasAcceptedRakNotice(false); setShowRakAlert(true); }} className="inline-flex h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-[#35126d] shadow-sm transition hover:bg-violet-50">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg> Buy Online
+                </button>
+                <button type="button" onClick={() => { setSector("motor"); setOnlineService("renew"); setRegistrationNumber(""); setRegistrationError(""); setShowRenewPrompt(true); }} className="inline-flex h-10 items-center gap-2 rounded-xl bg-white/15 px-4 text-sm font-semibold text-white ring-1 ring-white/30 transition hover:bg-white/25">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg> Renew Online
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-white bg-white/60 shadow-sm">
           {renderTabContent()}
+          </div>
         </section>
       </main>
 

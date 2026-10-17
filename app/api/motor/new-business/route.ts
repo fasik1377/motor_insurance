@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getCurrentUserId, isSameOriginRequest } from "@/lib/auth";
 import { getDb, sql } from "@/lib/db";
+import { coverColumns, coverErrors } from "@/lib/additional-risk";
 
 type Input = Record<string, unknown>;
 const clean = (value: unknown, max = 200) => typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -36,8 +37,9 @@ function validate(body: Input) {
   if (!proposal.chassisNo) errors.chassisNo = "Enter the chassis number.";
   if (!proposal.coverRequired) errors.coverRequired = "Select the required cover.";
   if (String(body.seating ?? "").replace(/\D/g, "").length > 2) errors.seating = "Seating must be at most two digits.";
-  if (["GOODS VEHICLE(PRIVATE)", "GOODS VEHICLE(PUBLIC)"].includes(proposal.vehicleType.toUpperCase()) && proposal.gvw <= 0) errors.gvw = "Gross vehicle weight is required for this vehicle type.";
-  if (["TANKER", "TRAILER", "TRACTOR"].includes(proposal.vehicleType.toUpperCase()) && proposal.trailerFeet <= 0) errors.trailerFeet = "Trailer feet is required for this vehicle type.";
+  // These are vehicle CLASSES (e.g. GOODS VEHICLE(PRIVATE)); the vehicle type is the category (e.g. Commercial Vehicle).
+  if (/GOODS VEHICLE\(PRIVATE\)|GOODS VEHICLE\(PUBLIC\)/.test(proposal.vehicleClass.toUpperCase()) && proposal.gvw <= 0) errors.gvw = "Gross vehicle weight is required for this vehicle class.";
+  if (/TANKER|TRAILER|TRACTOR/.test(proposal.vehicleClass.toUpperCase()) && proposal.trailerFeet <= 0) errors.trailerFeet = "Trailer feet is required for this vehicle class.";
   if (!proposal.lien) errors.lien = "Lien is mandatory.";
   if (proposal.lien && !proposal.lienType) errors.lienType = "Select the lien type.";
   if (proposal.lien && !proposal.lienholder) errors.lienholder = "Enter the lienholder.";
@@ -45,10 +47,13 @@ function validate(body: Input) {
   if (proposal.premium <= 0) errors.premium = "Calculate and enter the basic premium.";
   if (proposal.invoiceAmount <= 0) errors.invoiceAmount = "Enter the invoice amount.";
   if (proposal.pricePaid <= 0) errors.pricePaid = "Enter the price paid for the vehicle.";
-  return { proposal, errors };
+  // Optional covers of the Premium form (Rate<n> = number / 1 when selected, Amt<n> = amount).
+  for (const [field, message] of coverErrors(body, proposal.seating)) errors[field] = message;
+  return { proposal: { ...proposal, covers: coverColumns(body) }, errors };
 }
 
 const aliases: Record<string, string[]> = {
+  ...Object.fromEntries(Object.keys(coverColumns({})).map((column) => [column, [column]])),
   PolicyNo: ["PolicyNo", "PolicyNumber"], PolicyCode: ["PolicyCode"], CertificateNo: ["CertificateNo"], FinYear: ["FinYear"], IssDate: ["IssDate", "IssueDate"],
   Status: ["Status", "VehicleStatus"], Type: ["Type", "VehicleType"], Class: ["Class", "VehicleClass"], FromDate: ["FromDate", "StartDate"], ToDate: ["ToDate", "EndDate", "ExpiryDate"],
   AgentCode: ["AgentCode", "Agent"], ClientCode: ["ClientCode", "Client"], VehicleNo: ["VehicleNo", "RegNo", "RegistrationNo"], CoverRequired: ["CoverRequired", "Cover"],
@@ -101,7 +106,7 @@ export async function POST(request: NextRequest) {
     if (!departmentCode || !branch || !vehicleCode) throw new Error("Policy numbering configuration is incomplete for this vehicle class.");
     const policyNo = `${departmentCode}/${branch}/${vehicleCode}/${String(policyCode).padStart(5, "0")}/${year}`;
     const certificateNo = `NIA/${proposal.agentCode || "WEB"}/${String(policyCode).padStart(5, "0")}/${year}`;
-    const values = { PolicyNo: policyNo, PolicyCode: policyCode, CertificateNo: certificateNo, FinYear: year, IssDate: proposal.issueDate, Status: proposal.vehicleStatus, Type: proposal.vehicleType, Class: proposal.vehicleClass, FromDate: proposal.fromDate, ToDate: proposal.toDate, AgentCode: proposal.agentCode, ClientCode: proposal.clientCode, VehicleNo: proposal.vehicleNo, CoverRequired: proposal.coverRequired, SumInsured: proposal.sumInsured, Tlexcess: proposal.totalLossExcess, CompExcess: proposal.compulsoryExcess, VolExcess: proposal.voluntaryExcess, YDExcess: proposal.youngDriverExcess, TPPDExcess: proposal.tppdExcess, TPFExcess: proposal.tpfExcess, TheftExcess: proposal.theftExcess, AddExcess: proposal.additionalExcess, Make: proposal.make, Model: proposal.model, EngineNo: proposal.engineNo, ChassisNo: proposal.chassisNo, Colour: proposal.colour, Seating: proposal.seating, CC: proposal.cc, GVW: proposal.gvw, Premium: proposal.premium, InvAmount: proposal.invoiceAmount, PricePaid: proposal.pricePaid, Remarks: proposal.remarks, Country: proposal.country, FuelType: proposal.fuelType, Iuser: `web:${userId}`, Idate: new Date() };
+    const values = { PolicyNo: policyNo, PolicyCode: policyCode, CertificateNo: certificateNo, FinYear: year, IssDate: proposal.issueDate, Status: proposal.vehicleStatus, Type: proposal.vehicleType, Class: proposal.vehicleClass, FromDate: proposal.fromDate, ToDate: proposal.toDate, AgentCode: proposal.agentCode, ClientCode: proposal.clientCode, VehicleNo: proposal.vehicleNo, CoverRequired: proposal.coverRequired, SumInsured: proposal.sumInsured, Tlexcess: proposal.totalLossExcess, CompExcess: proposal.compulsoryExcess, VolExcess: proposal.voluntaryExcess, YDExcess: proposal.youngDriverExcess, TPPDExcess: proposal.tppdExcess, TPFExcess: proposal.tpfExcess, TheftExcess: proposal.theftExcess, AddExcess: proposal.additionalExcess, Make: proposal.make, Model: proposal.model, EngineNo: proposal.engineNo, ChassisNo: proposal.chassisNo, Colour: proposal.colour, Seating: proposal.seating, CC: proposal.cc, GVW: proposal.gvw, Premium: proposal.premium, InvAmount: proposal.invoiceAmount, PricePaid: proposal.pricePaid, Remarks: proposal.remarks, Country: proposal.country, FuelType: proposal.fuelType, Iuser: `web:${userId}`, Idate: new Date(), ...proposal.covers };
     await insertMapped(transaction, "MotorMaster", values); await insertMapped(transaction, "MotorPro", values); await transaction.commit();
     return NextResponse.json({ message: "New business policy saved successfully.", policyNo, certificateNo }, { status: 201 });
   } catch (error) {

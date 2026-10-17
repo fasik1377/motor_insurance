@@ -80,12 +80,23 @@ function validateKyc(body: KycInput) {
 
     if (client.nationality.toLowerCase() === "mauritius") {
       if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{14}$/.test(client.nid)) errors.NID = "Mauritian National ID must be 14 alphanumeric characters containing letters and numbers.";
-    } else if (client.passportNo.length < 8) {
-      errors.PassportNo = "Passport number must contain at least 8 characters.";
+    } else if (client.passportNo.length < 9) {
+      errors.PassportNo = "Passport number must contain at least 9 characters (letters, numbers or symbols).";
     }
+  }
+  // Whenever a passport number is entered it must have at least 9 characters (any letters, numbers or symbols).
+  if (client.passportNo && client.passportNo.length < 9 && !errors.PassportNo) {
+    errors.PassportNo = "Passport number must contain at least 9 characters (letters, numbers or symbols).";
   }
 
   if (client.category === "Company" && client.brn.length < 9) errors.BRN = "Business registration number must contain at least 9 characters.";
+
+  // Column sizes of dbo.Client: a longer value would make SQL Server reject the whole KYC save.
+  const columnLimits: Record<string, number> = { Surname: 50, City: 50, VAT: 15, TelRes: 15, TelForegin: 15, TelOff: 15, Fax: 15, Mobile: 15, Qualification: 50, EMail: 50, Occupation: 50, Nationality: 50, PassportNo: 15, NID: 15, BRN: 25, Remarks: 100 };
+  for (const [field, max] of Object.entries(columnLimits)) {
+    const raw = typeof body[field] === "string" ? (body[field] as string).trim() : "";
+    if (raw.length > max && !errors[field]) errors[field] = `Maximum ${max} characters.`;
+  }
 
   return { client, errors };
 }
@@ -100,15 +111,70 @@ function databaseError(error: unknown) {
   return NextResponse.json({ error: message }, { status: 500 });
 }
 
+type Pool = Awaited<ReturnType<typeof getDb>>;
+
+// Finds the client record that belongs to the signed-in user:
+// 1) the client code on the latest policy this user created online (MotorMaster.Iuser = web:<userId>);
+// 2) otherwise the single client whose e-mail or mobile matches the user's verified login e-mail / mobile.
+async function findOwnClientCode(pool: Pool, userId: string): Promise<string | null> {
+  try {
+    const columns = new Set((await pool.request().query("SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('dbo.MotorMaster')")).recordset.map((row: { name: string }) => row.name));
+    const clientColumn = ["ClientCode", "Client"].find((name) => columns.has(name));
+    if (clientColumn && columns.has("Iuser")) {
+      const order = columns.has("Idate") ? "ORDER BY [Idate] DESC" : "";
+      const policy = await pool.request().input("iuser", sql.VarChar(100), `web:${userId}`)
+        .query(`SELECT TOP (1) [${clientColumn}] AS ClientCode FROM dbo.MotorMaster WHERE Iuser = @iuser AND LTRIM(RTRIM(ISNULL([${clientColumn}], ''))) NOT IN ('', 'WEB') ${order}`);
+      const code = String(policy.recordset[0]?.ClientCode ?? "").trim();
+      if (code) return code;
+    }
+  } catch (error) {
+    console.warn("Own client lookup by policy failed", error);
+  }
+
+  const user = (await pool.request().input("userId", sql.UniqueIdentifier, userId)
+    .query("SELECT Email, Mobile, EmailVerified, MobileVerified FROM dbo.WebUsers WHERE UserId = @userId")).recordset[0] as
+    { Email: string | null; Mobile: string | null; EmailVerified: boolean; MobileVerified: boolean } | undefined;
+  if (!user) return null;
+  const email = user.EmailVerified && user.Email ? user.Email.trim().toLowerCase() : null;
+  // Client.Mobile holds the 8-digit local number (5xxxxxxx); the login mobile is international (+2305xxxxxxx).
+  const digits = user.MobileVerified && user.Mobile ? user.Mobile.replace(/\D/g, "") : "";
+  const mobile = /^(230)?5\d{7}$/.test(digits) ? digits.slice(-8) : null;
+  // The verified login e-mail belongs to this user, so clients with that e-mail are theirs. Earlier
+  // versions created a new client on every visit; prefer one with completed KYC, then the latest one.
+  if (email) {
+    const byEmail = await pool.request().input("email", sql.VarChar(100), email).query(`
+      SELECT TOP (1) c.Code FROM dbo.Client AS c
+      LEFT JOIN dbo.ClientKYC AS kyc ON kyc.Code = c.Code
+      WHERE LOWER(LTRIM(RTRIM(c.EMail))) = @email
+      ORDER BY CASE WHEN kyc.Code IS NULL THEN 1 ELSE 0 END, COALESCE(c.UDate, c.Idate) DESC
+    `);
+    if (byEmail.recordset[0]) return String(byEmail.recordset[0].Code).trim();
+  }
+  if (!mobile) return null;
+  const byMobile = await pool.request().input("mobile", sql.VarChar(20), mobile).query(`
+    SELECT TOP (2) Code FROM dbo.Client
+    WHERE REPLACE(REPLACE(LTRIM(RTRIM(Mobile)), ' ', ''), '-', '') = @mobile
+  `);
+  // A mobile number is only used when it matches exactly one client.
+  return byMobile.recordset.length === 1 ? String(byMobile.recordset[0].Code).trim() : null;
+}
+
 export async function GET(request: NextRequest) {
-  if (!await getCurrentUserId()) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
-  const code = text(request.nextUrl.searchParams.get("code"), 20);
-  if (!code) {
+  const userId = await getCurrentUserId();
+  if (!userId) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
+  const mine = request.nextUrl.searchParams.get("mine") === "1";
+  let code = text(request.nextUrl.searchParams.get("code"), 20);
+  if (!code && !mine) {
     return NextResponse.json({ error: "A client code is required." }, { status: 400 });
   }
 
   try {
     const pool = await getDb();
+    if (mine) {
+      code = (await findOwnClientCode(pool, userId)) ?? "";
+      // A first-time user has no client record yet: the form keeps its new-client format.
+      if (!code) return NextResponse.json({ client: null });
+    }
     const result = await pool
       .request()
       .input("code", sql.VarChar(20), code)
@@ -135,6 +201,7 @@ export async function GET(request: NextRequest) {
 
     const client = result.recordset[0];
     if (!client) {
+      if (mine) return NextResponse.json({ client: null });
       return NextResponse.json({ error: `Client ${code} was not found.` }, { status: 404 });
     }
 
@@ -183,6 +250,21 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "This KYC is already completed. Contact Head Office for further changes." }, { status: 409 });
     }
 
+    await writeKyc(transaction, client);
+
+    await transaction.commit();
+    return NextResponse.json({ client: { ...body, Code: client.code, HasKYC: true }, message: "KYC saved successfully." });
+  } catch (error) {
+    if (transaction) {
+      try { await transaction.rollback(); } catch { /* Transaction may already be closed. */ }
+    }
+    return databaseError(error);
+  }
+}
+
+// Saves every KYC field (passport, NID, address, occupation, ...) on dbo.Client and records the
+// completed KYC in dbo.ClientKYC. Used for existing clients (PUT) and new clients (POST).
+async function writeKyc(transaction: InstanceType<typeof sql.Transaction>, client: ReturnType<typeof validateKyc>["client"]) {
     const savedAt = new Date();
     const request = new sql.Request(transaction)
       .input("code", sql.VarChar(20), client.code)
@@ -229,15 +311,6 @@ export async function PUT(request: NextRequest) {
       INSERT INTO dbo.ClientKYC (Code, Iuser, IDate)
       VALUES (@code, @savedBy, @savedAt);
     `);
-
-    await transaction.commit();
-    return NextResponse.json({ client: { ...body, Code: client.code, HasKYC: true }, message: "KYC saved successfully." });
-  } catch (error) {
-    if (transaction) {
-      try { await transaction.rollback(); } catch { /* Transaction may already be closed. */ }
-    }
-    return databaseError(error);
-  }
 }
 
 export async function POST(request: NextRequest) {
@@ -255,10 +328,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Check the highlighted KYC fields.", errors }, { status: 400 });
   }
 
+  let transaction: InstanceType<typeof sql.Transaction> | undefined;
   try {
     const pool = await getDb();
-    const result = await pool
-      .request()
+    transaction = new sql.Transaction(pool);
+    await transaction.begin(sql.ISOLATION_LEVEL.READ_COMMITTED);
+    const result = await new sql.Request(transaction)
       .input("code", sql.VarChar(20), client.code)
       .input("category", sql.VarChar(15), client.category)
       .input("title", sql.VarChar(10), client.title)
@@ -274,9 +349,16 @@ export async function POST(request: NextRequest) {
                inserted.EMail, inserted.Mobile
         VALUES (@code, @category, @title, @name, @surname, @email, @mobile, @createdAt, @createdBy)
       `);
+    // A new client's KYC was previously only partly saved (no passport, NID, address, ...).
+    // Save every KYC field and mark the KYC as completed, in the same transaction.
+    await writeKyc(transaction, client);
+    await transaction.commit();
 
-    return NextResponse.json({ client: result.recordset[0] }, { status: 201 });
+    return NextResponse.json({ client: { ...body, ...result.recordset[0], Code: client.code, HasKYC: true }, message: "KYC saved successfully." }, { status: 201 });
   } catch (error) {
+    if (transaction) {
+      try { await transaction.rollback(); } catch { /* Transaction may already be closed. */ }
+    }
     if (typeof error === "object" && error && "number" in error && error.number === 2627) {
       return NextResponse.json(
         { error: `Client code ${client.code} already exists. Search for it or choose another code.` },

@@ -65,6 +65,8 @@ export type PolicyDocumentData = {
   levy: number;
   hitAndRun: number;
   total: number;
+  // usp_GetAdditionalRiskCovered text (optional covers selected in the Premium form).
+  additionalRisk?: string;
 };
 
 export type PolicyAttachment = { name: string; content: Uint8Array; docType?: string };
@@ -484,6 +486,10 @@ export async function buildSchedule(d: PolicyDocumentData): Promise<Uint8Array> 
   excessRows.forEach(([label, value], i) => { text(page, label, MARGIN + 30, y - i * 13, ctx.font, 8.5); text(page, `: Rs.  ${fmtAmount(value)}`, MARGIN + 150, y - i * 13, ctx.font, 8.5); });
   amountRows.forEach(([label, value], i) => { text(page, label, MARGIN + 270, y - i * 13, ctx.font, 8.5); text(page, `:Rs.  ${fmtAmount(value)}`, MARGIN + 385, y - i * 13, label === "TOTAL" ? ctx.bold : ctx.font, 8.5); });
   y -= excessRows.length * 13 + 30;
+  if (d.additionalRisk) {
+    text(page, "ADDITIONAL RISK COVERED", MARGIN + 30, y, ctx.font, 9); text(page, ":", MARGIN + 180, y, ctx.font, 9);
+    y = paragraph(page, d.additionalRisk, MARGIN + 190, y, ctx.font, 8.5, A4[0] - 2 * MARGIN - 230) - 12;
+  }
   text(page, "HYPOTHECATED WITH", MARGIN + 30, y, ctx.font, 9); text(page, ":", MARGIN + 180, y, ctx.font, 9);
   y -= 50;
   textRight(page, `PRINTED ON : ${fmtDate(issued.iso)} ${issued.time}`, A4[0] - MARGIN - 20, y, ctx.font, 8.5);

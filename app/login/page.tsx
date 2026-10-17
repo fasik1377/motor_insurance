@@ -1,8 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+
+import { AuthError, AuthIcon, AuthShell, RobotCheck, authButtonClass, authInputClass } from "../_components/auth-shell";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,41 +20,32 @@ export default function LoginPage() {
     try { const response=await fetch("/api/auth/otp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contact:value,type})}),data=await response.json();if(!response.ok)throw new Error(data.error||"Unable to send code.");router.push(`/otp?type=${type}&contact=${encodeURIComponent(value)}`); } catch(reason){setError(reason instanceof Error?reason.message:"Unable to send code.");setSending(false);}
   };
 
-  return (
-    <main className="grid h-dvh overflow-hidden bg-white lg:grid-cols-[1.15fr_0.85fr]">
-      <section className="relative hidden overflow-hidden bg-[#27105f] text-white lg:block">
-        <Image src="/images/login_car.jpg" alt="Insured car on the road" fill priority className="auth-hero-image object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#241052]/95 via-[#35126d]/75 to-slate-950/30" />
-        <div className="relative flex h-full flex-col justify-center px-[8%]">
-          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-violet-200">Motor Insurance Service</p>
-          <h1 className="mt-4 max-w-xl text-4xl font-semibold leading-tight xl:text-5xl">Insurance built around every journey.</h1>
-          <p className="mt-4 max-w-lg text-sm leading-6 text-white/75 xl:text-base">Sign in securely to manage your policy, renew your cover, and keep moving with confidence.</p>
-          <div className="mt-8 border-l-2 border-violet-300/70 pl-4 text-sm text-white/80">Secure one-time passcode verification</div>
-        </div>
-      </section>
+  // Shows an e-mail or phone icon depending on what the user types.
+  const looksLikeEmail = contact.includes("@") || /[a-z]/i.test(contact);
 
-      <section className="flex h-full items-center justify-center bg-slate-50 px-5 py-4 sm:px-10">
-        <div className="w-full max-w-md border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.1)] sm:p-8">
-          <Image src="/images/logo.png" alt="New India Assurance logo" width={220} height={70} priority className="mx-auto h-14 w-auto object-contain" />
-          <div className="mt-5 text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#412484]">Welcome</p>
-            <h2 className="mt-2 text-2xl font-semibold text-slate-900">Sign in or sign up</h2>
-            <p className="mt-2 text-sm leading-5 text-slate-500">Enter your email or mobile number and we’ll send you a secure code.</p>
-          </div>
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <label className="block text-sm font-medium text-slate-700">Email or mobile number
-              <input type="text" value={contact} onChange={(e) => setContact(e.target.value)} placeholder="example@gmail.com" className="mt-2 h-12 w-full border border-slate-300 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-[#412484] focus:ring-2 focus:ring-[#412484]/15" />
-            </label>
-            <label className="flex cursor-pointer items-center gap-3 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 hover:border-[#412484]">
-              <input type="checkbox" checked={robotChecked} onChange={(e) => setRobotChecked(e.target.checked)} className="h-5 w-5 accent-[#412484]" />
-              <span><span className="block font-semibold text-slate-900">I am not a robot</span><span className="text-xs text-slate-500">Confirm your identity to continue.</span></span>
-            </label>
-            {error?<p className="text-sm text-rose-600">{error}</p>:null}
-            <button type="submit" disabled={sending || !robotChecked || !contact.trim()} className="h-12 w-full bg-[#412484] px-5 text-sm font-semibold text-white transition hover:bg-[#321b70] disabled:cursor-not-allowed disabled:bg-slate-300">{sending?"Sending code...":"Continue securely"}</button>
-          </form>
-          <p className="mt-4 text-center text-xs text-slate-400">Your information is encrypted and securely handled.</p>
-        </div>
-      </section>
-    </main>
+  return (
+    <AuthShell
+      eyebrow="Welcome"
+      title="Sign in or sign up"
+      description="Enter your email or mobile number and we’ll send you a secure code."
+      heroTitle="Insurance built around every journey."
+      heroText="Sign in securely to manage your policy, renew your cover, and keep moving with confidence."
+      step={{ current: 1, total: 4, label: "Your contact" }}
+      footnote="Your information is encrypted and securely handled."
+    >
+      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <label className="block text-sm font-medium text-slate-700">Email or mobile number
+          <span className="relative mt-2 block">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><AuthIcon name={looksLikeEmail || !contact ? "mail" : "phone"} /></span>
+            <input type="text" value={contact} onChange={(e) => setContact(e.target.value)} placeholder="example@gmail.com" autoComplete="email" className={authInputClass} />
+          </span>
+        </label>
+        <RobotCheck checked={robotChecked} onChange={setRobotChecked} />
+        <AuthError message={error} />
+        <button type="submit" disabled={sending || !robotChecked || !contact.trim()} className={authButtonClass}>
+          {sending ? "Sending code..." : <>Continue securely <AuthIcon name="arrow" className="h-4 w-4 transition group-hover:translate-x-0.5" /></>}
+        </button>
+      </form>
+    </AuthShell>
   );
 }
