@@ -97,10 +97,12 @@ type ProfileData = {
   Mobile?: string;
 };
 
-function ClientDetailsForm({ onClientSelected, onSaved, onKycStatus }: { onClientSelected: (client: ClientRecord) => void; onSaved: () => void; onKycStatus: (missing: string[]) => void }) {
+function ClientDetailsForm({ onClientSelected, onSaved, onKycStatus, onClientChange }: { onClientSelected: (client: ClientRecord) => void; onSaved: () => void; onKycStatus: (missing: string[]) => void; onClientChange?: (client: ClientRecord) => void }) {
   const inputClass = "w-full border border-violet-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
   const labelClass = "text-xs font-semibold text-slate-600";
   const [client, setClient] = useState<ClientRecord>({ Code: "", Category: "Individual" });
+  // Share the live KYC record with the page (used for the policy email and its PDF documents).
+  useEffect(() => { onClientChange?.(client); }, [client, onClientChange]);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -512,7 +514,16 @@ function SectionIcon({ title }: { title: string }) {
   return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 3 4 7v5c0 4.6 3.4 7.8 8 9 4.6-1.2 8-4.4 8-9V7z" /><path d="m9 12 2 2 4-4" /></svg>;
 }
 
-function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange, onValuesChange, vehicleClass, vehicleType, fuelType, issueDate }: { policyCover: PolicyCover; onPolicyCoverChange: (cover: PolicyCover) => void; onStatusChange: (missing: number) => void; onValuesChange?: (values: Record<string, string>) => void; vehicleClass?: string; vehicleType?: string; fuelType?: string; issueDate?: string }) {
+// Readable messages for the error codes returned by usp_GetMotorExcess (via /api/motor/excess).
+const excessErrorMessages: Record<string, string> = {
+  "HO REVIEW-10M": "Sum insured above 10,000,000 must be referred to Head Office for review (HO REVIEW-10M). The sum insured has been cleared.",
+  "NO Class B-VERIFY": "This make is a Class B vehicle, but no Class B excess is defined for this sum insured. Please verify (NO Class B-VERIFY).",
+  "NO ELECTRIC TARIFF FOUND": "No electric-vehicle excess tariff was found for this sum insured and date.",
+  "NO RATE AVAILABLE": "No excess rate was found for these vehicle details. Please check the vehicle class, seating, CC/kW and sum insured.",
+  "NO Configuration details- VEHICLE TYPE": "No tariff configuration exists for this vehicle class. Please inform Head Office.",
+};
+
+function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange, onValuesChange, vehicleClass, vehicleType, fuelType, issueDate, country }: { policyCover: PolicyCover; onPolicyCoverChange: (cover: PolicyCover) => void; onStatusChange: (missing: number) => void; onValuesChange?: (values: Record<string, string>) => void; vehicleClass?: string; vehicleType?: string; fuelType?: string; issueDate?: string; country?: string }) {
   const inputClass = "h-9 w-full border border-violet-200 bg-white px-2 text-sm text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
   const labelClass = "text-xs font-semibold text-slate-600";
   const [requiredValues, setRequiredValues] = useState<Record<string, string>>({ vehicleNo: "", make: "", model: "", engineNo: "", chassisNo: "", gvw: "", trailerFeet: "", manufactureDate: "", sumInsured: "", seating: "", cc: "", fromDate: "" });
@@ -528,6 +539,7 @@ function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange,
   const [tpfExcessOptions, setTpfExcessOptions] = useState<string[]>(["Select..."]);
   const [fetchingExcess, setFetchingExcess] = useState(false);
   const [excessCalculated, setExcessCalculated] = useState(false);
+  const [excessError, setExcessError] = useState("");
   const fetchIdRef = useRef(0);
   
   useEffect(() => {
@@ -556,8 +568,10 @@ function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange,
         ...prev,
         compulsoryExcess: "",
         youngDriverExcess: "",
-        totalLossExcess: ""
+        totalLossExcess: "",
+        additionalExcess: "0"
       }));
+      setExcessError("");
       setExcessCalculated(false);
       setFetchingExcess(false);
       return;
@@ -593,7 +607,7 @@ function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange,
       manufactureDate: requiredValues.manufactureDate || "",
       issueDate: issueDate || "",
       seating: requiredValues.seating || "0",
-      country: "MAURITIUS",
+      country: country || "Mauritius",
       cylCapacity: requiredValues.cc || "0",
       trailerFeet: requiredValues.trailerFeet || "0",
       gvw: requiredValues.gvw || "0",
@@ -616,10 +630,28 @@ function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange,
           setCompulsoryExcessOptions(data?.compulsoryExcess || ["Select..."]);
           setYoungDriverExcessOptions(data?.youngDriverExcess || ["Select..."]);
           setTpfExcessOptions(data?.tpfExcess || ["Select..."]);
-          
+
+          // A failed lookup must not leave the previous excess values on screen.
+          if (!data || data.success === false) {
+            const code = String(data?.errorMsg ?? "");
+            setExcessError(excessErrorMessages[code] || (code ? code : "Enter the seating capacity or CC/kW to look up the excess."));
+            setRequiredValues((prev) => ({
+              ...prev,
+              compulsoryExcess: "",
+              youngDriverExcess: "",
+              totalLossExcess: "",
+              additionalExcess: "0",
+              // usp_GetMotorExcess clears the sum insured for HO REVIEW-10M (TxtSumInsured.Text = "").
+              ...(code === "HO REVIEW-10M" ? { sumInsured: "" } : {}),
+            }));
+            setExcessCalculated(true);
+            return;
+          }
+          setExcessError("");
+
           // Auto-set values from API response (for input fields)
           setRequiredValues((prev) => {
-            const next = { ...prev };
+            const next: Record<string, string> = { ...prev, additionalExcess: data?.addExcess ? String(data.addExcess) : "0" };
             if (data?.compulsoryExcess && data.compulsoryExcess.length > 0 && data.compulsoryExcess[0] !== "Select...") {
               next.compulsoryExcess = data.compulsoryExcess[0];
             }
@@ -637,13 +669,15 @@ function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange,
       .catch((err) => {
         if (!controller.signal.aborted) {
           console.error("[Frontend] Excess fetch error:", err);
+          setExcessError("The excess could not be loaded. Please try again.");
+          setRequiredValues((prev) => ({ ...prev, compulsoryExcess: "", youngDriverExcess: "", totalLossExcess: "", additionalExcess: "0" }));
         }
         setExcessCalculated(false);
       })
       .finally(() => { if (currentFetchId === fetchIdRef.current) setFetchingExcess(false); });
-    
+
     return () => controller.abort();
-  }, [policyCover, requiredValues.manufactureDate, requiredValues.sumInsured, requiredValues.make, requiredValues.model, requiredValues.cc, requiredValues.seating, requiredValues.gvw, requiredValues.trailerFeet, vehicleClass, vehicleType, fuelType, issueDate]);
+  }, [policyCover, requiredValues.manufactureDate, requiredValues.sumInsured, requiredValues.make, requiredValues.model, requiredValues.cc, requiredValues.seating, requiredValues.gvw, requiredValues.trailerFeet, vehicleClass, vehicleType, fuelType, issueDate, country]);
   
   useEffect(() => {
     if (!vehicleClass) { setMakes([]); setModels([]); return; }
@@ -724,7 +758,7 @@ function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange,
     if (name === "tpfExcess") fieldOptions = tpfExcessOptions;
     
     // Excess fields are calculated read-only values (from API)
-    if (name === "totalLossExcess" || name === "youngDriverExcess" || name === "compulsoryExcess") {
+    if (name === "totalLossExcess" || name === "youngDriverExcess" || name === "compulsoryExcess" || name === "additionalExcess") {
       const value = requiredValues[name] || "";
       const isFetching = fetchingExcess && !excessCalculated;
       return (
@@ -850,8 +884,9 @@ function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange,
                     <label className="grid gap-1.5 sm:grid-cols-[max-content_minmax(0,1fr)] sm:items-center"><span className={labelClass}>Cover Required<span className="text-rose-600"> *</span></span><select name="coverRequired" value={policyCover} onChange={(event) => { if (!coverLocked) { onPolicyCoverChange(event.target.value as PolicyCover); onStatusChange(Object.values(requiredValues).filter((item): item is string => typeof item === "string" && !item.trim()).length + (event.target.value ? 0 : 1)); } }} className={inputClass} disabled={coverLocked}><option value="">Select cover</option>{covers.filter((cover) => cover.name === "COMPREHENSIVE" || cover.name === "COMPREHENSIVE AUTOPLUS").map((cover) => <option key={cover.name} value={cover.name === "COMPREHENSIVE" ? "Comprehensive" : cover.name === "COMPREHENSIVE AUTOPLUS" ? "Comprehensive AutoPlus" : cover.name}>{cover.name === "COMPREHENSIVE" ? "Comprehensive" : cover.name === "COMPREHENSIVE AUTOPLUS" ? "Comprehensive AutoPlus" : cover.name}</option>)}</select></label>
                     {field("Young Driver Excess", "youngDriverExcess")}{field("Total Loss Excess", "totalLossExcess")}
 </div>
-                  <div className="space-y-3">{field("Sum Insured", "sumInsured", "input", undefined, true)}{field("Price Paid", "pricePaid", "input", undefined, true)}{field("Compulsory Excess", "compulsoryExcess")}</div>
+                  <div className="space-y-3">{field("Sum Insured", "sumInsured", "input", undefined, true)}{field("Price Paid", "pricePaid", "input", undefined, true)}{field("Compulsory Excess", "compulsoryExcess")}{field("Additional Excess", "additionalExcess")}</div>
 </div>
+                {excessError ? <p role="alert" className="mt-3 border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">{excessError}</p> : null}
           </fieldset>
         </div>
         <aside className="hidden">
@@ -1295,21 +1330,44 @@ function PremiumForm({ values, calculating, onCalculate, error }: { values: Reco
   );
 }
 
-function AttachedDocumentForm() {
+// A document chosen in the Attached Document form. It is kept in the page until the payment is
+// confirmed, then stored on the server (policy folder, or the KYC folder of the insured).
+type PendingDocument = { slot: string; docType: string; kyc: boolean; file: File };
+type StoredDocumentRow = { fileName: string; fullPath: string };
+type StoredDocumentList = { policyDocuments: StoredDocumentRow[]; kycDocuments: StoredDocumentRow[] };
+const ACCEPTED_DOCUMENT_EXTENSIONS = [".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx"];
+const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024;
+
+function documentFileError(file: File): string {
+  const dot = file.name.lastIndexOf(".");
+  const extension = dot > 0 ? file.name.slice(dot).toLowerCase() : "";
+  if (!extension) return "Document is not valid, NO EXTENSION. Please verify.";
+  if (!ACCEPTED_DOCUMENT_EXTENSIONS.includes(extension)) return "Only PDF, JPG, PNG, DOC and DOCX documents are accepted.";
+  if (file.size > MAX_DOCUMENT_BYTES) return "The maximum size is 5 MB.";
+  return "";
+}
+const formatFileSize = (bytes: number) => bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+
+function AttachedDocumentForm({ policyNo, documents: pendingDocuments, onDocumentsChange, stored, uploadMessage }: { policyNo: string; documents: PendingDocument[]; onDocumentsChange: (documents: PendingDocument[]) => void; stored: StoredDocumentList | null; uploadMessage: { text: string; error: boolean } | null }) {
   const inputClass = "h-9 w-full border border-violet-200 bg-white px-2 text-sm text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
   const labelClass = "text-xs font-semibold text-slate-600";
-  const documents = ["Certificate", "Vignette", "Sch", "Inv", "Premium", "Com", "PSSA", "Acc. Gen", "ICAC", "MIE", "AML", "AMCCU", "MRA", "PSEA", "BOM", "EWF", "Pro Note", "Summary", "Policy-wording", "KYC", "Scarcity", "Proposal"];
+  // docType is the "Document Type" used in the stored file name; kyc documents go to the insured's KYC folder.
   const requiredDocuments = [
-    { id: "licence", name: "Driver's Licence", types: ["Licence"], required: true, accepted: "PDF, JPG, PNG (Max 5MB)" },
-    { id: "nid_passport", name: "NID / Passport", types: ["National ID / Passport"], required: true, accepted: "PDF, JPG, PNG (Max 5MB)" },
-    { id: "sale_deed", name: "Sale Deed / HorsePower", types: ["Sale Deed"], required: true, accepted: "PDF, JPG, PNG (Max 5MB)" },
-    { id: "address_proof", name: "KYC / Address Proof", types: ["Address Proof"], required: true, accepted: "PDF, JPG, PNG (Max 5MB)" },
+    { id: "licence", name: "Driver's Licence", types: ["Licence"], docType: "Licence", kyc: false, required: true, accepted: "PDF, JPG, PNG (Max 5MB)" },
+    { id: "nid_passport", name: "NID / Passport", types: ["National ID / Passport"], docType: "NID Passport", kyc: true, required: true, accepted: "PDF, JPG, PNG (Max 5MB)" },
+    { id: "sale_deed", name: "Sale Deed / HorsePower", types: ["Sale Deed"], docType: "Sale Deed", kyc: false, required: true, accepted: "PDF, JPG, PNG (Max 5MB)" },
+    { id: "address_proof", name: "KYC / Address Proof", types: ["Address Proof"], docType: "Address Proof", kyc: true, required: true, accepted: "PDF, JPG, PNG (Max 5MB)" },
   ];
-  const actions = ["Insert & Save", "Edit & Save", "View", "Print", "Not approved", "Approve", "Insert 2 NTA", "Reports in PDF", "Exit"];
   const [selectedDocType, setSelectedDocType] = useState<string>("");
-  const [uploadedFiles, setUploadedFiles] = useState<Record<string, { name: string; size: string }>>({});
-  const [documentChecks, setDocumentChecks] = useState<Record<string, boolean>>({});
+  const uploadedFiles: Record<string, { name: string; size: string }> = Object.fromEntries(pendingDocuments.map((d) => [d.slot, { name: d.file.name, size: formatFileSize(d.file.size) }]));
+  const [documentChecks, setDocumentChecks] = useState<Record<string, boolean>>(() => Object.fromEntries(pendingDocuments.map((d) => [d.slot, true])));
+  const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
+  const [extraNames, setExtraNames] = useState<Record<string, string>>(() => Object.fromEntries(pendingDocuments.filter((d) => d.slot.startsWith("extra_")).map((d) => [d.slot, d.docType])));
   const [dragActive, setDragActive] = useState<string | null>(null);
+
+  const setDocument = (slot: string, document: PendingDocument | null) => {
+    onDocumentsChange([...pendingDocuments.filter((d) => d.slot !== slot), ...(document ? [document] : [])]);
+  };
   
   // Auto-select checkboxes when Doc Type is selected
   useEffect(() => {
@@ -1330,13 +1388,29 @@ function AttachedDocumentForm() {
     setSelectedDocType(value);
   };
   
-  const handleFileUpload = (docId: string, fileName: string) => {
-    setUploadedFiles((prev) => ({
-      ...prev,
-      [docId]: { name: fileName, size: "0 KB" }
-    }));
-    setDocumentChecks((prev) => ({ ...prev, [docId]: true }));
+  const handleFileUpload = (docId: string, file: File) => {
     setDragActive(null);
+    const error = documentFileError(file);
+    setFileErrors((prev) => ({ ...prev, [docId]: error }));
+    if (error) return;
+    const doc = requiredDocuments.find((d) => d.id === docId);
+    if (!doc) return;
+    setDocument(docId, { slot: docId, docType: doc.docType, kyc: doc.kyc, file });
+    setDocumentChecks((prev) => ({ ...prev, [docId]: true }));
+  };
+
+  const handleExtraFile = (slot: string, file: File | undefined) => {
+    if (!file) { setDocument(slot, null); return; }
+    const error = documentFileError(file);
+    setFileErrors((prev) => ({ ...prev, [slot]: error }));
+    if (error) return;
+    setDocument(slot, { slot, docType: extraNames[slot]?.trim() || "OTHER", kyc: false, file });
+  };
+
+  const handleExtraName = (slot: string, name: string) => {
+    setExtraNames((prev) => ({ ...prev, [slot]: name }));
+    const existing = pendingDocuments.find((d) => d.slot === slot);
+    if (existing) setDocument(slot, { ...existing, docType: name.trim() || "OTHER" });
   };
   
   const handleDragOver = (e: React.DragEvent, docId: string) => {
@@ -1355,7 +1429,7 @@ function AttachedDocumentForm() {
     e.preventDefault();
     e.stopPropagation();
     const file = e.dataTransfer.files[0];
-    if (file) handleFileUpload(docId, file.name);
+    if (file) handleFileUpload(docId, file);
     setDragActive(null);
   };
   
@@ -1390,6 +1464,13 @@ function AttachedDocumentForm() {
     <div className="border border-violet-200 bg-[#f7f5fb]">
       <div>
         <div className="p-4 sm:p-5 lg:border-r lg:border-violet-200">
+          {/* Document number (policy number) - the documents are stored under it on the server */}
+          <div className="mb-5 grid gap-2 border border-violet-200 bg-white p-3 sm:grid-cols-[max-content_1fr] sm:items-center">
+            <span className="text-xs font-semibold text-slate-600">Document No (Policy No)</span>
+            <input readOnly value={policyNo || ""} placeholder="Assigned when the policy is saved" className="h-9 w-full border border-violet-200 bg-slate-50 px-2 font-mono text-sm text-slate-800 outline-none" />
+            <p className="text-xs text-slate-500 sm:col-span-2">The documents are uploaded to the server when the payment is confirmed: policy documents to the policy folder, and NID / Passport and Address Proof to the insured&apos;s KYC folder.</p>
+          </div>
+
           {/* Progress Header */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
@@ -1452,7 +1533,8 @@ function AttachedDocumentForm() {
                     accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) handleFileUpload(doc.id, file.name);
+                      if (file) handleFileUpload(doc.id, file);
+                      e.target.value = "";
                     }}
                     className="absolute inset-0 opacity-0 cursor-pointer z-10"
                     disabled={false}
@@ -1496,10 +1578,11 @@ function AttachedDocumentForm() {
                         {uploadedFiles[doc.id] && (
                           <span className="text-emerald-600 font-medium flex items-center gap-1">
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                            {uploadedFiles[doc.id].name}
+                            {uploadedFiles[doc.id].name} ({uploadedFiles[doc.id].size})
                           </span>
                         )}
                       </div>
+                      {fileErrors[doc.id] ? <p role="alert" className="mt-1 text-xs font-medium text-rose-600">{fileErrors[doc.id]}</p> : null}
                     </div>
                     
                     {/* Checkbox */}
@@ -1538,16 +1621,25 @@ function AttachedDocumentForm() {
               Additional Documents (Optional)
             </h4>
             <div className="space-y-2">
-              {[1, 2, 3].map((row) => (
-                <div key={row} className="bg-white border border-violet-100 rounded-xl p-3 flex items-center gap-3">
+              {[1, 2, 3].map((row) => {
+                const slot = `extra_${row}`;
+                const attached = pendingDocuments.find((d) => d.slot === slot);
+                return (
+                <div key={row} className="bg-white border border-violet-100 rounded-xl p-3">
+                  <div className="flex items-center gap-3">
                   <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-medium text-slate-500">{requiredDocuments.length + row}</span>
-                  <input type="text" placeholder="Document name" className="flex-1 text-sm border border-violet-200 bg-white px-3 py-2 rounded-lg outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" />
+                  <input type="text" placeholder="Document name (Document Type)" value={extraNames[slot] ?? ""} onChange={(e) => handleExtraName(slot, e.target.value)} className="flex-1 text-sm border border-violet-200 bg-white px-3 py-2 rounded-lg outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" />
                   <label className="flex-shrink-0 cursor-pointer">
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" className="sr-only" />
-                    <span className="px-4 py-2 text-sm font-medium text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-colors border border-violet-200">Attach</span>
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" className="sr-only" onChange={(e) => { handleExtraFile(slot, e.target.files?.[0]); e.target.value = ""; }} />
+                    <span className="px-4 py-2 text-sm font-medium text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-colors border border-violet-200">{attached ? "Replace" : "Attach"}</span>
                   </label>
+                  {attached ? <button type="button" onClick={() => handleExtraFile(slot, undefined)} className="flex-shrink-0 text-xs font-medium text-rose-600 hover:underline">Remove</button> : null}
+                  </div>
+                  {attached ? <p className="mt-2 pl-11 text-xs font-medium text-emerald-600">{attached.file.name} ({formatFileSize(attached.file.size)})</p> : null}
+                  {fileErrors[slot] ? <p role="alert" className="mt-2 pl-11 text-xs font-medium text-rose-600">{fileErrors[slot]}</p> : null}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -1602,6 +1694,21 @@ function AttachedDocumentForm() {
             </div>
           </div>
 
+          {/* Upload result and documents stored for this policy (GetDocList) */}
+          {uploadMessage ? <p role={uploadMessage.error ? "alert" : "status"} className={`mt-6 border px-3 py-2 text-xs font-medium ${uploadMessage.error ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{uploadMessage.text}</p> : null}
+          {stored && (stored.policyDocuments.length > 0 || stored.kycDocuments.length > 0) ? (
+            <div className="mt-6 overflow-auto border border-violet-200 bg-white">
+              <table className="w-full min-w-[560px] border-collapse text-left text-xs">
+                <thead><tr className="bg-violet-100 text-[#35126d]"><th className="border-r border-violet-200 px-3 py-2">Folder</th><th className="border-r border-violet-200 px-3 py-2">File Name</th><th className="px-3 py-2">Full Path</th></tr></thead>
+                <tbody>
+                  {[...stored.policyDocuments.map((d) => ({ ...d, folder: "Policy" })), ...stored.kycDocuments.map((d) => ({ ...d, folder: "KYC" }))].map((d) => (
+                    <tr key={`${d.folder}-${d.fullPath}`} className="border-t border-violet-100"><td className="border-r border-violet-100 px-3 py-2 font-semibold text-slate-600">{d.folder}</td><td className="border-r border-violet-100 px-3 py-2 text-slate-700">{d.fileName}</td><td className="px-3 py-2 font-mono text-slate-500">{d.fullPath}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+
           {/* Remarks */}
           <div className="mt-6">
             <label className="grid gap-2">
@@ -1642,6 +1749,14 @@ export default function BuyOnlinePage() {
   const [premiumCalculating, setPremiumCalculating] = useState(false);
   const [premiumCalculated, setPremiumCalculated] = useState(false);
   const [premiumError, setPremiumError] = useState("");
+  // Policy number returned when the policy is saved (Attached Document); required for payment and the policy email.
+  const [policyNo, setPolicyNo] = useState("");
+  // Live KYC record from the KYC form (name, email, address, occupation, ...).
+  const [kycClient, setKycClient] = useState<ClientRecord>({});
+  // Documents chosen in the Attached Document form; uploaded to the server once the payment is confirmed.
+  const [pendingDocuments, setPendingDocuments] = useState<PendingDocument[]>([]);
+  const [storedDocuments, setStoredDocuments] = useState<StoredDocumentList | null>(null);
+  const [documentUploadMessage, setDocumentUploadMessage] = useState<{ text: string; error: boolean } | null>(null);
 
   const calculateVehicleAge = (manufactureDate: string, issueDate: string): number => {
     if (!manufactureDate || !issueDate) return 0;
@@ -1825,7 +1940,9 @@ export default function BuyOnlinePage() {
 
 const detailsComplete = Boolean(registration.trim() && fullName.trim());
   const [emailPreviewOpen, setEmailPreviewOpen] = useState(false);
-  const [emailPreviewData, setEmailPreviewData] = useState<{ policyNo: string; clientCode: string; fullName: string; email: string } | null>(null);
+  const [emailPreviewData, setEmailPreviewData] = useState<{ policyNo: string; clientCode: string; fullName: string; email: string; title: string; firstName: string; surname: string } | null>(null);
+  const kycValue = (field: string) => kycClient[field] == null ? "" : String(kycClient[field]).trim();
+  const draftValue = (field: string) => proposalDraft[field] == null ? "" : String(proposalDraft[field]).trim();
 
   useEffect(() => {
     console.log("[Payment] emailPreviewOpen changed:", emailPreviewOpen, "emailPreviewData:", emailPreviewData);
@@ -1840,13 +1957,21 @@ const detailsComplete = Boolean(registration.trim() && fullName.trim());
       return;
     }
     
-    const fullName = `${proposalDraft.Title || ""} ${proposalDraft.Name || ""} ${proposalDraft.Surname || ""}`.trim().toUpperCase();
-    const email = proposalDraft.EMail || "";
-    const clientCode = proposalDraft.clientCode || "WEB";
-    
+    // Client details come from the KYC form (falling back to a client picked by code search).
+    const title = kycValue("Title") || draftValue("title");
+    const firstName = kycValue("Name") || draftValue("firstName");
+    const surname = kycValue("Surname") || draftValue("surname");
+    const fullName = `${title} ${firstName} ${surname}`.replace(/\s+/g, " ").trim().toUpperCase();
+    const email = kycValue("EMail") || draftValue("email");
+    const clientCode = kycValue("Code") || draftValue("clientCode") || "WEB";
+    if (!email) {
+      setPaymentError(true);
+      setPaymentMessage("Enter the client's e-mail address in the KYC form so the policy documents can be sent.");
+      return;
+    }
+
     console.log("[Payment] Opening email preview with:", { policyNo, clientCode, fullName, email });
-    alert("showEmailPreview called - check console");
-    setEmailPreviewData({ policyNo, clientCode, fullName, email });
+    setEmailPreviewData({ policyNo, clientCode, fullName, email, title, firstName, surname });
     setPaymentOpen(false);
     // Use timeout to ensure state updates are processed
     setTimeout(() => {
@@ -1855,31 +1980,86 @@ const detailsComplete = Boolean(registration.trim() && fullName.trim());
     }, 0);
   };
 
+  // Uploads the documents chosen in the Attached Document form (after the payment is confirmed),
+  // then reloads the list of documents stored for the policy.
+  const uploadPendingDocuments = async (policyNumber: string, clientCode: string): Promise<{ text: string; failed: boolean }> => {
+    const messages: string[] = [];
+    let failed = false;
+    const toSend = pendingDocuments.filter((d) => !d.kyc || clientCode);
+    if (pendingDocuments.some((d) => d.kyc) && !clientCode) {
+      failed = true;
+      messages.push("The KYC documents were not uploaded because no client (insured) code is selected in KYC.");
+    }
+    if (toSend.length) {
+      const form = new FormData();
+      form.set("policyNo", policyNumber);
+      form.set("clientCode", clientCode);
+      toSend.forEach((d, index) => { form.set(`file_${index}`, d.file); form.set(`docType_${index}`, d.docType); form.set(`kyc_${index}`, String(d.kyc)); });
+      try {
+        const response = await fetch("/api/motor/attachments", { method: "POST", body: form });
+        const data = await response.json().catch(() => ({})) as { error?: string };
+        if (!response.ok) { failed = true; messages.push(data.error || "Document could not be uploaded. Please inform HO Or send the document through E-MaiL and request to upload by HO."); }
+        else { messages.push(`${toSend.length} attached document(s) uploaded to the server.`); setPendingDocuments((current) => current.filter((d) => !toSend.includes(d))); }
+      } catch {
+        failed = true;
+        messages.push("Document could not be uploaded. Please inform HO Or send the document through E-MaiL and request to upload by HO.");
+      }
+    }
+    try {
+      const response = await fetch(`/api/motor/attachments?policyNo=${encodeURIComponent(policyNumber)}`);
+      if (response.ok) setStoredDocuments(await response.json() as StoredDocumentList);
+    } catch { /* the list is informational */ }
+    const text = messages.join(" ");
+    setDocumentUploadMessage(text ? { text, error: failed } : null);
+    return { text, failed };
+  };
+
   const submitPayment = async () => {
     if (!emailPreviewData) return;
     setEmailPreviewOpen(false);
     setPaymentMessage(""); setPaymentError(false); setSaving(true);
     try {
-      const response = await fetch("/api/motor/payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ 
-        ...payment, 
-        clientCode: proposalDraft.clientCode, 
-        policyNo: emailPreviewData.policyNo, 
+      // Data shown in the KYC, Policy Details, Vehicle Details and Premium forms. The server prefers the
+      // saved policy and client records and uses these values only where the database has no value.
+      const documents: Record<string, string> = {
+        address: kycValue("Address"), city: kycValue("City"), occupation: kycValue("Occupation"), mobile: kycValue("Mobile"),
+        country: draftValue("country") || "Mauritius", vehicleType: draftValue("vehicleType"), vehicleClass: draftValue("vehicleClass"),
+        vehicleStatus: draftValue("vehicleStatus"), fuelType: draftValue("fuelType"), coverRequired: policyCover || draftValue("coverRequired"),
+        issueDate: draftValue("issueDate"), fromDate: draftValue("fromDate"), toDate: draftValue("toDate"),
+        vehicleNo: draftValue("vehicleNo"), make: draftValue("make"), model: draftValue("model"), engineNo: draftValue("engineNo"),
+        chassisNo: draftValue("chassisNo"), seating: draftValue("seating"), cc: draftValue("cc"), manufactureDate: draftValue("manufactureDate"),
+        sumInsured: draftValue("sumInsured"), compulsoryExcess: draftValue("compulsoryExcess"), additionalExcess: draftValue("additionalExcess"),
+        youngDriverExcess: draftValue("youngDriverExcess"), totalLossExcess: draftValue("totalLossExcess"), tpfExcess: draftValue("tpfExcess"),
+        premium: draftValue("premium"), documentCharge: draftValue("documentCharge"), levy: draftValue("levy"),
+        hitAndRun: draftValue("hitAndRun"), invoiceAmount: draftValue("invoiceAmount"),
+      };
+      const response = await fetch("/api/motor/payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+        ...payment,
+        clientCode: emailPreviewData.clientCode === "WEB" ? "" : emailPreviewData.clientCode,
+        policyNo: emailPreviewData.policyNo,
         amount: proposalDraft.invoiceAmount || proposalDraft.premium,
-        title: proposalDraft.Title || "",
-        firstName: proposalDraft.Name || "",
-        surname: proposalDraft.Surname || "",
-        email: proposalDraft.EMail || ""
+        title: emailPreviewData.title,
+        firstName: emailPreviewData.firstName,
+        surname: emailPreviewData.surname,
+        email: emailPreviewData.email,
+        documents,
       }) });
-      const data = await response.json() as { error?: string; message?: string; clientCode?: string; paymentProcessed?: boolean; invoiceNo?: number };
+      const data = await response.json() as { error?: string; message?: string; clientCode?: string; paymentProcessed?: boolean; invoiceNo?: number; emailSent?: boolean; emailMessage?: string; storageMessage?: string };
       if (!response.ok) {
         if (data.paymentProcessed) {
-          setPaymentError(true); 
-          setPaymentMessage(`${data.error} Payment was processed (Invoice: ${data.invoiceNo}). Please select a client in KYC.`);
+          // Payment confirmed: push the attached documents to the server as well.
+          const upload = await uploadPendingDocuments(emailPreviewData.policyNo, "");
+          setPaymentError(true);
+          setPaymentMessage(`${data.error} Payment was processed (Invoice: ${data.invoiceNo}). Please select a client in KYC. ${data.storageMessage || ""} ${data.emailMessage || ""} ${upload.text}`.replace(/\s+/g, " ").trim());
         } else {
           throw new Error(data.error || "Payment could not be submitted.");
         }
       } else {
-        setPaymentOpen(false); setPaymentMessage(`${data.message || "Payment submitted successfully."} Client code: ${data.clientCode || proposalDraft.clientCode}`);
+        setPaymentOpen(false);
+        // Payment confirmed: push the attached documents to the server (policy folder / KYC folder).
+        const upload = await uploadPendingDocuments(emailPreviewData.policyNo, data.clientCode || (emailPreviewData.clientCode === "WEB" ? "" : emailPreviewData.clientCode));
+        setPaymentError(data.emailSent === false || upload.failed);
+        setPaymentMessage(`${data.message || "Payment submitted successfully."} Client code: ${data.clientCode || emailPreviewData.clientCode}. ${data.storageMessage || ""} ${data.emailMessage || ""} ${upload.text}`.replace(/\s+/g, " ").trim());
       }
     } catch (error) { setPaymentError(true); setPaymentMessage(error instanceof Error ? error.message : "Payment could not be submitted."); }
     finally { setSaving(false); }
@@ -2044,7 +2224,7 @@ const saveCurrentSection = async () => {
                         {section.title === "KYC" ? <span className="self-start bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-100 sm:self-auto">{kycMissing.length ? `${kycMissing.length} mandatory field${kycMissing.length === 1 ? "" : "s"} pending` : "Complete"}</span> : section.title === "Policy Details" ? <span className={`self-start px-3 py-1.5 text-xs font-bold ring-1 sm:self-auto ${policyMissing ? "bg-red-50 text-red-700 ring-red-100" : "bg-emerald-50 text-emerald-700 ring-emerald-100"}`}>{policyMissing ? `${policyMissing} mandatory fields pending` : "Complete"}</span> : section.title === "Vechicle Details" ? <span className={`self-start px-3 py-1.5 text-xs font-bold ring-1 sm:self-auto ${vehicleMissing ? "bg-red-50 text-red-700 ring-red-100" : "bg-emerald-50 text-emerald-700 ring-emerald-100"}`}>{vehicleMissing ? `${vehicleMissing} mandatory fields pending` : "Complete"}</span> : section.pending ? <span className="self-start bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-100 sm:self-auto">{section.pending}</span> : <span className="self-start bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 sm:self-auto">Ready to complete</span>}
                       </div>
 <div className="overflow-x-auto p-3 sm:p-4">
-                        {section.title === "KYC" ? <ClientDetailsForm onKycStatus={setKycMissing} onClientSelected={(client) => setProposalDraft((current) => ({ ...current, clientCode: String(client.Code || ""), title: String(client.Title || ""), firstName: String(client.Name || ""), surname: String(client.Surname || ""), email: String(client.EMail || "") }))} onSaved={() => markSectionSaved("KYC")} /> : section.title === "Policy Details" ? <MotorProposalForm clientCode={String(proposalDraft.clientCode || "")} onStatusChange={setPolicyMissing} coverRequired={policyCover} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} /> : section.title === "Vechicle Details" ? <VehicleProposalForm policyCover={policyCover} onPolicyCoverChange={setPolicyCover} onStatusChange={setVehicleMissing} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} vehicleClass={proposalDraft.vehicleClass} vehicleType={proposalDraft.vehicleType} fuelType={proposalDraft.fuelType} issueDate={proposalDraft.issueDate} /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm /> : section.title === "Premium" ? <PremiumForm values={proposalDraft as Record<string, string | boolean>} calculating={premiumCalculating} onCalculate={calculatePremium} error={premiumError} /> : <AttachedDocumentForm />}
+                        {section.title === "KYC" ? <ClientDetailsForm onKycStatus={setKycMissing} onClientSelected={(client) => setProposalDraft((current) => ({ ...current, clientCode: String(client.Code || ""), title: String(client.Title || ""), firstName: String(client.Name || ""), surname: String(client.Surname || ""), email: String(client.EMail || "") }))} onSaved={() => markSectionSaved("KYC")} onClientChange={setKycClient} /> : section.title === "Policy Details" ? <MotorProposalForm clientCode={String(proposalDraft.clientCode || "")} onStatusChange={setPolicyMissing} coverRequired={policyCover} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} /> : section.title === "Vechicle Details" ? <VehicleProposalForm policyCover={policyCover} onPolicyCoverChange={setPolicyCover} onStatusChange={setVehicleMissing} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} vehicleClass={proposalDraft.vehicleClass} vehicleType={proposalDraft.vehicleType} fuelType={proposalDraft.fuelType} issueDate={proposalDraft.issueDate} country={String(proposalDraft.country || "Mauritius")} /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm /> : section.title === "Premium" ? <PremiumForm values={proposalDraft as Record<string, string | boolean>} calculating={premiumCalculating} onCalculate={calculatePremium} error={premiumError} /> : <AttachedDocumentForm policyNo={policyNo} documents={pendingDocuments} onDocumentsChange={setPendingDocuments} stored={storedDocuments} uploadMessage={documentUploadMessage} />}
                         {section.title !== "KYC" ? <div className="mt-4 flex justify-end border-t border-violet-100 pt-4"><button type="button" disabled={saving} onClick={() => void saveCurrentSection()} className="bg-[#35126d] px-6 py-3 text-sm font-bold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-400">{saving ? "Saving..." : section.title === "Attached Document" ? "Save policy and continue" : "Save and continue"}</button></div> : null}
                       </div>
                     </section>
@@ -2101,7 +2281,7 @@ const saveCurrentSection = async () => {
         </aside>
       </div>
 {paymentMessage ? <p role={paymentError ? "alert" : "status"} className={`fixed bottom-4 right-4 z-50 border px-4 py-3 text-sm font-semibold ${paymentError ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{paymentMessage}</p> : null}
-      {console.log("[Render] emailPreviewOpen:", emailPreviewOpen, "emailPreviewData:", emailPreviewData) || (emailPreviewOpen && emailPreviewData ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"><div className="w-full max-w-2xl bg-white p-6 shadow-xl"><h2 className="text-xl font-semibold text-[#35126d] mb-4">Policy Email Preview</h2><div className="border border-violet-200 rounded-lg p-4 mb-4 bg-violet-50"><p className="text-sm font-semibold text-[#35126d]">Policy Confirmation Email</p><p className="text-xs text-slate-600 mt-1">This email will be sent to the client upon payment confirmation.</p></div><div className="space-y-3 text-sm"><div><span className="font-semibold text-slate-700">To:</span> <span className="text-slate-600">{emailPreviewData.fullName}</span></div><div><span className="font-semibold text-slate-700">Email:</span> <span className="text-slate-600">{emailPreviewData.email || "Not provided"}</span></div><div><span className="font-semibold text-slate-700">Policy No:</span> <span className="font-mono text-[#35126d]">{emailPreviewData.policyNo}</span></div><div><span className="font-semibold text-slate-700">Client Code:</span> <span className="font-mono text-[#35126d]">{emailPreviewData.clientCode}</span></div></div><div className="mt-6 flex justify-end gap-3"><button type="button" onClick={() => setEmailPreviewOpen(false)} className="border px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button><button type="button" onClick={submitPayment} disabled={saving} className="bg-[#35126d] px-5 py-2 text-sm font-semibold text-white">{saving ? "Submitting..." : "Send Email & Submit Payment"}</button></div></div></div> : null)}
+      {console.log("[Render] emailPreviewOpen:", emailPreviewOpen, "emailPreviewData:", emailPreviewData) || (emailPreviewOpen && emailPreviewData ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"><div className="w-full max-w-2xl bg-white p-6 shadow-xl"><h2 className="text-xl font-semibold text-[#35126d] mb-4">Policy Email Preview</h2><div className="border border-violet-200 rounded-lg p-4 mb-4 bg-violet-50"><p className="text-sm font-semibold text-[#35126d]">Policy Confirmation Email</p><p className="text-xs text-slate-600 mt-1">This email will be sent to the client upon payment confirmation, with the Certificate of Insurance, Debit Note (Invoice), Policy Schedule and Insurance Vignette attached as PDF files.</p></div><div className="space-y-3 text-sm"><div><span className="font-semibold text-slate-700">To:</span> <span className="text-slate-600">{emailPreviewData.fullName}</span></div><div><span className="font-semibold text-slate-700">Email:</span> <span className="text-slate-600">{emailPreviewData.email || "Not provided"}</span></div><div><span className="font-semibold text-slate-700">Policy No:</span> <span className="font-mono text-[#35126d]">{emailPreviewData.policyNo}</span></div><div><span className="font-semibold text-slate-700">Client Code:</span> <span className="font-mono text-[#35126d]">{emailPreviewData.clientCode}</span></div></div><div className="mt-6 flex justify-end gap-3"><button type="button" onClick={() => setEmailPreviewOpen(false)} className="border px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button><button type="button" onClick={submitPayment} disabled={saving} className="bg-[#35126d] px-5 py-2 text-sm font-semibold text-white">{saving ? "Submitting..." : "Send Email & Submit Payment"}</button></div></div></div> : null)}
       {paymentOpen ? <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/50 p-4"><form onSubmit={(e) => { e.preventDefault(); showEmailPreview(e); }} className="w-full max-w-lg space-y-4 bg-white p-6 shadow-xl"><h2 className="text-xl font-semibold text-[#35126d]">Complete payment</h2><select value={payment.method} onChange={e => setPayment({...payment, method:e.target.value})} className="w-full border p-3"><option value="card">Credit or debit card</option><option value="bank">Internet banking</option></select><input required placeholder="Name on card" value={payment.name} onChange={e=>setPayment({...payment,name:e.target.value})} className="w-full border p-3" /><input required placeholder="Card number" value={payment.cardNumber} onChange={e=>setPayment({...payment,cardNumber:e.target.value})} className="w-full border p-3" /><div className="grid grid-cols-2 gap-3"><input required placeholder="MM/YY" value={payment.expiry} onChange={e=>setPayment({...payment,expiry:e.target.value})} className="border p-3" /><input required placeholder="CVV" value={payment.cvv} onChange={e=>setPayment({...payment,cvv:e.target.value})} className="border p-3" /></div><div className="flex justify-end gap-3"><button type="button" onClick={()=>setPaymentOpen(false)} className="border px-4 py-2">Cancel</button><button type="button" onClick={(e) => { e.preventDefault(); showEmailPreview(e); }} disabled={saving} className="bg-[#35126d] px-5 py-2 font-semibold text-white">{saving ? "Submitting..." : "Continue to Email Preview"}</button></div></form></div> : null}
     </main>
   );

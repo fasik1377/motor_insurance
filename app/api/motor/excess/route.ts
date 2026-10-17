@@ -99,7 +99,24 @@ export async function GET(request: Request) {
     }
     
     // STEP 3: Class-B tariff - "Only Make" (MotClassBVehList)
-    if (make && sumInsured > 0 && issueDateStr) {
+    // As in usp_GetMotorExcess: if the make is listed as "Only Make" at all, this branch
+    // always ends here - with the sum-insured row, or with "NO Class B-VERIFY" when no
+    // sum-insured range matches (it must not fall through to the later steps).
+    const onlyMakeListed = make && issueDateStr ? (await db.request()
+      .input("Make", make.toUpperCase())
+      .input("FuelType", calcFuelType)
+      .input("IssueDate", issueDateStr)
+      .query(`
+        SELECT TOP 1 1 AS Listed
+        FROM MotClassBVehList
+        WHERE UPPER(Make) = UPPER(@Make)
+          AND OnlyMake = 1
+          AND @IssueDate BETWEEN EffDate AND ExpDate
+          AND FuelType = @FuelType
+          AND Status = 'O'
+      `)).recordset.length > 0 : false;
+
+    if (onlyMakeListed) {
       const onlyMakeResult = await db.request()
         .input("Make", make.toUpperCase())
         .input("FuelType", calcFuelType)
@@ -117,25 +134,24 @@ export async function GET(request: Request) {
           ORDER BY EffDate DESC
         `);
       
-      if (onlyMakeResult.recordset.length > 0) {
-        compulsoryExcess = [String(onlyMakeResult.recordset[0].ExcessComp || "")];
-        youngDriverExcess = [String(onlyMakeResult.recordset[0].ExcessYoung || "")];
-        
-        if (!compulsoryExcess[0]) {
-          success = false;
-          errorMsg = "NO Class B-VERIFY";
-        }
-        
-        return NextResponse.json({ 
-          compulsoryExcess, 
-          youngDriverExcess, 
-          totalLossExcess, 
-          tpfExcess: ["Select..."],
-          addExcess,
-          success,
-          errorMsg
-        });
+      const row = onlyMakeResult.recordset[0];
+      if (row && row.ExcessComp !== null && row.ExcessComp !== undefined) {
+        compulsoryExcess = [String(row.ExcessComp)];
+        youngDriverExcess = [String(row.ExcessYoung ?? "")];
+      } else {
+        success = false;
+        errorMsg = "NO Class B-VERIFY";
       }
+
+      return NextResponse.json({
+        compulsoryExcess: success ? compulsoryExcess : ["Select..."],
+        youngDriverExcess: success ? youngDriverExcess : ["Select..."],
+        totalLossExcess,
+        tpfExcess: ["Select..."],
+        addExcess,
+        success,
+        errorMsg
+      });
     }
     
     // STEP 4: Class-B tariff - "Make & Model" (MotClassBVehList)
@@ -176,7 +192,9 @@ export async function GET(request: Request) {
     
     // STEP 5: Electric-vehicle tariff (MotElectricExcess) - effective Apr-2026
     const isElectric = calcFuelType === "Electric";
-    const isNotTwoWheelers = !vehicleClass.toUpperCase().includes("TWO WHEELER");
+    // The original VB gate is CmbType.Text <> 'Two wheelers' (the vehicle TYPE, not the class);
+    // usp_GetMotorExcess flags this as open. Two-wheeler classes (e.g. ELECTRIC BIKE) are skipped here.
+    const isNotTwoWheelers = vehicleType.trim().toUpperCase() !== "TWO WHEELERS" && vehicleClass.trim().toUpperCase() !== "TWO WHEELERS";
     
     if (isElectric && isNotTwoWheelers && sumInsured > 0) {
       const electricResult = await db.request()

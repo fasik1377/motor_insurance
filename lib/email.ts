@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { PolicyAttachment } from "@/lib/policy-documents";
+
 interface PolicyEmailData {
   title: string;
   firstName: string;
@@ -9,7 +11,7 @@ interface PolicyEmailData {
   email: string;
 }
 
-export async function sendPolicyEmail(data: PolicyEmailData): Promise<{ success: boolean; error?: string }> {
+export async function sendPolicyEmail(data: PolicyEmailData, attachments: PolicyAttachment[] = []): Promise<{ success: boolean; error?: string }> {
   const apiKey = process.env.BREVO_API_KEY;
   const fromEmail = process.env.BREVO_FROM_EMAIL;
   const fromName = process.env.BREVO_FROM_NAME;
@@ -91,6 +93,8 @@ Underwriting Department
         subject: `Your Policy Documents - Policy No: ${data.policyNo}`,
         htmlContent,
         textContent,
+        // Certificate, Debit Note, Schedule and Vignette as PDF attachments (Brevo expects base64 content).
+        ...(attachments.length ? { attachment: attachments.map((file) => ({ name: file.name, content: Buffer.from(file.content).toString("base64") })) } : {}),
       }),
     });
 
