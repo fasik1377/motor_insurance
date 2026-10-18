@@ -44,7 +44,7 @@ const sectionRequirements: Record<string, Array<[string, string]>> = {
   Premium: [],
   Accessories: [],
   "General Information": [],
-  "Common Det.": [["commonDetailsConfirmed", "Complete the common vehicle details declarations."]],
+  "Common Det.": [], // validated by commonDetailsErrors()
   "Attached Document": [],
 };
 
@@ -1557,38 +1557,294 @@ function GeneralInformationForm() {
   );
 }
 
-function CommonDetailsForm() {
-  const inputClass = "h-9 w-full border border-violet-200 bg-white px-2 text-sm text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
-  const documents = ["Certificate", "Vignette", "Sch", "Inv", "Premium", "Com", "PSSA", "Acc. Gen", "ICAC", "MIE", "AML", "AMCCU", "MRA", "PSEA", "BOM", "EWF", "Pro Note", "Summary", "Policy-wording", "KYC", "Scarcity", "Proposal"];
-  const actions = ["Insert & Save", "Edit & Save", "View", "Print", "Not approved", "Approve", "Insert 2 NTA", "Reports in PDF", "Exit"];
-  const yesNo = (name: string) => <div className="flex items-center gap-5 text-xs"><label className="flex items-center gap-1"><input type="radio" name={name} className="accent-[#35126d]" />Yes</label><label className="flex items-center gap-1"><input type="radio" name={name} className="accent-[#35126d]" />No</label></div>;
+// Common Det. answers (proposal declarations for commercial vehicles). Follow-up questions are only
+// asked when they apply, e.g. the nature of goods only for goods-carrying vehicles.
+const COMMON_PURPOSES = ["Passenger Carry", "Commercial", "Goods Carry", "Other"];
+const commonYes = (values: Record<string, unknown>, field: string) => values[field] === "Yes";
+
+function commonDetailsErrors(values: Record<string, unknown>): [string, string][] {
+  const errors: [string, string][] = [];
+  const answered = (field: string) => String(values[field] ?? "").trim() !== "";
+  if (!answered("cdPurpose")) errors.push(["cdPurpose", "Select the purpose for which the vehicle will be used."]);
+  if (values.cdPurpose === "Goods Carry" && !answered("cdGoodsNature")) errors.push(["cdGoodsNature", "Select the nature of the goods carried."]);
+  if (values.cdPurpose === "Goods Carry" && values.cdGoodsNature === "Hazardous" && !answered("cdHazardous")) errors.push(["cdHazardous", "State whether explosives or petrol will be carried."]);
+  if (!answered("cdRegisteredInName")) errors.push(["cdRegisteredInName", "State whether the vehicle is registered in your name."]);
+  if (!answered("cdAltered")) errors.push(["cdAltered", "State whether the vehicle's design was altered."]);
+  if (commonYes(values, "cdAltered") && String(values.cdAlterationDetails ?? "").trim().length < 5) errors.push(["cdAlterationDetails", "Describe the alteration or addition (at least 5 characters)."]);
+  if (values.cdPurpose === "Passenger Carry") {
+    const passengers = Number(values.cdPassengers);
+    if (!answered("cdPassengers")) errors.push(["cdPassengers", "Enter the maximum licensed number of passengers."]);
+    else if (!Number.isInteger(passengers) || passengers < 1 || passengers > 99) errors.push(["cdPassengers", "The number of passengers must be a whole number from 1 to 99."]);
+  }
+  if (!answered("cdOwnPremises")) errors.push(["cdOwnPremises", "State whether use is limited to your own premises."]);
+  if (!answered("cdPrivateUse")) errors.push(["cdPrivateUse", "State whether the vehicle is also used for private purposes."]);
+  if (commonYes(values, "cdPrivateUse") && String(values.cdPrivateUseDetails ?? "").trim().length < 5) errors.push(["cdPrivateUseDetails", "Give the details of the private use (at least 5 characters)."]);
+  if (values.commonDetailsConfirmed !== true) errors.push(["commonDetailsConfirmed", "Confirm that the common vehicle details are complete."]);
+  return errors;
+}
+
+function CommonDetailsForm({ values, onFieldChange, showErrors }: { values: Record<string, string | boolean>; onFieldChange: (field: string, value: string | boolean) => void; showErrors?: boolean }) {
+  const errors = Object.fromEntries(commonDetailsErrors(values));
+  // Errors show once a question is answered (invalid value) or after a save attempt.
+  const errorFor = (field: string) => showErrors || String(values[field] ?? "") !== "" ? errors[field] : undefined;
+  const isGoods = values.cdPurpose === "Goods Carry";
+  const questions = ["cdPurpose", ...(isGoods ? ["cdGoodsNature"] : []), ...(isGoods && values.cdGoodsNature === "Hazardous" ? ["cdHazardous"] : []), "cdRegisteredInName", "cdAltered", ...(values.cdPurpose === "Passenger Carry" ? ["cdPassengers"] : []), "cdOwnPremises", "cdPrivateUse"];
+  const answeredCount = questions.filter((field) => String(values[field] ?? "").trim() !== "" && !errors[field]).length;
+
+  // Clearing a "parent" answer also clears the follow-up questions that no longer apply.
+  const setAnswer = (field: string, value: string) => {
+    onFieldChange(field, value);
+    if (field === "cdPurpose" && value !== "Goods Carry") { onFieldChange("cdGoodsNature", ""); onFieldChange("cdHazardous", ""); }
+    if (field === "cdPurpose" && value !== "Passenger Carry") onFieldChange("cdPassengers", "");
+    if (field === "cdGoodsNature" && value !== "Hazardous") onFieldChange("cdHazardous", "");
+    if (field === "cdAltered" && value !== "Yes") onFieldChange("cdAlterationDetails", "");
+    if (field === "cdPrivateUse" && value !== "Yes") onFieldChange("cdPrivateUseDetails", "");
+  };
+
+  const choices = (field: string, options: string[]) => (
+    <div role="radiogroup" className="flex flex-wrap gap-2">
+      {options.map((option) => {
+        const selected = values[field] === option;
+        return (
+          <label key={option} className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-semibold ring-1 transition ${selected ? "bg-[#35126d] text-white ring-[#35126d] shadow-sm" : "bg-white text-slate-600 ring-slate-200 hover:bg-violet-50 hover:text-[#35126d] hover:ring-violet-300"}`}>
+            <input type="radio" name={field} value={option} checked={selected} onChange={() => setAnswer(field, option)} className="sr-only" />
+            {option}
+          </label>
+        );
+      })}
+    </div>
+  );
+  const question = (letter: string, field: string, text: string, control: React.ReactNode, followUp?: React.ReactNode) => {
+    const error = errorFor(field);
+    const done = String(values[field] ?? "").trim() !== "" && !errors[field];
+    return (
+      <div key={field} className={`rounded-xl border bg-white p-4 transition ${error ? "border-rose-200" : done ? "border-emerald-100" : "border-violet-100"}`}>
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+          <div className="flex items-start gap-3">
+            <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${done ? "bg-emerald-100 text-emerald-700" : "bg-violet-100 text-[#35126d]"}`}>{done ? "✓" : letter}</span>
+            <p className="pt-1 text-sm leading-5 text-slate-700">{text} <span className="text-rose-500">*</span></p>
+          </div>
+          <div className="md:justify-self-end">{control}</div>
+        </div>
+        {followUp}
+        {error ? <p role="alert" className="mt-2 pl-10 text-xs font-medium text-rose-600">{error}</p> : null}
+      </div>
+    );
+  };
+  const details = (field: string, label: string) => {
+    const error = errorFor(field);
+    return (
+      <label className="mt-3 block pl-10">
+        <span className="text-xs font-semibold text-slate-600">{label} <span className="text-rose-500">*</span></span>
+        <textarea name={field} rows={2} value={String(values[field] ?? "")} onChange={(e) => onFieldChange(field, e.target.value)} className={`mt-1 w-full rounded-lg border bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none transition focus:bg-white focus:ring-2 focus:ring-violet-100 ${error ? "border-rose-300" : "border-slate-200 focus:border-[#5b3aa4]"}`} />
+        {error ? <span role="alert" className="mt-1 block text-xs font-medium text-rose-600">{error}</span> : null}
+      </label>
+    );
+  };
 
   return (
-    <div className="border border-violet-200 bg-[#f7f5fb]">
+    <div className="space-y-4 rounded-2xl border border-violet-200 bg-[#f7f5fb] p-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="text-base font-bold text-[#35126d]">Vehicle use declarations</h3>
+          <p className="mt-0.5 text-xs text-slate-500">Tell us how the commercial vehicle is used. Follow-up questions appear only when they apply.</p>
+        </div>
+        <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${answeredCount === questions.length ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-white text-slate-600 ring-violet-200"}`}>{answeredCount} of {questions.length} answered</span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-violet-100"><div className={`h-full rounded-full transition-all duration-300 ${answeredCount === questions.length ? "bg-emerald-500" : "bg-[#5b3aa4]"}`} style={{ width: `${(answeredCount / questions.length) * 100}%` }} /></div>
 
-      <div>
-<div className="space-y-4 p-4 sm:p-6 lg:border-r lg:border-violet-200">
-          <div className="grid gap-3 sm:grid-cols-[max-content_1fr_minmax(360px,1.2fr)]"><span className="text-xs font-semibold">a)</span><p className="text-xs leading-5 text-slate-700">Purpose for which vehicle will be used</p><div className="flex flex-wrap gap-x-5 gap-y-2 text-xs"><label className="flex items-center gap-1"><input type="radio" name="vehicle-purpose" className="accent-[#35126d]" />Passenger Carry</label><label className="flex items-center gap-1"><input type="radio" name="vehicle-purpose" className="accent-[#35126d]" />Commercial</label><label className="flex items-center gap-1"><input type="radio" name="vehicle-purpose" className="accent-[#35126d]" />Goods Carry</label><label className="flex items-center gap-1"><input type="radio" name="vehicle-purpose" className="accent-[#35126d]" />Other</label></div></div>
-          <div className="grid gap-3 sm:grid-cols-[max-content_1fr_minmax(360px,1.2fr)]"><span className="text-xs font-semibold">b)</span><p className="text-xs leading-5 text-slate-700">If vehicle used for carriage of goods specify its nature</p><div className="flex flex-wrap gap-x-5 gap-y-2 text-xs"><label className="flex items-center gap-1"><input type="radio" name="goods-nature" className="accent-[#35126d]" />General</label><label className="flex items-center gap-1"><input type="radio" name="goods-nature" className="accent-[#35126d]" />Hazardous</label></div></div>
-          <div className="grid gap-3 sm:grid-cols-[max-content_1fr_max-content]"><span className="text-xs font-semibold">c)</span><p className="text-xs leading-5 text-slate-700">If hazardous cargo will be carried state whether explosives or petrol will be carried</p>{yesNo("hazardous-cargo")}</div>
-          <div className="grid gap-3 sm:grid-cols-[max-content_1fr_max-content]"><span className="text-xs font-semibold">d)</span><p className="text-xs leading-5 text-slate-700">Vehicle registered in your name</p>{yesNo("registered-name")}</div>
-          <div className="grid gap-3 sm:grid-cols-[max-content_1fr_max-content]"><span className="text-xs font-semibold">e)</span><p className="text-xs leading-5 text-slate-700">Has any alteration or addition been made to manufacturer&apos;s standard design</p>{yesNo("altered-design")}</div>
-          <label className="grid gap-3 sm:ml-[22px] sm:grid-cols-[1fr_1.2fr]"><span className="text-xs leading-5 text-slate-500">If yes, provide alteration details</span><textarea rows={3} className="w-full border border-violet-200 bg-white px-2 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" /></label>
-          <div className="grid gap-3 border-y border-violet-100 py-4 sm:grid-cols-[max-content_1fr_max-content_1fr]"><span className="text-xs font-semibold">f)</span><p className="text-xs leading-5 text-slate-700">Maximum licensed carrying capacity (No. of passengers) in case of passenger carrying vehicle.</p><label className="text-xs font-semibold text-slate-600">No. of Passengers</label><input type="number" min="0" className={inputClass} /></div>
-          <div className="grid gap-3 sm:grid-cols-[max-content_1fr_max-content]"><span className="text-xs font-semibold">g)</span><p className="text-xs leading-5 text-slate-700">Whether the use of the vehicle is limited to own premises</p>{yesNo("own-premises")}</div>
-          <div className="grid gap-3 sm:grid-cols-[max-content_1fr_max-content]"><span className="text-xs font-semibold">h)</span><p className="text-xs leading-5 text-slate-700">Whether the commercial vehicle is also used for private purpose</p>{yesNo("private-purpose")}</div>
-          <label className="grid gap-3 sm:ml-[22px] sm:grid-cols-[1fr_1.2fr]"><span className="text-xs leading-5 text-slate-700">Excluding use for hire / reward</span><textarea rows={3} className="w-full border border-violet-200 bg-white px-2 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" /></label>
-          <label className="grid gap-3 sm:ml-[22px] sm:grid-cols-[1fr_1.2fr]"><span className="text-xs leading-5 text-slate-700">If yes please give details</span><textarea rows={3} className="w-full border border-violet-200 bg-white px-2 py-2 text-sm outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100" /></label>
-          <label className="mt-3 flex items-center gap-2 text-xs font-semibold text-[#35126d]"><input name="commonDetailsConfirmed" type="checkbox" className="accent-[#35126d]" /> I confirm the common vehicle details are complete.</label>
+      <div className="space-y-3">
+        {question("a", "cdPurpose", "Purpose for which the vehicle will be used", choices("cdPurpose", COMMON_PURPOSES),
+          isGoods ? (
+            <div className="mt-3 space-y-3 border-l-2 border-violet-200 pl-4 md:ml-10">
+              <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                <p className="text-sm text-slate-700">b) Nature of the goods carried <span className="text-rose-500">*</span></p>
+                {choices("cdGoodsNature", ["General", "Hazardous"])}
+              </div>
+              {errorFor("cdGoodsNature") ? <p role="alert" className="text-xs font-medium text-rose-600">{errorFor("cdGoodsNature")}</p> : null}
+              {values.cdGoodsNature === "Hazardous" ? (
+                <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                  <p className="text-sm text-slate-700">c) Will explosives or petrol be carried? <span className="text-rose-500">*</span></p>
+                  {choices("cdHazardous", ["Yes", "No"])}
+                </div>
+              ) : null}
+              {errorFor("cdHazardous") ? <p role="alert" className="text-xs font-medium text-rose-600">{errorFor("cdHazardous")}</p> : null}
+            </div>
+          ) : values.cdPurpose === "Passenger Carry" ? (
+            <label className="mt-3 flex flex-wrap items-center gap-3 border-l-2 border-violet-200 pl-4 md:ml-10">
+              <span className="text-sm text-slate-700">f) Maximum licensed carrying capacity (No. of passengers) <span className="text-rose-500">*</span></span>
+              <input name="cdPassengers" type="number" min={1} max={99} step={1} inputMode="numeric" value={String(values.cdPassengers ?? "")} onChange={(e) => onFieldChange("cdPassengers", e.target.value.replace(/[^0-9]/g, "").slice(0, 2))} className={`h-9 w-24 rounded-lg border bg-white px-3 text-center text-sm outline-none focus:ring-2 focus:ring-violet-100 ${errorFor("cdPassengers") ? "border-rose-300" : "border-slate-200 focus:border-[#5b3aa4]"}`} />
+              {errorFor("cdPassengers") ? <span role="alert" className="w-full text-xs font-medium text-rose-600">{errorFor("cdPassengers")}</span> : null}
+            </label>
+          ) : null)}
+        {question("d", "cdRegisteredInName", "Is the vehicle registered in your name?", choices("cdRegisteredInName", ["Yes", "No"]))}
+        {question("e", "cdAltered", "Has any alteration or addition been made to the manufacturer's standard design?", choices("cdAltered", ["Yes", "No"]),
+          commonYes(values, "cdAltered") ? details("cdAlterationDetails", "Alteration / addition details") : null)}
+        {question("g", "cdOwnPremises", "Is the use of the vehicle limited to your own premises?", choices("cdOwnPremises", ["Yes", "No"]))}
+        {question("h", "cdPrivateUse", "Is the commercial vehicle also used for private purposes (excluding use for hire or reward)?", choices("cdPrivateUse", ["Yes", "No"]),
+          commonYes(values, "cdPrivateUse") ? details("cdPrivateUseDetails", "Details of the private use") : null)}
+      </div>
+
+      <label className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold transition ${values.commonDetailsConfirmed === true ? "border-emerald-200 bg-emerald-50 text-emerald-700" : showErrors && errors.commonDetailsConfirmed ? "border-rose-200 bg-rose-50 text-rose-700" : "border-violet-200 bg-white text-[#35126d]"}`}>
+        <input name="commonDetailsConfirmed" type="checkbox" checked={values.commonDetailsConfirmed === true} onChange={(e) => onFieldChange("commonDetailsConfirmed", e.target.checked)} className="h-5 w-5 accent-[#35126d]" />
+        I confirm the common vehicle details are complete and correct.
+      </label>
+    </div>
+  );
+}
+
+// Payment details entered in the "Complete payment" dialog. Card details stay in the browser:
+// only the method, the payer name, the bank and the last four card digits are sent to the server.
+type PaymentDetails = { method: string; name: string; cardNumber: string; expiry: string; cvv: string; bank: string };
+const PAYMENT_BANKS = ["The Mauritius Commercial Bank (MCB)", "SBM Bank", "Bank of Baroda", "Absa Bank", "AfrAsia Bank", "MauBank", "Bank One", "Standard Bank", "HSBC", "Other"];
+const cardDigits = (value: string) => value.replace(/\D/g, "");
+function cardBrand(digits: string): "Visa" | "Mastercard" | "Amex" | "" {
+  if (/^4/.test(digits)) return "Visa";
+  if (/^(5[1-5]|222[1-9]|22[3-9]\d|2[3-6]\d{2}|27[01]\d|2720)/.test(digits)) return "Mastercard";
+  if (/^3[47]/.test(digits)) return "Amex";
+  return "";
+}
+// Luhn checksum used by all payment cards.
+function luhnValid(digits: string) {
+  let sum = 0;
+  for (let i = 0; i < digits.length; i++) {
+    let digit = Number(digits[digits.length - 1 - i]);
+    if (i % 2 === 1) { digit *= 2; if (digit > 9) digit -= 9; }
+    sum += digit;
+  }
+  return digits.length > 0 && sum % 10 === 0;
+}
+const formatCardNumber = (value: string) => {
+  const digits = cardDigits(value).slice(0, 19);
+  return cardBrand(digits) === "Amex" ? digits.replace(/^(\d{0,4})(\d{0,6})(\d{0,5}).*/, (_, a, b, c) => [a, b, c].filter(Boolean).join(" ")) : digits.replace(/(\d{4})(?=\d)/g, "$1 ");
+};
+const formatExpiry = (value: string, previous: string) => {
+  const digits = cardDigits(value).slice(0, 4);
+  if (value.length < previous.length) return value; // let backspace remove the slash
+  return digits.length >= 3 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits.length === 2 ? `${digits}/` : digits;
+};
+
+function paymentErrors(p: PaymentDetails, now = new Date()): Partial<Record<keyof PaymentDetails, string>> {
+  const errors: Partial<Record<keyof PaymentDetails, string>> = {};
+  const name = p.name.trim();
+  if (!name) errors.name = p.method === "card" ? "Enter the name shown on the card." : "Enter the account holder's name.";
+  else if (name.length < 2) errors.name = "Enter the full name (at least 2 letters).";
+  else if (!/^[A-Za-z][A-Za-z .'-]*$/.test(name)) errors.name = "Use letters, spaces, apostrophes, dots or hyphens only.";
+  if (p.method === "bank") {
+    if (!p.bank) errors.bank = "Select your bank.";
+    return errors;
+  }
+  const digits = cardDigits(p.cardNumber);
+  const brand = cardBrand(digits);
+  if (!digits) errors.cardNumber = "Enter the card number.";
+  else if (digits.length < 13 || digits.length > 19 || (brand === "Amex" && digits.length !== 15) || (brand === "Visa" && ![13, 16, 19].includes(digits.length)) || (brand === "Mastercard" && digits.length !== 16)) errors.cardNumber = "The card number has the wrong number of digits.";
+  else if (!luhnValid(digits)) errors.cardNumber = "This card number is not valid. Please check it.";
+  const match = p.expiry.match(/^(\d{2})\/(\d{2})$/);
+  if (!p.expiry) errors.expiry = "Enter the expiry date.";
+  else if (!match || Number(match[1]) < 1 || Number(match[1]) > 12) errors.expiry = "Use the format MM/YY.";
+  else {
+    const expiryEnd = new Date(2000 + Number(match[2]), Number(match[1]), 1); // first day after the expiry month
+    if (expiryEnd <= now) errors.expiry = "This card has expired.";
+    else if (expiryEnd.getFullYear() > now.getFullYear() + 20) errors.expiry = "Check the expiry year.";
+  }
+  const cvvLength = brand === "Amex" ? 4 : 3;
+  if (!p.cvv) errors.cvv = "Enter the security code.";
+  else if (!new RegExp(`^\\d{${cvvLength}}$`).test(p.cvv)) errors.cvv = `The security code has ${cvvLength} digits.`;
+  return errors;
+}
+
+function PaymentForm({ payment, onChange, amount, policyNo, notice, onCancel, onContinue }: { payment: PaymentDetails; onChange: (payment: PaymentDetails) => void; amount: number; policyNo: string; notice: string; onCancel: () => void; onContinue: () => void }) {
+  const [touched, setTouched] = useState<Partial<Record<keyof PaymentDetails, boolean>>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const errors = paymentErrors(payment);
+  const show = (field: keyof PaymentDetails) => (submitted || touched[field]) ? errors[field] : undefined;
+  const set = (field: keyof PaymentDetails, value: string) => onChange({ ...payment, [field]: value });
+  const blur = (field: keyof PaymentDetails) => () => setTouched((current) => ({ ...current, [field]: true }));
+  const brand = cardBrand(cardDigits(payment.cardNumber));
+  const isCard = payment.method === "card";
+  const inputClass = (field: keyof PaymentDetails) => `mt-1.5 h-11 w-full rounded-xl border bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:bg-white focus:ring-4 ${show(field) ? "border-rose-300 focus:ring-rose-100" : "border-slate-200 focus:border-[#5b3aa4] focus:ring-violet-100"}`;
+  const fieldError = (field: keyof PaymentDetails) => show(field) ? <span role="alert" className="mt-1 block text-xs font-medium text-rose-600">{show(field)}</span> : null;
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitted(true);
+    if (Object.keys(errors).length) return;
+    onContinue();
+  };
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/50 p-4">
+      <form onSubmit={submit} noValidate className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="bg-gradient-to-r from-[#35126d] to-[#5b3aa4] px-6 py-4 text-white">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-violet-200">Secure payment</p>
+              <h2 className="mt-1 text-lg font-bold">Complete payment</h2>
+              {policyNo ? <p className="mt-0.5 font-mono text-xs text-violet-100">Policy {policyNo}</p> : null}
+            </div>
+            <div className="text-right">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-violet-200">Amount due</p>
+              <p className="font-mono text-2xl font-bold tabular-nums">Rs {amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            </div>
+          </div>
         </div>
 
-        <aside className="hidden">
-          <h3 className="border-b border-violet-100 pb-3 text-center text-sm font-bold uppercase tracking-wider text-[#35126d]">Print New Documents</h3>
-          <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">{documents.map((document, index) => <label key={document} className="flex items-center gap-2 text-xs text-violet-700"><input type="radio" name="common-print-document" defaultChecked={index === 0} className="accent-[#35126d]" />{document}</label>)}</div>
-          <div className="mt-6 grid grid-cols-3 gap-2">{actions.map((action) => <button key={action} type="button" className="min-h-16 border border-violet-200 bg-violet-50 px-2 py-3 text-xs font-semibold text-[#35126d] hover:bg-violet-100">{action}</button>)}</div>
-          <label className="mt-5 block text-xs font-bold uppercase tracking-wider text-red-600">Remarks<textarea rows={4} className={`mt-2 ${inputClass}`} /></label>
-        </aside>
-      </div>
+        <div className="space-y-4 p-6">
+          <div role="radiogroup" aria-label="Payment method" className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1">
+            {[["card", "Credit / debit card"], ["bank", "Internet banking"]].map(([value, label]) => (
+              <label key={value} className={`cursor-pointer rounded-lg px-3 py-2 text-center text-sm font-semibold transition ${payment.method === value ? "bg-white text-[#35126d] shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                <input type="radio" name="payment-method" value={value} checked={payment.method === value} onChange={() => { set("method", value); setSubmitted(false); }} className="sr-only" />
+                {label}
+              </label>
+            ))}
+          </div>
+
+          <label className="block text-sm font-medium text-slate-700">{isCard ? "Name on card" : "Account holder name"}
+            <input autoComplete={isCard ? "cc-name" : "name"} value={payment.name} onChange={(e) => set("name", e.target.value)} onBlur={blur("name")} placeholder={isCard ? "As printed on the card" : "Full name"} className={inputClass("name")} />
+            {fieldError("name")}
+          </label>
+
+          {isCard ? (
+            <>
+              <label className="block text-sm font-medium text-slate-700">Card number
+                <span className="relative block">
+                  <input inputMode="numeric" autoComplete="cc-number" value={payment.cardNumber} onChange={(e) => set("cardNumber", formatCardNumber(e.target.value))} onBlur={blur("cardNumber")} placeholder="1234 5678 9012 3456" className={`${inputClass("cardNumber")} pr-24 font-mono tracking-wider`} />
+                  {brand ? <span className="absolute right-3 top-1/2 mt-0.5 -translate-y-1/2 rounded-md bg-[#35126d] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">{brand}</span> : null}
+                </span>
+                {fieldError("cardNumber")}
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block text-sm font-medium text-slate-700">Expiry date
+                  <input inputMode="numeric" autoComplete="cc-exp" value={payment.expiry} onChange={(e) => set("expiry", formatExpiry(e.target.value, payment.expiry))} onBlur={blur("expiry")} placeholder="MM/YY" maxLength={5} className={`${inputClass("expiry")} font-mono`} />
+                  {fieldError("expiry")}
+                </label>
+                <label className="block text-sm font-medium text-slate-700">Security code (CVV)
+                  <input type="password" inputMode="numeric" autoComplete="cc-csc" value={payment.cvv} onChange={(e) => set("cvv", cardDigits(e.target.value).slice(0, brand === "Amex" ? 4 : 3))} onBlur={blur("cvv")} placeholder={brand === "Amex" ? "4 digits" : "3 digits"} className={`${inputClass("cvv")} font-mono`} />
+                  {fieldError("cvv")}
+                </label>
+              </div>
+            </>
+          ) : (
+            <label className="block text-sm font-medium text-slate-700">Bank
+              <select value={payment.bank} onChange={(e) => set("bank", e.target.value)} onBlur={blur("bank")} className={inputClass("bank")}>
+                <option value="">Select your bank</option>
+                {PAYMENT_BANKS.map((bank) => <option key={bank}>{bank}</option>)}
+              </select>
+              {fieldError("bank")}
+            </label>
+          )}
+
+          {notice ? <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">{notice}</p> : null}
+          <p className="flex items-center gap-2 text-xs text-slate-500">
+            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 018 0v4" /></svg>
+            {isCard ? "Your card number and security code are never stored or sent to our server." : "You will confirm the transfer with your bank."}
+          </p>
+        </div>
+
+        <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
+          <button type="button" onClick={onCancel} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+          <button type="submit" className="rounded-xl bg-[#35126d] px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#2b0f5a]">Continue to e-mail preview</button>
+        </div>
+      </form>
     </div>
   );
 }
@@ -1916,7 +2172,9 @@ export default function BuyOnlinePage() {
   const [policyMissing, setPolicyMissing] = useState(3);
   const [vehicleMissing, setVehicleMissing] = useState(6);
   const [paymentOpen, setPaymentOpen] = useState(false);
-  const [payment, setPayment] = useState({ method: "card", name: "", cardNumber: "", expiry: "", cvv: "" });
+  const [payment, setPayment] = useState<PaymentDetails>({ method: "card", name: "", cardNumber: "", expiry: "", cvv: "", bank: "" });
+  // Shows every Common Det. error once the user has tried to save the section.
+  const [commonDetailsAttempted, setCommonDetailsAttempted] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState("");
   const [paymentError, setPaymentError] = useState(false);
   const [premiumCalculating, setPremiumCalculating] = useState(false);
@@ -2110,8 +2368,7 @@ const detailsComplete = Boolean(registration.trim() && fullName.trim());
   const [paymentResult, setPaymentResult] = useState<{ ok: boolean; recorded: boolean; lines: string[] } | null>(null);
   const payableAmount = Number(String(proposalDraft.invoiceAmount || proposalDraft.premium || "").replace(/,/g, "")) || 0;
 
-  const showEmailPreview = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const showEmailPreview = async () => {
     if (!policyNo) {
       setPaymentError(true);
       setPaymentMessage("Policy number not found. Please save the policy first (Attached Document section).");
@@ -2199,7 +2456,10 @@ const detailsComplete = Boolean(registration.trim() && fullName.trim());
         hitAndRun: draftValue("hitAndRun"), invoiceAmount: draftValue("invoiceAmount"),
       };
       const response = await fetch("/api/motor/payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-        ...payment,
+        method: payment.method,
+        payerName: payment.name.trim(),
+        bank: payment.method === "bank" ? payment.bank : "",
+        cardLast4: payment.method === "card" ? cardDigits(payment.cardNumber).slice(-4) : "",
         clientCode: emailPreviewData.clientCode === "WEB" ? "" : emailPreviewData.clientCode,
         policyNo: emailPreviewData.policyNo,
         amount: payableAmount,
@@ -2322,6 +2582,7 @@ const saveCurrentSection = async () => {
       else if (Number(currentDraft.sumInsured) > 0 && !filled("compulsoryExcess")) missing.push(["compulsoryExcess", "The compulsory excess could not be found for these details. See the message under Cover & excess."]);
     }
     if (openSection === "Premium") missing.push(...coverErrors(currentDraft, Number(currentDraft.seating) || 0));
+    if (openSection === "Common Det.") { setCommonDetailsAttempted(true); missing.push(...commonDetailsErrors(currentDraft)); }
     // Skip validation for Attached Document - allow proceeding to payment without all documents
     if (missing.length && openSection !== "Attached Document") { setSaveError(true); setSaveMessage(missing.map(([, message]) => message).join(" ")); return; }
     if (openSection === "Attached Document") {
@@ -2399,7 +2660,7 @@ const saveCurrentSection = async () => {
                         {section.title === "KYC" ? <span className="self-start bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-100 sm:self-auto">{kycMissing.length ? `${kycMissing.length} mandatory field${kycMissing.length === 1 ? "" : "s"} pending` : "Complete"}</span> : section.title === "Policy Details" ? <span className={`self-start px-3 py-1.5 text-xs font-bold ring-1 sm:self-auto ${policyMissing ? "bg-red-50 text-red-700 ring-red-100" : "bg-emerald-50 text-emerald-700 ring-emerald-100"}`}>{policyMissing ? `${policyMissing} mandatory fields pending` : "Complete"}</span> : section.title === "Vechicle Details" ? <span className={`self-start px-3 py-1.5 text-xs font-bold ring-1 sm:self-auto ${vehicleMissing ? "bg-red-50 text-red-700 ring-red-100" : "bg-emerald-50 text-emerald-700 ring-emerald-100"}`}>{vehicleMissing ? `${vehicleMissing} mandatory fields pending` : "Complete"}</span> : section.pending ? <span className="self-start bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-100 sm:self-auto">{section.pending}</span> : <span className="self-start bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 sm:self-auto">Ready to complete</span>}
                       </div>
 <div className="overflow-x-auto p-3 sm:p-4">
-                        {section.title === "KYC" ? <ClientDetailsForm onKycStatus={setKycMissing} onClientSelected={(client) => setProposalDraft((current) => ({ ...current, clientCode: String(client.Code || ""), title: String(client.Title || ""), firstName: String(client.Name || ""), surname: String(client.Surname || ""), email: String(client.EMail || "") }))} onSaved={() => markSectionSaved("KYC")} onClientChange={setKycClient} /> : section.title === "Policy Details" ? <MotorProposalForm clientCode={String(proposalDraft.clientCode || "")} onStatusChange={setPolicyMissing} coverRequired={policyCover} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} /> : section.title === "Vechicle Details" ? <VehicleProposalForm policyCover={policyCover} onPolicyCoverChange={setPolicyCover} onStatusChange={setVehicleMissing} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} vehicleClass={proposalDraft.vehicleClass} vehicleType={proposalDraft.vehicleType} fuelType={proposalDraft.fuelType} issueDate={proposalDraft.issueDate} country={String(proposalDraft.country || "Mauritius")} /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm /> : section.title === "Premium" ? <PremiumForm values={proposalDraft as Record<string, string | boolean>} calculating={premiumCalculating} onCalculate={calculatePremium} error={premiumError} cover={policyCover || String(proposalDraft.coverRequired || "")} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} /> : <AttachedDocumentForm policyNo={policyNo} documents={pendingDocuments} onDocumentsChange={setPendingDocuments} stored={storedDocuments} uploadMessage={documentUploadMessage} />}
+                        {section.title === "KYC" ? <ClientDetailsForm onKycStatus={setKycMissing} onClientSelected={(client) => setProposalDraft((current) => ({ ...current, clientCode: String(client.Code || ""), title: String(client.Title || ""), firstName: String(client.Name || ""), surname: String(client.Surname || ""), email: String(client.EMail || "") }))} onSaved={() => markSectionSaved("KYC")} onClientChange={setKycClient} /> : section.title === "Policy Details" ? <MotorProposalForm clientCode={String(proposalDraft.clientCode || "")} onStatusChange={setPolicyMissing} coverRequired={policyCover} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} /> : section.title === "Vechicle Details" ? <VehicleProposalForm policyCover={policyCover} onPolicyCoverChange={setPolicyCover} onStatusChange={setVehicleMissing} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} vehicleClass={proposalDraft.vehicleClass} vehicleType={proposalDraft.vehicleType} fuelType={proposalDraft.fuelType} issueDate={proposalDraft.issueDate} country={String(proposalDraft.country || "Mauritius")} /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm values={proposalDraft as Record<string, string | boolean>} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} showErrors={commonDetailsAttempted} /> : section.title === "Premium" ? <PremiumForm values={proposalDraft as Record<string, string | boolean>} calculating={premiumCalculating} onCalculate={calculatePremium} error={premiumError} cover={policyCover || String(proposalDraft.coverRequired || "")} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} /> : <AttachedDocumentForm policyNo={policyNo} documents={pendingDocuments} onDocumentsChange={setPendingDocuments} stored={storedDocuments} uploadMessage={documentUploadMessage} />}
                         {section.title !== "KYC" ? <div className="mt-4 flex justify-end border-t border-violet-100 pt-4"><button type="button" disabled={saving} onClick={() => void saveCurrentSection()} className="bg-[#35126d] px-6 py-3 text-sm font-bold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-400">{saving ? "Saving..." : section.title === "Attached Document" ? "Save policy and continue" : "Save and continue"}</button></div> : null}
                       </div>
                     </section>
@@ -2409,9 +2670,57 @@ const saveCurrentSection = async () => {
             ) : null}
 
             {currentStep === 1 ? (
-              <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-6">
-                <label className="flex cursor-pointer items-center gap-4 border border-violet-200 bg-violet-50 p-5"><input type="radio" name="payment" defaultChecked className="h-5 w-5 accent-[#35126d]" /><span className="font-semibold text-[#35126d]">Credit or debit card</span></label>
-                <label className="flex cursor-pointer items-center gap-4 border border-violet-200 p-5"><input type="radio" name="payment" className="h-5 w-5 accent-[#35126d]" /><span className="font-semibold text-[#35126d]">Internet banking</span></label>
+              <div className="grid gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+                <div className="space-y-5">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">How would you like to pay?</p>
+                    <div role="radiogroup" className="mt-3 grid gap-3 sm:grid-cols-2">
+                      {[
+                        ["card", "Credit or debit card", "Visa, Mastercard or American Express", "M3 10h18M7 15h2m4 0h4M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z"],
+                        ["bank", "Internet banking", "Pay from your bank account", "M3 10l9-6 9 6M5 10v8m4-8v8m6-8v8m4-8v8M3 20h18"],
+                      ].map(([value, title, text, icon]) => {
+                        const selected = payment.method === value;
+                        return (
+                          <label key={value} className={`relative flex cursor-pointer items-start gap-4 rounded-2xl border-2 p-5 transition ${selected ? "border-[#35126d] bg-violet-50 shadow-sm" : "border-slate-200 bg-white hover:border-violet-300"}`}>
+                            <input type="radio" name="payment" value={value} checked={selected} onChange={() => setPayment((current) => ({ ...current, method: value }))} className="sr-only" />
+                            <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${selected ? "bg-[#35126d] text-white" : "bg-violet-100 text-[#412484]"}`}>
+                              <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={icon} /></svg>
+                            </span>
+                            <span className="min-w-0"><span className="block font-semibold text-slate-900">{title}</span><span className="mt-0.5 block text-xs text-slate-500">{text}</span></span>
+                            <span className={`absolute right-4 top-4 flex h-5 w-5 items-center justify-center rounded-full border-2 ${selected ? "border-[#35126d] bg-[#35126d]" : "border-slate-300"}`}>{selected ? <span className="h-2 w-2 rounded-full bg-white" /> : null}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <ol className="grid gap-3 sm:grid-cols-3">
+                    {[["1", "Enter payment details", "Card or bank details are checked before you continue."], ["2", "Review the e-mail", "Check the recipient and the policy number."], ["3", "Receive your documents", "Certificate, schedule, debit note and vignette as PDFs."]].map(([step, title, text]) => (
+                      <li key={step} className="rounded-xl border border-violet-100 bg-[#faf9fd] p-4">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#35126d] text-xs font-bold text-white">{step}</span>
+                        <p className="mt-2 text-sm font-semibold text-slate-800">{title}</p>
+                        <p className="mt-0.5 text-xs leading-5 text-slate-500">{text}</p>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+
+                <div className="self-start overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-sm">
+                  <p className="border-b border-violet-100 bg-violet-50/60 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[#35126d]">Order summary</p>
+                  <dl className="space-y-2 px-4 py-3 text-sm">
+                    {[["Policy No", policyNo || "Not saved yet"], ["Vehicle", draftValue("vehicleNo") || "-"], ["Cover", policyCover || draftValue("coverRequired") || "-"]].map(([label, value]) => (
+                      <div key={label} className="flex justify-between gap-3"><dt className="text-slate-500">{label}</dt><dd className="truncate text-right font-medium text-slate-800">{value}</dd></div>
+                    ))}
+                    <div className="my-2 h-px bg-slate-100" />
+                    {[["Premium", draftValue("premium")], ["Document charges", draftValue("documentCharge")]].map(([label, value]) => (
+                      <div key={label} className="flex justify-between gap-3"><dt className="text-slate-500">{label}</dt><dd className="font-mono text-slate-800">{(Number(value) || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</dd></div>
+                    ))}
+                  </dl>
+                  <div className="flex items-end justify-between gap-3 bg-gradient-to-r from-[#35126d] to-[#5b3aa4] px-4 py-3 text-white">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-violet-200">Total payable</span>
+                    <span className="font-mono text-xl font-bold tabular-nums">Rs {payableAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  {!payableAmount ? <p role="alert" className="px-4 py-3 text-xs font-medium text-amber-700">The premium has not been calculated yet. Go back to the Premium section first.</p> : null}
+                </div>
               </div>
             ) : null}
 
@@ -2465,7 +2774,7 @@ const saveCurrentSection = async () => {
           </div>
         </aside>
       </div>
-{paymentMessage ? <p role={paymentError ? "alert" : "status"} className={`fixed bottom-4 right-4 z-50 border px-4 py-3 text-sm font-semibold ${paymentError ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{paymentMessage}</p> : null}
+{paymentMessage && !paymentOpen ? <p role={paymentError ? "alert" : "status"} className={`fixed bottom-4 right-4 z-50 border px-4 py-3 text-sm font-semibold ${paymentError ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{paymentMessage}</p> : null}
       {emailPreviewOpen && emailPreviewData ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
           <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl">
@@ -2513,7 +2822,7 @@ const saveCurrentSection = async () => {
           </div>
         </div>
       ) : null}
-      {paymentOpen ? <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/50 p-4"><form onSubmit={(e) => { e.preventDefault(); showEmailPreview(e); }} className="w-full max-w-lg space-y-4 bg-white p-6 shadow-xl"><h2 className="text-xl font-semibold text-[#35126d]">Complete payment</h2><select value={payment.method} onChange={e => setPayment({...payment, method:e.target.value})} className="w-full border p-3"><option value="card">Credit or debit card</option><option value="bank">Internet banking</option></select><input required placeholder="Name on card" value={payment.name} onChange={e=>setPayment({...payment,name:e.target.value})} className="w-full border p-3" /><input required placeholder="Card number" value={payment.cardNumber} onChange={e=>setPayment({...payment,cardNumber:e.target.value})} className="w-full border p-3" /><div className="grid grid-cols-2 gap-3"><input required placeholder="MM/YY" value={payment.expiry} onChange={e=>setPayment({...payment,expiry:e.target.value})} className="border p-3" /><input required placeholder="CVV" value={payment.cvv} onChange={e=>setPayment({...payment,cvv:e.target.value})} className="border p-3" /></div><div className="flex justify-end gap-3"><button type="button" onClick={()=>setPaymentOpen(false)} className="border px-4 py-2">Cancel</button><button type="button" onClick={(e) => { e.preventDefault(); showEmailPreview(e); }} disabled={saving} className="bg-[#35126d] px-5 py-2 font-semibold text-white">{saving ? "Submitting..." : "Continue to Email Preview"}</button></div></form></div> : null}
+      {paymentOpen ? <PaymentForm payment={payment} onChange={setPayment} amount={payableAmount} policyNo={policyNo} notice={paymentError ? paymentMessage : ""} onCancel={() => { setPaymentOpen(false); setPaymentMessage(""); setPaymentError(false); }} onContinue={() => void showEmailPreview()} /> : null}
     </main>
   );
 }
