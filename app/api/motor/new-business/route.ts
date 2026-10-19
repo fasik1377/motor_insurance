@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getCurrentUserId, isSameOriginRequest } from "@/lib/auth";
 import { getDb, sql } from "@/lib/db";
-import { coverColumns, coverErrors } from "@/lib/additional-risk";
+import { applyCoverRules, coverColumns, coverErrors, mandatoryCoverRules } from "@/lib/additional-risk";
+import { loadCoverRestrictions } from "@/lib/cover-restrictions";
 
 type Input = Record<string, unknown>;
 const clean = (value: unknown, max = 200) => typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -48,8 +49,11 @@ function validate(body: Input) {
   if (proposal.invoiceAmount <= 0) errors.invoiceAmount = "Enter the invoice amount.";
   if (proposal.pricePaid <= 0) errors.pricePaid = "Enter the price paid for the vehicle.";
   // Optional covers of the Premium form (Rate<n> = number / 1 when selected, Amt<n> = amount).
-  for (const [field, message] of coverErrors(body, proposal.seating)) errors[field] = message;
-  return { proposal: { ...proposal, covers: coverColumns(body) }, errors };
+  // Mandatory covers (Driver Only, Passenger Risk for public-use classes) are applied before saving.
+  const rules = mandatoryCoverRules(proposal.vehicleClass, proposal.country);
+  const coverValues = applyCoverRules(body, rules);
+  for (const [field, message] of coverErrors(coverValues, proposal.seating, [], rules)) errors[field] = message;
+  return { proposal: { ...proposal, covers: coverColumns(coverValues) }, errors, coverValues, rules };
 }
 
 const aliases: Record<string, string[]> = {
@@ -83,7 +87,14 @@ export async function POST(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
   if (!isSameOriginRequest(request)) return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
   let body: Input; try { body = await request.json() as Input; } catch { return NextResponse.json({ error: "The request body must be valid JSON." }, { status: 400 }); }
-  const { proposal, errors } = validate(body);
+  const { proposal, errors, coverValues, rules } = validate(body);
+  // Covers not available for the vehicle class (usp_CurCoverinfo) cannot be saved.
+  try {
+    const { restrictedRates } = await loadCoverRestrictions(proposal.vehicleClass, proposal.country);
+    for (const [field, message] of coverErrors(coverValues, proposal.seating, restrictedRates, rules)) if (field.startsWith("cover")) errors[field] = message;
+  } catch (error) {
+    console.warn("Cover restrictions could not be checked", error);
+  }
   if (Object.keys(errors).length) return NextResponse.json({ error: "Complete the required new-business fields.", errors }, { status: 400 });
   const transaction = new sql.Transaction(await getDb());
   try {

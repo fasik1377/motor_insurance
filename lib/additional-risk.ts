@@ -33,6 +33,31 @@ export const coverFieldNames = PREMIUM_COVERS.flatMap((c) => [`cover${c.rate}`, 
 const toNumber = (value: unknown) => { const n = Number(String(value ?? "").replace(/,/g, "").trim()); return Number.isFinite(n) ? n : NaN; };
 const isSelected = (value: unknown) => value === true || String(value).toLowerCase() === "true";
 
+// Covers the VB Premium form ticks and locks itself (Mauritius policies, any class except TRAILER):
+//  - Driver Only is always included (No = 1, no amount);
+//  - Passenger Risk is mandatory for Goods Vehicle (Public), Contract Car, Taxi Car, Taxi Bus and ContractBus/Van.
+export type CoverRule = { required: true; amountLocked?: boolean };
+export function mandatoryCoverRules(vehicleClass: string, country: string): Record<number, CoverRule> {
+  const vehicle = String(vehicleClass ?? "").trim().toUpperCase();
+  if (!vehicle || String(country ?? "").trim().toUpperCase() !== "MAURITIUS" || vehicle === "TRAILER") return {};
+  const rules: Record<number, CoverRule> = { 7: { required: true, amountLocked: true } };
+  if (/GOODS VEHICLE\(PUBLIC\)|CONTRACT CAR|TAXI CAR|TAXI BUS|CONTRACTBUS\/VAN/.test(vehicle)) rules[1] = { required: true };
+  return rules;
+}
+
+// The form values with the mandatory covers applied (ticked, count defaulting to 1, locked amount cleared).
+export function applyCoverRules<T extends Record<string, unknown>>(values: T, rules: Record<number, CoverRule>): T {
+  const next: Record<string, unknown> = { ...values };
+  for (const cover of PREMIUM_COVERS) {
+    const rule = rules[cover.rate];
+    if (!rule) continue;
+    next[`cover${cover.rate}`] = true;
+    if (cover.count && String(next[`rate${cover.rate}`] ?? "").trim() === "") next[`rate${cover.rate}`] = "1";
+    if (rule.amountLocked) next[`amt${cover.rate}`] = "";
+  }
+  return next as T;
+}
+
 // Rate<n> / Amt<n> values to save: 0 when the cover is not selected.
 export function coverColumns(values: Record<string, unknown>): Record<string, number> {
   const columns: Record<string, number> = {};
@@ -47,11 +72,16 @@ export function coverColumns(values: Record<string, unknown>): Record<string, nu
 }
 
 // Validation of the selected covers. Returns [field, message] pairs.
-export function coverErrors(values: Record<string, unknown>, seating: number): [string, string][] {
+export function coverErrors(values: Record<string, unknown>, seating: number, restrictedRates: number[] = [], rules: Record<number, CoverRule> = {}): [string, string][] {
   const errors: [string, string][] = [];
   const passengerSeats = seating > 1 ? seating - 1 : 0; // seating capacity less the driver
   for (const cover of PREMIUM_COVERS) {
-    if (!isSelected(values[`cover${cover.rate}`])) continue;
+    if (!isSelected(values[`cover${cover.rate}`])) {
+      if (rules[cover.rate]) errors.push([`cover${cover.rate}`, `${cover.label} is mandatory for this vehicle class.`]);
+      continue;
+    }
+    // A mandatory cover is never treated as restricted.
+    if (restrictedRates.includes(cover.rate) && !rules[cover.rate]) { errors.push([`cover${cover.rate}`, `${cover.label} is not available for this vehicle class.`]); continue; }
     const rawAmount = String(values[`amt${cover.rate}`] ?? "").trim();
     const amount = toNumber(rawAmount);
     if (rawAmount && (!Number.isFinite(amount) || amount < 0)) errors.push([`amt${cover.rate}`, `${cover.label}: the amount must be 0 or more.`]);
@@ -104,3 +134,30 @@ export function additionalRiskCovered({ rates, vehicleClass = "", cover = "", st
 // Rate<n> values of a saved policy row (or of coverColumns()) keyed by n.
 export const ratesFromColumns = (row: Record<string, unknown> | undefined) =>
   Object.fromEntries(PREMIUM_COVERS.map((c) => [c.rate, Number(row?.[`Rate${c.rate}`]) || 0]));
+
+// dbo.MotCoverDecListforVehType lists, per vehicle class (VehicleType) and country, the covers that are
+// NOT available (e.g. Passenger Risk for a TRAILER). The cover names there use the VB wording.
+const RESTRICTED_COVER_NAMES: [RegExp, number][] = [
+  [/^PASSENGER RISK$/, 1],
+  [/^PERSONAL ACCIDENT$/, 2],
+  [/^(PA \(CONDUCTOR\)|PERSONAL ACCIDENT FOR CONDUCTOR)$/, 3],
+  [/^(PA \(EMPLOYEE\)|PERSONAL ACCIDENT FOR EMPLOYEES?)$/, 4],
+  [/^(PA \(FAMILY MEMBERS\)|PERSONAL ACCIDENT FOR FAMILY MEMBERS?)$/, 5],
+  [/^AUTO PLUS$/, 6],
+  [/^DRIVER( ONLY)?$/, 7],
+  [/^LOSS OF USE$/, 8],
+  [/^TOWING$/, 9],
+  [/^STRIKE,\s*RIOT AND CIVIL COMMO/, 10],
+  [/^CYCLONE$/, 12],
+];
+
+// Rate numbers of the Premium form covers that a usp_CurCoverinfo cover name restricts.
+export function restrictedRatesFromNames(names: string[]): number[] {
+  const rates = new Set<number>();
+  for (const name of names) {
+    const normalized = String(name ?? "").trim().toUpperCase().replace(/\s+/g, " ");
+    const match = RESTRICTED_COVER_NAMES.find(([pattern]) => pattern.test(normalized));
+    if (match) rates.add(match[1]);
+  }
+  return [...rates].sort((a, b) => a - b);
+}

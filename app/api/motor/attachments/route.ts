@@ -72,7 +72,11 @@ export async function POST(request: NextRequest) {
     if (kycDocuments.length) {
       results.kyc = await storeDocuments({ root: KYC_DOCUMENTS_DIR, folderName: kycFolder, docNo: clientCode, module: KYC_MODULE, user, documents: kycDocuments });
     }
-    return NextResponse.json({ message: "Documents uploaded successfully.", ...results }, { status: 201 });
+    const savedTo = (results.policy as { folder?: string; recorded?: boolean } | undefined);
+    const message = savedTo && savedTo.recorded === false
+      ? `Documents saved in ${savedTo.folder}, but their paths were not recorded because the dbo.temp_attachment table does not exist.`
+      : "Documents uploaded successfully.";
+    return NextResponse.json({ message, ...results }, { status: 201 });
   } catch (error) {
     if (error instanceof AttachmentError) return NextResponse.json({ error: error.message }, { status: 400 });
     console.error("Attachment upload failed", error);

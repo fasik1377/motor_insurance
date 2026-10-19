@@ -19,7 +19,8 @@ export const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
 export type IncomingDocument = { docType: string; originalName: string; content: Uint8Array };
 export type StoredDocument = { fileName: string; fullPath: string };
-export type StoreResult = { folder: string; folderCreated: boolean; stored: StoredDocument[] };
+// recorded is false when no attachment table exists: the files are saved but their paths are not stored.
+export type StoreResult = { folder: string; folderCreated: boolean; stored: StoredDocument[]; recorded: boolean; table: string };
 
 export class AttachmentError extends Error {}
 
@@ -66,11 +67,30 @@ async function folderExists(folder: string) {
   try { await access(folder); return true; } catch { return false; }
 }
 
-type ColumnInfo = { name: string; max_length: number; type_name: string };
+type ColumnInfo = { name: string; max_length: number; type_name: string; is_identity: boolean; is_computed: boolean };
+
+// Attachment register: dbo.temp_attachment (columns matched by name), or the VB table dbo.TempAttachments
+// (9 columns, positional insert) when only that one exists.
+const ATTACHMENT_TABLES = ["temp_attachment", "TempAttachments"];
+async function attachmentTable(pool: Awaited<ReturnType<typeof getDb>>): Promise<{ name: string; columns: ColumnInfo[] } | null> {
+  for (const name of ATTACHMENT_TABLES) {
+    const columns = (await pool.request().input("table", sql.NVarChar(128), `dbo.${name}`).query(
+      "SELECT c.name, c.max_length, t.name AS type_name, c.is_identity, c.is_computed FROM sys.columns c JOIN sys.types t ON t.user_type_id = c.user_type_id WHERE c.object_id = OBJECT_ID(@table, 'U') ORDER BY c.column_id",
+    )).recordset as ColumnInfo[];
+    if (columns.length) return { name, columns };
+  }
+  return null;
+}
+// Trim text values to the column sizes so an insert never fails on a long name.
+const fit = (value: unknown, column: ColumnInfo) => {
+  if (typeof value !== "string" || column.max_length <= 0) return value;
+  const limit = /^n(var)?char$/i.test(column.type_name) ? column.max_length / 2 : column.max_length;
+  return value.slice(0, limit);
+};
 
 /**
- * Stores documents in <root>\<folderName> (created when it does not exist yet) and records each
- * one in dbo.TempAttachments, inside one transaction (rolled back if any insert fails).
+ * Stores documents in <root>\<folderName> (created when it does not exist yet) and records the path of
+ * each one in the attachment table, inside one transaction (rolled back if any insert fails).
  */
 export async function storeDocuments(options: { root: string; folderName: string; docNo: string; module: string; user: string; documents: IncomingDocument[] }): Promise<StoreResult> {
   const now = new Date();
@@ -86,34 +106,54 @@ export async function storeDocuments(options: { root: string; folderName: string
   if (!existed) await mkdir(folder, { recursive: true });
 
   const pool = await getDb();
-  const columns = (await pool.request().query(
-    "SELECT c.name, c.max_length, t.name AS type_name FROM sys.columns c JOIN sys.types t ON t.user_type_id = c.user_type_id WHERE c.object_id = OBJECT_ID('dbo.TempAttachments') ORDER BY c.column_id",
-  )).recordset as ColumnInfo[];
-  if (columns.length !== 9) throw new Error(`dbo.TempAttachments has ${columns.length} columns; the upload expects the 9 columns used by the VB code.`);
-  // Trim text values to the column sizes so an insert never fails on a long name.
-  const fit = (value: string, column: ColumnInfo) => {
-    if (column.max_length <= 0) return value;
-    const limit = /^n(var)?char$/i.test(column.type_name) ? column.max_length / 2 : column.max_length;
-    return value.slice(0, limit);
-  };
-
+  const table = await attachmentTable(pool);
   const stored: StoredDocument[] = [];
+  if (!table) {
+    // No register table yet: keep the files in the policy folder and report that the paths were not recorded.
+    for (const document of prepared) {
+      const fullPath = path.win32.join(folder, `${document.fileName}${document.extension}`);
+      await writeFile(fullPath, document.content);
+      stored.push({ fileName: `${document.fileName}${document.extension}`, fullPath });
+    }
+    return { folder, folderCreated: !existed, stored, recorded: false, table: "" };
+  }
+  const byName = new Map(table.columns.map((column) => [column.name.toLowerCase(), column]));
+  const legacy = table.name === "TempAttachments";
+  if (legacy && table.columns.length !== 9) throw new Error(`dbo.TempAttachments has ${table.columns.length} columns; the upload expects the 9 columns used by the VB code.`);
+  if (!legacy && (!byName.has("docno") || !byName.has("fullpath"))) throw new Error(`dbo.${table.name} needs DocNo and FullPath columns.`);
+
   const transaction = new sql.Transaction(pool);
   await transaction.begin(sql.ISOLATION_LEVEL.READ_COMMITTED);
   try {
     for (const document of prepared) {
-      await writeFile(path.win32.join(folder, `${document.fileName}${document.extension}`), document.content);
-      const extension = document.extension.replace(".", " ").trim();
-      const fullPath = `${folder}\\${document.fileName}.${extension}`;
-      await new sql.Request(transaction)
-        .input("docNo", sql.NVarChar(100), options.docNo)
-        .input("fileName", sql.NVarChar(200), document.fileName)
-        .input("extension", sql.NVarChar(20), `.${extension}`)
-        .query("DELETE FROM dbo.TempAttachments WHERE DocNo = @docNo AND FileName = @fileName AND Extension = @extension");
-      const values = [options.docNo, fullPath, document.fileName, extension, vbDateTime(now), options.user, options.module, document.fileName, document.fileName];
-      const request = new sql.Request(transaction);
-      values.forEach((value, index) => request.input(`v${index}`, fit(value, columns[index])));
-      await request.query(`INSERT INTO dbo.TempAttachments VALUES (${values.map((_, index) => `@v${index}`).join(", ")})`);
+      const fullPath = path.win32.join(folder, `${document.fileName}${document.extension}`);
+      await writeFile(fullPath, document.content);
+      const extension = document.extension.replace(".", "");
+      if (legacy) {
+        await new sql.Request(transaction)
+          .input("docNo", sql.NVarChar(100), options.docNo)
+          .input("fileName", sql.NVarChar(200), document.fileName)
+          .input("extension", sql.NVarChar(20), `.${extension}`)
+          .query("DELETE FROM dbo.TempAttachments WHERE DocNo = @docNo AND FileName = @fileName AND Extension = @extension");
+        const values = [options.docNo, fullPath, document.fileName, extension, vbDateTime(now), options.user, options.module, document.fileName, document.fileName];
+        const request = new sql.Request(transaction);
+        values.forEach((value, index) => request.input(`v${index}`, fit(value, table.columns[index])));
+        await request.query(`INSERT INTO dbo.TempAttachments VALUES (${values.map((_, index) => `@v${index}`).join(", ")})`);
+      } else {
+        const values: Record<string, unknown> = {
+          docno: options.docNo, fullpath: fullPath, filename: `${document.fileName}${document.extension}`, extension,
+          doctype: document.docType, module: options.module, iuser: options.user, idate: now,
+        };
+        const request = new sql.Request(transaction);
+        const names: string[] = [];
+        Object.entries(values).forEach(([key, value]) => {
+          const column = byName.get(key);
+          if (!column || column.is_identity || column.is_computed) return;
+          request.input(`p${names.length}`, /date/i.test(column.type_name) ? value : fit(typeof value === "string" ? value : value instanceof Date ? vbDateTime(value) : value, column));
+          names.push(`[${column.name}]`);
+        });
+        await request.query(`INSERT INTO dbo.[${table.name}] (${names.join(", ")}) VALUES (${names.map((_, index) => `@p${index}`).join(", ")})`);
+      }
       stored.push({ fileName: `${document.fileName}${document.extension}`, fullPath });
     }
     await transaction.commit();
@@ -121,14 +161,16 @@ export async function storeDocuments(options: { root: string; folderName: string
     try { await transaction.rollback(); } catch { /* already closed */ }
     throw error;
   }
-  return { folder, folderCreated: !existed, stored };
+  return { folder, folderCreated: !existed, stored, recorded: true, table: table.name };
 }
 
-// GetDocList: files attached for a document number, oldest first.
+// GetDocList: files recorded for a document number (policy number), oldest first.
 export async function listDocuments(docNo: string): Promise<StoredDocument[]> {
   const pool = await getDb();
-  const result = await pool.request().input("docNo", sql.NVarChar(100), docNo).query("SELECT FileName, FullPath FROM dbo.TempAttachments WHERE DocNo = @docNo ORDER BY Idate");
-  return result.recordset.map((row: { FileName: string; FullPath: string }) => ({ fileName: String(row.FileName ?? ""), fullPath: String(row.FullPath ?? "") }));
+  const table = await attachmentTable(pool);
+  if (!table) return [];
+  const result = await pool.request().input("docNo", sql.NVarChar(100), docNo).query(`SELECT * FROM dbo.[${table.name}] WHERE DocNo = @docNo`);
+  return result.recordset.map((row: Record<string, unknown>) => ({ fileName: String(row.FileName ?? ""), fullPath: String(row.FullPath ?? "") }));
 }
 
 // The policy must exist and, when it was created online, belong to the signed-in user.

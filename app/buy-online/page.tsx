@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PREMIUM_COVERS, additionalRiskCovered, coverColumns, coverErrors, ratesFromColumns } from "@/lib/additional-risk";
+import { PREMIUM_COVERS, additionalRiskCovered, applyCoverRules, coverColumns, coverErrors, mandatoryCoverRules, ratesFromColumns, type CoverRule } from "@/lib/additional-risk";
 
 type PolicyCover = "" | "Comprehensive" | "Comprehensive AutoPlus" | "Third Party Fire & Theft" | "Third Party Only";
 
@@ -357,7 +357,6 @@ const isReadOnly = loaded && checkedValue(client.HasKYC);
       {hint ? <span className="text-[10px] font-medium uppercase tracking-wide text-violet-500">{hint}</span> : null}
     </span>
   );
-  const fieldError = (field: string) => errors[field] ? <span className="mt-1 block text-xs font-medium text-rose-600">{errors[field]}</span> : null;
   const section = (title: string, subtitle: string, icon: React.ReactNode, children: React.ReactNode) => (
     <section className="overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
       <header className="flex items-center gap-3 border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-4 py-3">
@@ -413,32 +412,26 @@ const isReadOnly = loaded && checkedValue(client.HasKYC);
               {choice("category", "Individual", isIndividual, () => { if (!isReadOnly) setField("Category", "Individual"); }, isReadOnly)}
               {choice("category", "Company", isCompany, () => { if (!isReadOnly) setField("Category", "Company"); }, isReadOnly)}
             </div>
-            {fieldError("Category")}
           </div>
           <label className="block">
             {fieldLabel("Title", true)}
             <select value={value("Title")} onChange={(event) => { if (!isReadOnly) setField("Title", event.target.value); }} disabled={isReadOnly} className={fieldClass("Title", isReadOnly)}><option value="">Select title</option><option>Mr.</option><option>Mrs.</option><option>Ms</option></select>
-            {fieldError("Title")}
           </label>
           <label className="block">
             {fieldLabel(isCompany ? "Company Name" : "First Name", true)}
             <input value={value("Name")} onChange={(event) => { if (!isReadOnly) setField("Name", event.target.value); }} readOnly={isReadOnly} className={fieldClass("Name", isReadOnly)} />
-            {fieldError("Name")}
           </label>
           <label className="block">
             {fieldLabel("Surname", isIndividual)}
             <input value={value("Surname")} onChange={(event) => { if (!isReadOnly) setField("Surname", event.target.value); }} readOnly={isReadOnly} className={fieldClass("Surname", isReadOnly)} />
-            {fieldError("Surname")}
           </label>
           <label className="block">
             {fieldLabel("UBO (Ultimate beneficial owner)", isCompany, isIndividual ? "Auto" : undefined)}
             <input value={value("UBO")} onChange={(event) => { if (!isReadOnly && isCompany) setField("UBO", event.target.value); }} readOnly={isReadOnly || isIndividual} className={fieldClass("UBO", isReadOnly || isIndividual)} />
-            {fieldError("UBO")}
           </label>
           <label className="block">
             {fieldLabel("Birth Date", isIndividual, profileDob ? "From profile" : undefined)}
             <input type="date" value={dateValue("DOB")} onChange={(event) => { if (!dobLocked) setField("DOB", event.target.value); }} readOnly={dobLocked} disabled={!isIndividual} className={fieldClass("DOB", dobLocked || !isIndividual)} />
-            {fieldError("DOB")}
           </label>
           <div>
             {fieldLabel("Gender", isIndividual)}
@@ -446,7 +439,6 @@ const isReadOnly = loaded && checkedValue(client.HasKYC);
               {choice("gender", "Male", value("Gender") === "Male", () => { if (!isReadOnly) setField("Gender", "Male"); }, isReadOnly || !isIndividual)}
               {choice("gender", "Female", value("Gender") === "Female", () => { if (!isReadOnly) setField("Gender", "Female"); }, isReadOnly || !isIndividual)}
             </div>
-            {fieldError("Gender")}
           </div>
         </>)}
 
@@ -454,37 +446,30 @@ const isReadOnly = loaded && checkedValue(client.HasKYC);
           <label className="block">
             {fieldLabel("Mobile", !value("TelRes") && !value("TelForegin"))}
             <input value={value("Mobile")} placeholder="5XXXXXXX" onChange={(event) => { if (!isReadOnly) setField("Mobile", event.target.value); }} readOnly={isReadOnly} className={fieldClass("Mobile", isReadOnly)} />
-            {fieldError("Mobile")}
           </label>
           <label className="block">
             {fieldLabel("Tel Res / Abroad", !value("Mobile"))}
             <input value={value("TelRes") || value("TelForegin")} onChange={(event) => { if (!isReadOnly) setField("TelRes", event.target.value); }} readOnly={isReadOnly} className={fieldClass("TelRes", isReadOnly)} />
-            {fieldError("TelRes")}
           </label>
           <label className="block">
             {fieldLabel("Tel Off")}
             <input value={value("TelOff")} onChange={(event) => { if (!isReadOnly) setField("TelOff", event.target.value); }} readOnly={isReadOnly} className={fieldClass("TelOff", isReadOnly)} />
-            {fieldError("TelOff")}
           </label>
           <label className="block">
             {fieldLabel("Fax")}
             <input value={value("Fax")} onChange={(event) => { if (!isReadOnly) setField("Fax", event.target.value); }} readOnly={isReadOnly} className={fieldClass("Fax", isReadOnly)} />
-            {fieldError("Fax")}
           </label>
           <label className="block sm:col-span-2">
             {fieldLabel("E-Mail")}
             <input type="email" value={value("EMail")} onChange={(event) => { if (!isReadOnly) setField("EMail", event.target.value); }} readOnly={isReadOnly} className={fieldClass("EMail", isReadOnly)} />
-            {fieldError("EMail")}
           </label>
           <label className="block sm:col-span-2">
             {fieldLabel("Address")}
             <input value={value("Address")} onChange={(event) => { if (!isReadOnly) setField("Address", event.target.value); }} readOnly={isReadOnly} className={fieldClass("Address", isReadOnly)} />
-            {fieldError("Address")}
           </label>
           <label className="block">
             {fieldLabel("City")}
             <input value={value("City")} onChange={(event) => { if (!isReadOnly) setField("City", event.target.value); }} readOnly={isReadOnly} className={fieldClass("City", isReadOnly)} />
-            {fieldError("City")}
           </label>
         </>)}
 
@@ -499,32 +484,26 @@ const isReadOnly = loaded && checkedValue(client.HasKYC);
           <label className="block">
             {fieldLabel("Nationality", isIndividual, residence === "resident" ? "Resident" : undefined)}
             <input value={value("Nationality")} placeholder={residence === "non-resident" ? "Enter nationality" : ""} onChange={(event) => { if (!isReadOnly && residence !== "resident") setField("Nationality", event.target.value); }} readOnly={isReadOnly || residence === "resident"} className={fieldClass("Nationality", isReadOnly || residence === "resident")} />
-            {fieldError("Nationality")}
           </label>
           <label className="block">
             {fieldLabel("Country Code")}
             <input value={value("CountryCode")} onChange={(event) => { if (!isReadOnly) setField("CountryCode", event.target.value); }} readOnly={isReadOnly} className={fieldClass("CountryCode", isReadOnly)} />
-            {fieldError("CountryCode")}
           </label>
           <label className="block">
             {fieldLabel("Passport No.", isIndividual && !nationalityIsMauritius, "Min 9 characters")}
             <input value={value("PassportNo")} onChange={(event) => { if (!isReadOnly) setField("PassportNo", event.target.value); }} readOnly={isReadOnly} minLength={9} className={fieldClass("PassportNo", isReadOnly)} />
-            {fieldError("PassportNo")}
           </label>
           <label className="block">
             {fieldLabel("NID", isIndividual && nationalityIsMauritius)}
             <input disabled={isReadOnly || !isIndividual || !nationalityIsMauritius} value={value("NID")} placeholder={isIndividual && nationalityIsMauritius ? "14 characters" : "Mauritian nationals only"} onChange={(event) => { if (!isReadOnly) setField("NID", event.target.value); }} readOnly={isReadOnly} className={fieldClass("NID", isReadOnly || !isIndividual || !nationalityIsMauritius)} />
-            {fieldError("NID")}
           </label>
           <label className="block">
             {fieldLabel("BRN", isCompany)}
             <input disabled={isReadOnly || !isCompany} value={value("BRN")} placeholder={isCompany ? "" : "Companies only"} onChange={(event) => { if (!isReadOnly) setField("BRN", event.target.value); }} readOnly={isReadOnly} className={fieldClass("BRN", isReadOnly || !isCompany)} />
-            {fieldError("BRN")}
           </label>
           <label className="block">
             {fieldLabel("VAT")}
             <input value={value("VAT")} onChange={(event) => { if (!isReadOnly) setField("VAT", event.target.value); }} readOnly={isReadOnly} className={fieldClass("VAT", isReadOnly)} />
-            {fieldError("VAT")}
           </label>
         </>)}
 
@@ -532,12 +511,10 @@ const isReadOnly = loaded && checkedValue(client.HasKYC);
           <label className="block">
             {fieldLabel("Occupation")}
             <input value={value("Occupation")} onChange={(event) => { if (!isReadOnly) setField("Occupation", event.target.value); }} readOnly={isReadOnly} className={fieldClass("Occupation", isReadOnly)} />
-            {fieldError("Occupation")}
           </label>
           <label className="block">
             {fieldLabel("Qualification")}
             <input value={value("Qualification")} onChange={(event) => { if (!isReadOnly) setField("Qualification", event.target.value); }} readOnly={isReadOnly} className={fieldClass("Qualification", isReadOnly)} />
-            {fieldError("Qualification")}
           </label>
         </>)}
 
@@ -1252,6 +1229,8 @@ function AccessoriesForm() {
   const [accessories, setAccessories] = useState<Array<{ name: string; rate: number; category?: string }>>([]);
   // Amounts are keyed by accessory name so they stay with the right row when the category filter changes.
   const [amounts, setAmounts] = useState<Record<string, string>>({});
+  // Make & Model per accessory (letters, numbers and spaces); required once the accessory has an amount.
+  const [makeModels, setMakeModels] = useState<Record<string, string>>({});
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
   useEffect(() => {
@@ -1330,7 +1309,7 @@ function AccessoriesForm() {
               <thead className="sticky top-0 z-10">
                 <tr className="bg-[#35126d] text-white">
                   <th className="px-4 py-3 font-semibold">Description</th>
-                  <th className="px-3 py-3 font-semibold">Make & Model</th>
+                  <th className="px-3 py-3 font-semibold">Make & Model <span className="text-rose-300">*</span></th>
                   <th className="px-3 py-3 text-center font-semibold">Rate (%)</th>
                   <th className="px-3 py-3 text-center font-semibold">Amount</th>
                   <th className="px-4 py-3 text-right font-semibold">Premium</th>
@@ -1351,9 +1330,14 @@ function AccessoriesForm() {
                     <td className="px-3 py-2">
                       <input
                         name={`accessoryMakeModel_${index}`}
-                        placeholder="Optional"
-                        className="h-8 w-full rounded-md border border-transparent bg-transparent px-2 text-xs outline-none transition hover:border-violet-200 focus:border-violet-300 focus:bg-white"
+                        value={makeModels[accessory.name] ?? ""}
+                        onChange={(e) => setMakeModels((prev) => ({ ...prev, [accessory.name]: e.target.value.replace(/[^A-Za-z0-9 ]/g, "").slice(0, 100) }))}
+                        placeholder="e.g. Pioneer DEH80"
+                        maxLength={100}
+                        aria-invalid={hasAmount && !(makeModels[accessory.name] ?? "").trim()}
+                        className={`h-8 w-full rounded-md border px-2 text-xs outline-none transition focus:bg-white ${hasAmount && !(makeModels[accessory.name] ?? "").trim() ? "border-rose-300 bg-rose-50/60 focus:border-rose-400" : "border-transparent bg-transparent hover:border-violet-200 focus:border-violet-300"}`}
                       />
+                      {hasAmount && !(makeModels[accessory.name] ?? "").trim() ? <span role="alert" className="mt-0.5 block text-[10px] font-medium text-rose-600">Enter the make & model</span> : null}
                     </td>
                     <td className="px-3 py-2 text-center font-mono text-slate-600">{(Number(accessory.rate) || 0).toFixed(2)}%</td>
                     <td className="px-3 py-2 text-center">
@@ -1704,16 +1688,6 @@ function cardBrand(digits: string): "Visa" | "Mastercard" | "Amex" | "" {
   if (/^3[47]/.test(digits)) return "Amex";
   return "";
 }
-// Luhn checksum used by all payment cards.
-function luhnValid(digits: string) {
-  let sum = 0;
-  for (let i = 0; i < digits.length; i++) {
-    let digit = Number(digits[digits.length - 1 - i]);
-    if (i % 2 === 1) { digit *= 2; if (digit > 9) digit -= 9; }
-    sum += digit;
-  }
-  return digits.length > 0 && sum % 10 === 0;
-}
 const formatCardNumber = (value: string) => {
   const digits = cardDigits(value).slice(0, 19);
   return cardBrand(digits) === "Amex" ? digits.replace(/^(\d{0,4})(\d{0,6})(\d{0,5}).*/, (_, a, b, c) => [a, b, c].filter(Boolean).join(" ")) : digits.replace(/(\d{4})(?=\d)/g, "$1 ");
@@ -1724,50 +1698,14 @@ const formatExpiry = (value: string, previous: string) => {
   return digits.length >= 3 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits.length === 2 ? `${digits}/` : digits;
 };
 
-function paymentErrors(p: PaymentDetails, now = new Date()): Partial<Record<keyof PaymentDetails, string>> {
-  const errors: Partial<Record<keyof PaymentDetails, string>> = {};
-  const name = p.name.trim();
-  if (!name) errors.name = p.method === "card" ? "Enter the name shown on the card." : "Enter the account holder's name.";
-  else if (name.length < 2) errors.name = "Enter the full name (at least 2 letters).";
-  else if (!/^[A-Za-z][A-Za-z .'-]*$/.test(name)) errors.name = "Use letters, spaces, apostrophes, dots or hyphens only.";
-  if (p.method === "bank") {
-    if (!p.bank) errors.bank = "Select your bank.";
-    return errors;
-  }
-  const digits = cardDigits(p.cardNumber);
-  const brand = cardBrand(digits);
-  if (!digits) errors.cardNumber = "Enter the card number.";
-  else if (digits.length < 13 || digits.length > 19 || (brand === "Amex" && digits.length !== 15) || (brand === "Visa" && ![13, 16, 19].includes(digits.length)) || (brand === "Mastercard" && digits.length !== 16)) errors.cardNumber = "The card number has the wrong number of digits.";
-  else if (!luhnValid(digits)) errors.cardNumber = "This card number is not valid. Please check it.";
-  const match = p.expiry.match(/^(\d{2})\/(\d{2})$/);
-  if (!p.expiry) errors.expiry = "Enter the expiry date.";
-  else if (!match || Number(match[1]) < 1 || Number(match[1]) > 12) errors.expiry = "Use the format MM/YY.";
-  else {
-    const expiryEnd = new Date(2000 + Number(match[2]), Number(match[1]), 1); // first day after the expiry month
-    if (expiryEnd <= now) errors.expiry = "This card has expired.";
-    else if (expiryEnd.getFullYear() > now.getFullYear() + 20) errors.expiry = "Check the expiry year.";
-  }
-  const cvvLength = brand === "Amex" ? 4 : 3;
-  if (!p.cvv) errors.cvv = "Enter the security code.";
-  else if (!new RegExp(`^\\d{${cvvLength}}$`).test(p.cvv)) errors.cvv = `The security code has ${cvvLength} digits.`;
-  return errors;
-}
-
 function PaymentForm({ payment, onChange, amount, policyNo, notice, onCancel, onContinue }: { payment: PaymentDetails; onChange: (payment: PaymentDetails) => void; amount: number; policyNo: string; notice: string; onCancel: () => void; onContinue: () => void }) {
-  const [touched, setTouched] = useState<Partial<Record<keyof PaymentDetails, boolean>>>({});
-  const [submitted, setSubmitted] = useState(false);
-  const errors = paymentErrors(payment);
-  const show = (field: keyof PaymentDetails) => (submitted || touched[field]) ? errors[field] : undefined;
   const set = (field: keyof PaymentDetails, value: string) => onChange({ ...payment, [field]: value });
-  const blur = (field: keyof PaymentDetails) => () => setTouched((current) => ({ ...current, [field]: true }));
   const brand = cardBrand(cardDigits(payment.cardNumber));
   const isCard = payment.method === "card";
-  const inputClass = (field: keyof PaymentDetails) => `mt-1.5 h-11 w-full rounded-xl border bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:bg-white focus:ring-4 ${show(field) ? "border-rose-300 focus:ring-rose-100" : "border-slate-200 focus:border-[#5b3aa4] focus:ring-violet-100"}`;
-  const fieldError = (field: keyof PaymentDetails) => show(field) ? <span role="alert" className="mt-1 block text-xs font-medium text-rose-600">{show(field)}</span> : null;
+  // Demo payment: the details are optional and not validated, and no card or account is charged.
+  const inputClass = "mt-1.5 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-[#5b3aa4] focus:bg-white focus:ring-4 focus:ring-violet-100";
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSubmitted(true);
-    if (Object.keys(errors).length) return;
     onContinue();
   };
 
@@ -1777,7 +1715,7 @@ function PaymentForm({ payment, onChange, amount, policyNo, notice, onCancel, on
         <div className="bg-gradient-to-r from-[#35126d] to-[#5b3aa4] px-6 py-4 text-white">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-violet-200">Secure payment</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-violet-200">Demo payment</p>
               <h2 className="mt-1 text-lg font-bold">Complete payment</h2>
               {policyNo ? <p className="mt-0.5 font-mono text-xs text-violet-100">Policy {policyNo}</p> : null}
             </div>
@@ -1792,51 +1730,46 @@ function PaymentForm({ payment, onChange, amount, policyNo, notice, onCancel, on
           <div role="radiogroup" aria-label="Payment method" className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1">
             {[["card", "Credit / debit card"], ["bank", "Internet banking"]].map(([value, label]) => (
               <label key={value} className={`cursor-pointer rounded-lg px-3 py-2 text-center text-sm font-semibold transition ${payment.method === value ? "bg-white text-[#35126d] shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
-                <input type="radio" name="payment-method" value={value} checked={payment.method === value} onChange={() => { set("method", value); setSubmitted(false); }} className="sr-only" />
+                <input type="radio" name="payment-method" value={value} checked={payment.method === value} onChange={() => set("method", value)} className="sr-only" />
                 {label}
               </label>
             ))}
           </div>
 
           <label className="block text-sm font-medium text-slate-700">{isCard ? "Name on card" : "Account holder name"}
-            <input autoComplete={isCard ? "cc-name" : "name"} value={payment.name} onChange={(e) => set("name", e.target.value)} onBlur={blur("name")} placeholder={isCard ? "As printed on the card" : "Full name"} className={inputClass("name")} />
-            {fieldError("name")}
+            <input autoComplete={isCard ? "cc-name" : "name"} value={payment.name} onChange={(e) => set("name", e.target.value)} placeholder={isCard ? "As printed on the card" : "Full name"} className={inputClass} />
           </label>
 
           {isCard ? (
             <>
               <label className="block text-sm font-medium text-slate-700">Card number
                 <span className="relative block">
-                  <input inputMode="numeric" autoComplete="cc-number" value={payment.cardNumber} onChange={(e) => set("cardNumber", formatCardNumber(e.target.value))} onBlur={blur("cardNumber")} placeholder="1234 5678 9012 3456" className={`${inputClass("cardNumber")} pr-24 font-mono tracking-wider`} />
+                  <input inputMode="numeric" autoComplete="cc-number" value={payment.cardNumber} onChange={(e) => set("cardNumber", formatCardNumber(e.target.value))} placeholder="1234 5678 9012 3456" className={`${inputClass} pr-24 font-mono tracking-wider`} />
                   {brand ? <span className="absolute right-3 top-1/2 mt-0.5 -translate-y-1/2 rounded-md bg-[#35126d] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">{brand}</span> : null}
                 </span>
-                {fieldError("cardNumber")}
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <label className="block text-sm font-medium text-slate-700">Expiry date
-                  <input inputMode="numeric" autoComplete="cc-exp" value={payment.expiry} onChange={(e) => set("expiry", formatExpiry(e.target.value, payment.expiry))} onBlur={blur("expiry")} placeholder="MM/YY" maxLength={5} className={`${inputClass("expiry")} font-mono`} />
-                  {fieldError("expiry")}
+                  <input inputMode="numeric" autoComplete="cc-exp" value={payment.expiry} onChange={(e) => set("expiry", formatExpiry(e.target.value, payment.expiry))} placeholder="MM/YY" maxLength={5} className={`${inputClass} font-mono`} />
                 </label>
                 <label className="block text-sm font-medium text-slate-700">Security code (CVV)
-                  <input type="password" inputMode="numeric" autoComplete="cc-csc" value={payment.cvv} onChange={(e) => set("cvv", cardDigits(e.target.value).slice(0, brand === "Amex" ? 4 : 3))} onBlur={blur("cvv")} placeholder={brand === "Amex" ? "4 digits" : "3 digits"} className={`${inputClass("cvv")} font-mono`} />
-                  {fieldError("cvv")}
+                  <input type="password" inputMode="numeric" autoComplete="cc-csc" value={payment.cvv} onChange={(e) => set("cvv", cardDigits(e.target.value).slice(0, brand === "Amex" ? 4 : 3))} placeholder={brand === "Amex" ? "4 digits" : "3 digits"} className={`${inputClass} font-mono`} />
                 </label>
               </div>
             </>
           ) : (
             <label className="block text-sm font-medium text-slate-700">Bank
-              <select value={payment.bank} onChange={(e) => set("bank", e.target.value)} onBlur={blur("bank")} className={inputClass("bank")}>
+              <select value={payment.bank} onChange={(e) => set("bank", e.target.value)} className={inputClass}>
                 <option value="">Select your bank</option>
                 {PAYMENT_BANKS.map((bank) => <option key={bank}>{bank}</option>)}
               </select>
-              {fieldError("bank")}
             </label>
           )}
 
           {notice ? <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">{notice}</p> : null}
           <p className="flex items-center gap-2 text-xs text-slate-500">
             <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 018 0v4" /></svg>
-            {isCard ? "Your card number and security code are never stored or sent to our server." : "You will confirm the transfer with your bank."}
+            Demo payment: the details are optional and nothing is charged. Card numbers and security codes are never sent to our server.
           </p>
         </div>
 
@@ -1849,11 +1782,11 @@ function PaymentForm({ payment, onChange, amount, policyNo, notice, onCancel, on
   );
 }
 
-function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldChange }: { values: Record<string, string | boolean>; calculating?: boolean; onCalculate?: () => void; error?: string; cover?: string; onFieldChange?: (field: string, value: string | boolean) => void }) {
+function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldChange, restrictedRates = [], coverRules = {} }: { values: Record<string, string | boolean>; calculating?: boolean; onCalculate?: () => void; error?: string; cover?: string; onFieldChange?: (field: string, value: string | boolean) => void; restrictedRates?: number[]; coverRules?: Record<number, CoverRule> }) {
   const inputClass = "h-8 w-full border border-violet-200 bg-white px-2 text-xs text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
   // Optional covers (MotorMaster Rate<n> / Amt<n>); see lib/additional-risk.ts.
   const seating = Number(values.seating) || 0;
-  const errors = Object.fromEntries(coverErrors(values, seating));
+  const errors = Object.fromEntries(coverErrors(values, seating, restrictedRates, coverRules));
   const selected = (rate: number) => values[`cover${rate}`] === true || values[`cover${rate}`] === "true";
   const additionalRisk = additionalRiskCovered({ rates: ratesFromColumns(coverColumns(values)), vehicleClass: String(values.vehicleClass || ""), cover: String(cover || values.coverRequired || ""), seating });
   const toggleCover = (rate: number, count: boolean, checked: boolean) => {
@@ -1871,15 +1804,19 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
         <div className="grid grid-cols-[1fr_64px_96px] gap-2 bg-[#35126d] px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-white"><span>{title}</span><span className="text-center">No</span><span className="text-right">Amount</span></div>
         {rows.map((row) => {
           const on = selected(row.rate);
-          const rowErrors = [errors[`rate${row.rate}`], errors[`amt${row.rate}`]].filter(Boolean);
+          // usp_CurCoverinfo: this cover is not offered for the vehicle class.
+          // Mandatory covers (Driver Only, Passenger Risk for public-use classes) are ticked and locked.
+          const rule = coverRules[row.rate];
+          const restricted = restrictedRates.includes(row.rate) && !rule;
+          const rowErrors = [errors[`cover${row.rate}`], errors[`rate${row.rate}`], errors[`amt${row.rate}`]].filter(Boolean);
           return (
             <div key={row.rate} className={`border-t border-violet-50 px-3 py-1.5 transition ${on ? "bg-violet-50/60" : "hover:bg-violet-50/40"}`}>
               <div className="grid grid-cols-[1fr_64px_96px] items-center gap-2">
-                <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-700"><input type="checkbox" checked={on} onChange={(e) => toggleCover(row.rate, Boolean(row.count), e.target.checked)} className="h-4 w-4 accent-[#35126d]" /><span className={on ? "font-semibold text-[#35126d]" : ""}>{row.label}</span></label>
+                <label title={restricted ? "Not available for this vehicle class" : undefined} className={`flex items-center gap-2 text-xs ${restricted ? "cursor-not-allowed text-slate-400" : "cursor-pointer text-slate-700"}`}><input type="checkbox" checked={on} disabled={Boolean(rule) || (restricted && !on)} onChange={(e) => toggleCover(row.rate, Boolean(row.count), e.target.checked)} className="h-4 w-4 accent-[#35126d] disabled:opacity-40" /><span className={on ? "font-semibold text-[#35126d]" : restricted ? "line-through decoration-slate-300" : ""}>{row.label}</span>{restricted ? <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-500 no-underline">N/A</span> : null}{rule ? <span title="Mandatory for this vehicle class" className="rounded-full bg-[#35126d] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">Required</span> : null}</label>
                 {row.count ? (
                   <input type="number" min={1} step={1} disabled={!on} value={on ? String(values[`rate${row.rate}`] ?? "") : ""} onChange={(e) => onFieldChange?.(`rate${row.rate}`, e.target.value.replace(/[^0-9]/g, ""))} placeholder={on ? row.count : ""} title={row.count} className={`${coverInput} text-center ${errors[`rate${row.rate}`] ? "border-rose-300" : "border-violet-100"}`} aria-label={`${row.label} - number of ${row.count.toLowerCase()}`} />
                 ) : <span className="text-center text-xs text-slate-300">{on ? "1" : ""}</span>}
-                <input type="number" min={0} step="0.01" disabled={!on} value={on ? String(values[`amt${row.rate}`] ?? "") : ""} onChange={(e) => onFieldChange?.(`amt${row.rate}`, e.target.value)} placeholder={on ? "0.00" : ""} className={`${coverInput} text-right ${errors[`amt${row.rate}`] ? "border-rose-300" : "border-violet-100"}`} aria-label={`${row.label} amount`} />
+                <input type="number" min={0} step="0.01" disabled={!on || Boolean(rule?.amountLocked)} value={on && !rule?.amountLocked ? String(values[`amt${row.rate}`] ?? "") : ""} onChange={(e) => onFieldChange?.(`amt${row.rate}`, e.target.value)} placeholder={on ? "0.00" : ""} className={`${coverInput} text-right ${errors[`amt${row.rate}`] ? "border-rose-300" : "border-violet-100"}`} aria-label={`${row.label} amount`} />
               </div>
               {rowErrors.map((message) => <p key={message} role="alert" className="mt-1 text-[11px] font-medium text-rose-600">{message}</p>)}
             </div>
@@ -2002,22 +1939,77 @@ function documentFileError(file: File): string {
 }
 const formatFileSize = (bytes: number) => bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
+// Result of "Save and continue": a checklist of what to fix (each item jumps to its field), or a success note.
+type SaveIssue = { field: string; message: string };
+function SaveNotice({ error, message, issues, onDismiss, onOpenSection }: { error: boolean; message: string; issues: SaveIssue[]; onDismiss: () => void; onOpenSection?: (title: string) => void }) {
+  const noticeRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (error) noticeRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); }, [error, message, issues]);
+  const goTo = (field: string) => {
+    const element = document.querySelector<HTMLElement>(`#new-business-fields [name="${CSS.escape(field)}"]`);
+    if (!element) return;
+    const focus = () => { element.scrollIntoView({ behavior: "smooth", block: "center" }); element.focus({ preventScroll: true }); };
+    // The field may be in another (hidden) section: open it first.
+    const section = element.closest<HTMLElement>("section[data-section]");
+    if (section?.hidden && onOpenSection) { onOpenSection(section.dataset.section || ""); setTimeout(focus, 50); } else focus();
+  };
+  if (!message) return null;
+  if (!error) {
+    return (
+      <div ref={noticeRef} role="status" className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white"><svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg></span>
+        <span className="flex-1">{message}</span>
+        <button type="button" onClick={onDismiss} aria-label="Dismiss" className="rounded-md p-1 text-emerald-600 hover:bg-emerald-100">✕</button>
+      </div>
+    );
+  }
+  return (
+    <div ref={noticeRef} role="alert" className="overflow-hidden rounded-xl border border-rose-200 bg-white shadow-[0_10px_30px_rgba(225,29,72,0.12)]">
+      <div className="flex items-start gap-3 border-l-4 border-rose-500 bg-rose-50 px-4 py-3">
+        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-500 text-sm font-bold text-white">!</span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold text-rose-800">{message}</p>
+          {issues.length ? <p className="mt-0.5 text-xs text-rose-700">Click an item to go to the field.</p> : null}
+        </div>
+        <button type="button" onClick={onDismiss} aria-label="Dismiss" className="rounded-md p-1 text-rose-500 hover:bg-rose-100">✕</button>
+      </div>
+      {issues.length ? (
+        <ul className="divide-y divide-rose-50">
+          {issues.map((issue) => (
+            <li key={issue.message}>
+              <button type="button" onClick={() => goTo(issue.field)} className="group flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-rose-50/60">
+                <span className="h-2 w-2 shrink-0 rounded-full bg-rose-500" />
+                <span className="flex-1">{issue.message}</span>
+                <span className="text-xs font-semibold text-rose-600 opacity-0 transition group-hover:opacity-100">Go to field →</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
 function AttachedDocumentForm({ policyNo, documents: pendingDocuments, onDocumentsChange, stored, uploadMessage }: { policyNo: string; documents: PendingDocument[]; onDocumentsChange: (documents: PendingDocument[]) => void; stored: StoredDocumentList | null; uploadMessage: { text: string; error: boolean } | null }) {
-  // docType is the "Document Type" used in the stored file name; kyc documents go to the insured's KYC folder.
+  // docType is the "Document Type" used in the stored file name. Cards (licence, NID / passport,
+  // horsepower) need a picture of the front and of the back; every file goes to the policy folder.
   const requiredDocuments = [
-    { id: "licence", name: "Driver's Licence", docType: "Licence", kyc: false },
-    { id: "nid_passport", name: "NID / Passport", docType: "NID Passport", kyc: true },
-    { id: "sale_deed", name: "Sale Deed / HorsePower", docType: "Sale Deed", kyc: false },
-    { id: "address_proof", name: "KYC / Address Proof", docType: "Address Proof", kyc: true },
+    { id: "licence", name: "Driver's Licence", docType: "Licence", sides: true },
+    { id: "nid_passport", name: "NID / Passport", docType: "NID Passport", sides: true },
+    { id: "sale_deed", name: "Sale Deed / HorsePower", docType: "Sale Deed", sides: true },
+    { id: "address_proof", name: "Address Proof", docType: "Address Proof", sides: false },
   ];
+  const documentSlots = (doc: (typeof requiredDocuments)[number]) => doc.sides
+    ? [{ slot: `${doc.id}_front`, label: "Front", docType: `${doc.docType} Front` }, { slot: `${doc.id}_back`, label: "Back", docType: `${doc.docType} Back` }]
+    : [{ slot: doc.id, label: "Document", docType: doc.docType }];
+  const requiredSlots = requiredDocuments.flatMap(documentSlots);
   const extraSlots = ["extra_1", "extra_2", "extra_3"];
   const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
   const [dragActive, setDragActive] = useState<string | null>(null);
   const bySlot = (slot: string) => pendingDocuments.find((d) => d.slot === slot);
   const extras = pendingDocuments.filter((d) => d.slot.startsWith("extra_")).sort((a, b) => a.slot.localeCompare(b.slot));
   const nextExtraSlot = extraSlots.find((slot) => !bySlot(slot));
-  const uploadedCount = requiredDocuments.filter((d) => bySlot(d.id)).length;
-  const allRequiredUploaded = uploadedCount === requiredDocuments.length;
+  const uploadedCount = requiredSlots.filter((d) => bySlot(d.slot)).length;
+  const allRequiredUploaded = uploadedCount === requiredSlots.length;
 
   const setDocument = (slot: string, document: PendingDocument | null) => {
     onDocumentsChange([...pendingDocuments.filter((d) => d.slot !== slot), ...(document ? [document] : [])]);
@@ -2055,39 +2047,53 @@ function AttachedDocumentForm({ policyNo, documents: pendingDocuments, onDocumen
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-base font-bold text-[#35126d]">Upload your documents</h3>
-          <p className="mt-0.5 text-xs text-slate-500">PDF, JPG, PNG, DOC or DOCX, up to 5 MB each. Click a row or drop a file on it.</p>
+          <p className="mt-0.5 text-xs text-slate-500">Upload a clear photo or scan of the front and the back of each card. PDF, JPG, PNG, DOC or DOCX, up to 5 MB each.</p>
         </div>
         <div className="flex items-center gap-2">
           {policyNo ? <span className="rounded-full bg-white px-3 py-1 font-mono text-xs font-semibold text-[#35126d] ring-1 ring-violet-200">{policyNo}</span> : null}
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${allRequiredUploaded ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-white text-slate-600 ring-violet-200"}`}>{uploadedCount} of {requiredDocuments.length} required</span>
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${allRequiredUploaded ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-white text-slate-600 ring-violet-200"}`}>{uploadedCount} of {requiredSlots.length} files</span>
         </div>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-violet-100"><div className={`h-full rounded-full transition-all duration-300 ${allRequiredUploaded ? "bg-emerald-500" : "bg-[#5b3aa4]"}`} style={{ width: `${(uploadedCount / requiredDocuments.length) * 100}%` }} /></div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-violet-100"><div className={`h-full rounded-full transition-all duration-300 ${allRequiredUploaded ? "bg-emerald-500" : "bg-[#5b3aa4]"}`} style={{ width: `${(uploadedCount / requiredSlots.length) * 100}%` }} /></div>
 
-      {/* Required documents */}
-      <ul className="space-y-2">
+      {/* Required documents: one tile per side (front / back) */}
+      <ul className="space-y-3">
         {requiredDocuments.map((doc) => {
-          const attached = bySlot(doc.id);
-          const onFile = (file: File | undefined) => attach(doc.id, file, doc.docType, doc.kyc);
+          const slots = documentSlots(doc);
+          const done = slots.filter((side) => bySlot(side.slot)).length;
           return (
-            <li key={doc.id} {...dropProps(doc.id, onFile)} className={`rounded-xl border bg-white px-4 py-3 transition ${dragActive === doc.id ? "border-[#5b3aa4] bg-violet-50 ring-2 ring-violet-100" : attached ? "border-emerald-200" : "border-slate-200 hover:border-violet-300"}`}>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${attached ? "bg-emerald-100 text-emerald-600" : "bg-violet-50 text-[#5b3aa4]"}`}>{icon(attached ? CHECK_PATH : FILE_PATH)}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-800">{doc.name}{doc.kyc ? <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-700 ring-1 ring-sky-200">KYC</span> : null}</p>
-                  <p className={`truncate text-xs ${attached ? "font-medium text-emerald-700" : "text-slate-400"}`}>{attached ? `${attached.file.name} · ${formatFileSize(attached.file.size)}` : "No file chosen"}</p>
-                </div>
-                {fileInput(doc.id, onFile)}
-                {attached ? (
-                  <div className="flex items-center gap-2">
-                    <label htmlFor={`file_${doc.id}`} className={`${buttonClass} text-[#412484] ring-1 ring-violet-200 hover:bg-violet-50`}>Replace</label>
-                    <button type="button" onClick={() => remove(doc.id)} className={`${buttonClass} text-rose-600 hover:bg-rose-50`}>Remove</button>
-                  </div>
-                ) : (
-                  <label htmlFor={`file_${doc.id}`} className={`${buttonClass} bg-[#35126d] text-white hover:bg-[#2b0f5a]`}>{icon(UPLOAD_PATH, "h-4 w-4")} Choose file</label>
-                )}
+            <li key={doc.id} className={`rounded-xl border bg-white p-4 transition ${done === slots.length ? "border-emerald-200" : "border-slate-200"}`}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${done === slots.length ? "bg-emerald-100 text-emerald-600" : "bg-violet-50 text-[#5b3aa4]"}`}>{icon(done === slots.length ? CHECK_PATH : FILE_PATH, "h-4 w-4")}</span>
+                  {doc.name}
+                </p>
+                <span className="text-xs text-slate-500">{doc.sides ? `Front and back · ${done} of 2 uploaded` : done ? "Uploaded" : "1 file"}</span>
               </div>
-              {fileErrors[doc.id] ? <p role="alert" className="mt-2 text-xs font-medium text-rose-600">{fileErrors[doc.id]}</p> : null}
+              <div className={`mt-3 grid gap-3 ${doc.sides ? "sm:grid-cols-2" : ""}`}>
+                {slots.map((side) => {
+                  const attached = bySlot(side.slot);
+                  const onFile = (picked: File | undefined) => attach(side.slot, picked, side.docType, false);
+                  return (
+                    <div key={side.slot} {...dropProps(side.slot, onFile)} className={`rounded-xl border-2 border-dashed px-3 py-3 transition ${dragActive === side.slot ? "border-[#5b3aa4] bg-violet-50" : attached ? "border-emerald-200 bg-emerald-50/50" : "border-violet-200 bg-[#faf9fd] hover:border-violet-400"}`}>
+                      {fileInput(side.slot, onFile)}
+                      <div className="flex items-center gap-3">
+                        <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${attached ? "bg-emerald-600 text-white" : "bg-violet-100 text-[#35126d]"}`}>{side.label}</span>
+                        <p className={`min-w-0 flex-1 truncate text-xs ${attached ? "font-medium text-emerald-700" : "text-slate-400"}`}>{attached ? `${attached.file.name} · ${formatFileSize(attached.file.size)}` : doc.sides ? `Upload the ${side.label.toLowerCase()} side` : "No file chosen"}</p>
+                        {attached ? (
+                          <span className="flex shrink-0 items-center gap-1">
+                            <label htmlFor={`file_${side.slot}`} className={`${buttonClass} text-[#412484] ring-1 ring-violet-200 hover:bg-white`}>Replace</label>
+                            <button type="button" onClick={() => remove(side.slot)} className={`${buttonClass} text-rose-600 hover:bg-rose-50`}>Remove</button>
+                          </span>
+                        ) : (
+                          <label htmlFor={`file_${side.slot}`} className={`${buttonClass} shrink-0 bg-[#35126d] text-white hover:bg-[#2b0f5a]`}>{icon(UPLOAD_PATH, "h-4 w-4")} Choose</label>
+                        )}
+                      </div>
+                      {fileErrors[side.slot] ? <p role="alert" className="mt-2 text-xs font-medium text-rose-600">{fileErrors[side.slot]}</p> : null}
+                    </div>
+                  );
+                })}
+              </div>
             </li>
           );
         })}
@@ -2124,7 +2130,7 @@ function AttachedDocumentForm({ policyNo, documents: pendingDocuments, onDocumen
       <input name="documentsConfirmed" type="checkbox" checked={allRequiredUploaded} readOnly className="sr-only" tabIndex={-1} aria-hidden="true" />
       <p className={`flex items-start gap-2 rounded-xl px-3 py-2 text-xs ${allRequiredUploaded ? "bg-emerald-50 text-emerald-700" : "bg-white text-slate-500 ring-1 ring-slate-200"}`}>
         {icon(allRequiredUploaded ? CHECK_PATH : "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z", "h-4 w-4 shrink-0")}
-        {allRequiredUploaded ? "All required documents are ready. They are uploaded to the server when the payment is confirmed." : "The files are uploaded to the server when the payment is confirmed: policy documents to the policy folder, NID / Passport and Address Proof to the insured's KYC folder."}
+        {allRequiredUploaded ? "All required files are ready. After the policy e-mail is sent, they are uploaded to the folder named after the policy number." : "After the payment is confirmed and the policy e-mail is sent, every file is uploaded to the folder named after the policy number."}
       </p>
 
       {/* Upload result and documents stored for this policy (GetDocList) */}
@@ -2164,6 +2170,22 @@ export default function BuyOnlinePage() {
   const [policyCover, setPolicyCover] = useState<PolicyCover>("");
   const [openSection, setOpenSection] = useState<string | null>("KYC");
   const [saveMessage, setSaveMessage] = useState("");
+  const [saveIssues, setSaveIssues] = useState<SaveIssue[]>([]);
+  // Outline the fields listed in saveIssues; a field loses its outline as soon as it is changed.
+  useEffect(() => {
+    const root = document.getElementById("new-business-fields");
+    if (!root) return;
+    const marked = saveIssues.flatMap((issue) => Array.from(root.querySelectorAll<HTMLElement>(`[name="${CSS.escape(issue.field)}"]`)));
+    marked.forEach((element) => { element.style.boxShadow = "0 0 0 2px #fb7185"; element.setAttribute("aria-invalid", "true"); });
+    return () => marked.forEach((element) => { element.style.boxShadow = ""; element.removeAttribute("aria-invalid"); });
+  }, [saveIssues]);
+  const showSaveIssues = (issues: SaveIssue[], section: string) => {
+    const unique = issues.filter((issue, index) => issues.findIndex((other) => other.message === issue.message) === index);
+    setSaveError(true);
+    setSaveIssues(unique);
+    setSaveMessage(unique.length === 1 ? `1 thing to fix in ${section} before saving` : `${unique.length} things to fix in ${section} before saving`);
+  };
+  const clearSaveNotice = () => { setSaveMessage(""); setSaveIssues([]); setSaveError(false); };
   const [saveError, setSaveError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [proposalDraft, setProposalDraft] = useState<Record<string, string | boolean>>({});
@@ -2173,6 +2195,31 @@ export default function BuyOnlinePage() {
   const [vehicleMissing, setVehicleMissing] = useState(6);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [payment, setPayment] = useState<PaymentDetails>({ method: "card", name: "", cardNumber: "", expiry: "", cvv: "", bank: "" });
+  // Covers that cannot be selected for the vehicle class / country (usp_CurCoverinfo).
+  const [coverRestrictions, setCoverRestrictions] = useState<{ available: boolean; coverNames: string[]; restrictedRates: number[] }>({ available: false, coverNames: [], restrictedRates: [] });
+  const restrictionClass = String(proposalDraft.vehicleClass || "");
+  const restrictionCountry = String(proposalDraft.country || "Mauritius");
+  const premiumCoverRules = useMemo(() => mandatoryCoverRules(restrictionClass, restrictionCountry), [restrictionClass, restrictionCountry]);
+  useEffect(() => {
+    if (!restrictionClass) return;
+    let cancelled = false;
+    fetch(`/api/motor/cover-restrictions?vehicleClass=${encodeURIComponent(restrictionClass)}&country=${encodeURIComponent(restrictionCountry)}`)
+      .then((response) => response.json())
+      .then((data: { available?: boolean; coverNames?: string[]; restrictedRates?: number[] }) => {
+        if (cancelled) return;
+        const restrictedRates = data.restrictedRates || [];
+        setCoverRestrictions({ available: Boolean(data.available), coverNames: data.coverNames || [], restrictedRates });
+        // Unselect covers that are not available for the new vehicle class.
+        if (restrictedRates.length) setProposalDraft((prev) => {
+          if (!restrictedRates.some((rate) => prev[`cover${rate}`] === true || prev[`cover${rate}`] === "true")) return prev;
+          const next = { ...prev };
+          restrictedRates.forEach((rate) => { next[`cover${rate}`] = false; next[`rate${rate}`] = ""; next[`amt${rate}`] = ""; });
+          return next;
+        });
+      })
+      .catch(() => { if (!cancelled) setCoverRestrictions({ available: false, coverNames: [], restrictedRates: [] }); });
+    return () => { cancelled = true; };
+  }, [restrictionClass, restrictionCountry]);
   // Shows every Common Det. error once the user has tried to save the section.
   const [commonDetailsAttempted, setCommonDetailsAttempted] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState("");
@@ -2512,7 +2559,7 @@ const detailsComplete = Boolean(registration.trim() && fullName.trim());
     // the policy documents and later visits can find each other.
     const kycCode = kycValue("Code");
     if (kycCode && kycCode.toUpperCase() !== "WEB") payload.clientCode = kycCode;
-    setSaving(true); setSaveMessage(""); setSaveError(false);
+    setSaving(true); clearSaveNotice();
     try {
       const response = await fetch("/api/motor/new-business", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const data = await response.json() as { error?: string; message?: string; policyNo?: string; errors?: Record<string, string> };
@@ -2523,7 +2570,8 @@ const detailsComplete = Boolean(registration.trim() && fullName.trim());
         if (data.error?.toLowerCase().includes("already has an active policy")) {
           setSaveError(true); setSaveMessage(data.error); return "existing";
         }
-        throw new Error(data.errors ? Object.values(data.errors).join(" ") : data.error || "Policy could not be saved.");
+        if (data.errors && Object.keys(data.errors).length) { showSaveIssues(Object.entries(data.errors).map(([field, message]) => ({ field, message })), "the policy"); return false; }
+        throw new Error(data.error || "Policy could not be saved.");
       }
 setSaveMessage(`${data.message} Policy: ${data.policyNo}`);
       setPolicyNo(data.policyNo);
@@ -2543,7 +2591,7 @@ const markSectionSaved = (title: string) => {
 
 const saveCurrentSection = async () => {
     if (!openSection || openSection === "KYC") return;
-    setSaveMessage(""); setSaveError(false);
+    clearSaveNotice();
     // Read the live controls before validating. Vehicle fields are controlled
     // inside their form component and React state updates may be asynchronous.
     // The calculated premium fields are read-only displays ("0.00" / "Calculating..."), so they are never
@@ -2581,10 +2629,17 @@ const saveCurrentSection = async () => {
       if (Number(currentDraft.sumInsured) > 10000000) missing.push(["sumInsured", "Sum insured above 10,000,000 must be referred to Head Office for review (HO REVIEW-10M)."]);
       else if (Number(currentDraft.sumInsured) > 0 && !filled("compulsoryExcess")) missing.push(["compulsoryExcess", "The compulsory excess could not be found for these details. See the message under Cover & excess."]);
     }
-    if (openSection === "Premium") missing.push(...coverErrors(currentDraft, Number(currentDraft.seating) || 0));
+    if (openSection === "Premium") missing.push(...coverErrors(applyCoverRules(currentDraft, premiumCoverRules), Number(currentDraft.seating) || 0, coverRestrictions.restrictedRates, premiumCoverRules));
+    // Accessories: every accessory with an amount needs its make & model (letters, numbers and spaces).
+    if (openSection === "Accessories") {
+      const makeModels = Object.keys(currentDraft).filter((key) => /^accessoryAmount_d+$/.test(key) && Number(currentDraft[key]) > 0)
+        .map((key) => String(currentDraft[key.replace("Amount", "MakeModel")] ?? "").trim());
+      if (makeModels.some((value) => !value)) missing.push(["accessoryMakeModel", "Enter the make & model of every accessory that has an amount."]);
+      if (makeModels.some((value) => value && !/^[A-Za-z0-9 ]+$/.test(value))) missing.push(["accessoryMakeModel", "Make & model can contain letters, numbers and spaces only."]);
+    }
     if (openSection === "Common Det.") { setCommonDetailsAttempted(true); missing.push(...commonDetailsErrors(currentDraft)); }
     // Skip validation for Attached Document - allow proceeding to payment without all documents
-    if (missing.length && openSection !== "Attached Document") { setSaveError(true); setSaveMessage(missing.map(([, message]) => message).join(" ")); return; }
+    if (missing.length && openSection !== "Attached Document") { showSaveIssues(missing.map(([field, message]) => ({ field, message })), openSection); return; }
     if (openSection === "Attached Document") {
       const saved = await saveProposal();
       if (!saved) return;
@@ -2627,8 +2682,8 @@ const saveCurrentSection = async () => {
             </div>
 
             {currentStep === 0 ? (
-              <div id="new-business-fields" onChangeCapture={(event) => { const field = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement; if (field.name && ((field.type !== "radio" && field.type !== "checkbox") || field.checked)) { setProposalDraft((current) => ({ ...current, [field.name]: field.type === "checkbox" ? field.checked : field.value })); if (openSection) { const changedIndex = newVehicleSections.findIndex((section) => section.title === openSection); setSavedSections((current) => new Set([...current].filter((title) => newVehicleSections.findIndex((section) => section.title === title) < changedIndex))); } } }} className="bg-[#f8f9fc] p-3 sm:p-4">
-                {saveMessage ? <p role={saveError ? "alert" : "status"} className={`mb-3 border px-4 py-3 text-sm font-semibold ${saveError ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{saveMessage}</p> : null}
+              <div id="new-business-fields" onChangeCapture={(event) => { const field = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement; field.style.boxShadow = ""; field.removeAttribute("aria-invalid"); if (field.name && ((field.type !== "radio" && field.type !== "checkbox") || field.checked)) { setProposalDraft((current) => ({ ...current, [field.name]: field.type === "checkbox" ? field.checked : field.value })); if (openSection) { const changedIndex = newVehicleSections.findIndex((section) => section.title === openSection); setSavedSections((current) => new Set([...current].filter((title) => newVehicleSections.findIndex((section) => section.title === title) < changedIndex))); } } }} className="bg-[#f8f9fc] p-3 sm:p-4">
+                {saveMessage && !openSection ? <div className="mb-3"><SaveNotice error={saveError} message={saveMessage} issues={saveIssues} onDismiss={clearSaveNotice} onOpenSection={setOpenSection} /></div> : null}
                 <div className="mb-4 overflow-hidden bg-[#35126d] text-white shadow-lg shadow-violet-950/10">
                   <div className="grid gap-4 bg-[radial-gradient(circle_at_85%_10%,_rgba(167,139,250,0.55),_transparent_35%)] p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-6">
                     <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-200">Your application journey</p><h2 className="mt-2 text-xl font-semibold">Build your cover, one clear step at a time</h2><p className="mt-1 max-w-xl text-sm leading-6 text-violet-100">Choose a section from the journey map. Your information stays visible in one focused workspace.</p></div>
@@ -2654,13 +2709,14 @@ const saveCurrentSection = async () => {
 </nav>
 
   {visibleSections.map((section) => (
-                    <section key={section.title} hidden={openSection !== section.title} className="min-w-0 overflow-hidden border border-violet-100 bg-white shadow-sm">
+                    <section key={section.title} data-section={section.title} hidden={openSection !== section.title} className="min-w-0 overflow-hidden border border-violet-100 bg-white shadow-sm">
                       <div className="flex flex-col gap-3 border-b border-violet-100 bg-gradient-to-r from-violet-50/80 to-white p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                         <div className="flex items-center gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center bg-white text-[#35126d] shadow-sm ring-1 ring-violet-100"><SectionIcon title={section.title} /></span><div><h3 className="font-semibold text-slate-900 sm:text-lg">{section.title}</h3><p className="mt-0.5 text-xs text-slate-500 sm:text-sm">{section.title === "KYC" && kycMissing.length ? `Missing: ${kycMissing.join(", ")}` : sectionDescriptions[section.title]}</p></div></div>
                         {section.title === "KYC" ? <span className="self-start bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-100 sm:self-auto">{kycMissing.length ? `${kycMissing.length} mandatory field${kycMissing.length === 1 ? "" : "s"} pending` : "Complete"}</span> : section.title === "Policy Details" ? <span className={`self-start px-3 py-1.5 text-xs font-bold ring-1 sm:self-auto ${policyMissing ? "bg-red-50 text-red-700 ring-red-100" : "bg-emerald-50 text-emerald-700 ring-emerald-100"}`}>{policyMissing ? `${policyMissing} mandatory fields pending` : "Complete"}</span> : section.title === "Vechicle Details" ? <span className={`self-start px-3 py-1.5 text-xs font-bold ring-1 sm:self-auto ${vehicleMissing ? "bg-red-50 text-red-700 ring-red-100" : "bg-emerald-50 text-emerald-700 ring-emerald-100"}`}>{vehicleMissing ? `${vehicleMissing} mandatory fields pending` : "Complete"}</span> : section.pending ? <span className="self-start bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-100 sm:self-auto">{section.pending}</span> : <span className="self-start bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 sm:self-auto">Ready to complete</span>}
                       </div>
 <div className="overflow-x-auto p-3 sm:p-4">
-                        {section.title === "KYC" ? <ClientDetailsForm onKycStatus={setKycMissing} onClientSelected={(client) => setProposalDraft((current) => ({ ...current, clientCode: String(client.Code || ""), title: String(client.Title || ""), firstName: String(client.Name || ""), surname: String(client.Surname || ""), email: String(client.EMail || "") }))} onSaved={() => markSectionSaved("KYC")} onClientChange={setKycClient} /> : section.title === "Policy Details" ? <MotorProposalForm clientCode={String(proposalDraft.clientCode || "")} onStatusChange={setPolicyMissing} coverRequired={policyCover} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} /> : section.title === "Vechicle Details" ? <VehicleProposalForm policyCover={policyCover} onPolicyCoverChange={setPolicyCover} onStatusChange={setVehicleMissing} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} vehicleClass={proposalDraft.vehicleClass} vehicleType={proposalDraft.vehicleType} fuelType={proposalDraft.fuelType} issueDate={proposalDraft.issueDate} country={String(proposalDraft.country || "Mauritius")} /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm values={proposalDraft as Record<string, string | boolean>} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} showErrors={commonDetailsAttempted} /> : section.title === "Premium" ? <PremiumForm values={proposalDraft as Record<string, string | boolean>} calculating={premiumCalculating} onCalculate={calculatePremium} error={premiumError} cover={policyCover || String(proposalDraft.coverRequired || "")} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} /> : <AttachedDocumentForm policyNo={policyNo} documents={pendingDocuments} onDocumentsChange={setPendingDocuments} stored={storedDocuments} uploadMessage={documentUploadMessage} />}
+                        {section.title === "KYC" ? <ClientDetailsForm onKycStatus={setKycMissing} onClientSelected={(client) => setProposalDraft((current) => ({ ...current, clientCode: String(client.Code || ""), title: String(client.Title || ""), firstName: String(client.Name || ""), surname: String(client.Surname || ""), email: String(client.EMail || "") }))} onSaved={() => markSectionSaved("KYC")} onClientChange={setKycClient} /> : section.title === "Policy Details" ? <MotorProposalForm clientCode={String(proposalDraft.clientCode || "")} onStatusChange={setPolicyMissing} coverRequired={policyCover} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} /> : section.title === "Vechicle Details" ? <VehicleProposalForm policyCover={policyCover} onPolicyCoverChange={setPolicyCover} onStatusChange={setVehicleMissing} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} vehicleClass={proposalDraft.vehicleClass} vehicleType={proposalDraft.vehicleType} fuelType={proposalDraft.fuelType} issueDate={proposalDraft.issueDate} country={String(proposalDraft.country || "Mauritius")} /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm values={proposalDraft as Record<string, string | boolean>} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} showErrors={commonDetailsAttempted} /> : section.title === "Premium" ? <PremiumForm values={applyCoverRules(proposalDraft, premiumCoverRules) as Record<string, string | boolean>} calculating={premiumCalculating} onCalculate={calculatePremium} error={premiumError} cover={policyCover || String(proposalDraft.coverRequired || "")} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} restrictedRates={coverRestrictions.restrictedRates} coverRules={premiumCoverRules} /> : <AttachedDocumentForm policyNo={policyNo} documents={pendingDocuments} onDocumentsChange={setPendingDocuments} stored={storedDocuments} uploadMessage={documentUploadMessage} />}
+                        {section.title !== "KYC" && openSection === section.title && saveMessage ? <div className="mt-4"><SaveNotice error={saveError} message={saveMessage} issues={saveIssues} onDismiss={clearSaveNotice} onOpenSection={setOpenSection} /></div> : null}
                         {section.title !== "KYC" ? <div className="mt-4 flex justify-end border-t border-violet-100 pt-4"><button type="button" disabled={saving} onClick={() => void saveCurrentSection()} className="bg-[#35126d] px-6 py-3 text-sm font-bold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-400">{saving ? "Saving..." : section.title === "Attached Document" ? "Save policy and continue" : "Save and continue"}</button></div> : null}
                       </div>
                     </section>

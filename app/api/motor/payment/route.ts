@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
                 user: `web:${userId}`,
                 documents: attachments.map((file) => ({ docType: file.docType || "Policy Document", originalName: `${data.vehicleNo || "Policy"}.pdf`, content: file.content })),
               });
-              storageMessage = `Policy documents stored on the server (folder ${policyFolderName(policyNo)}${result.folderCreated ? ", created" : ""}).`;
+              storageMessage = `Policy documents stored on the server (folder ${policyFolderName(policyNo)}${result.folderCreated ? ", created" : ""})${result.recorded ? "" : "; their paths were not recorded because the dbo.temp_attachment table does not exist"}.`;
             } catch (error) {
               console.error("Policy documents could not be stored", error);
               storageMessage = error instanceof AttachmentError ? error.message : UPLOAD_FAILED_MESSAGE;
