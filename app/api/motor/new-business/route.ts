@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getCurrentUserId, isSameOriginRequest } from "@/lib/auth";
 import { getDb, sql } from "@/lib/db";
-import { applyCoverRules, coverColumns, coverErrors, mandatoryCoverRules } from "@/lib/additional-risk";
+import { applyCoverRules, coverColumns, coverErrors, mandatoryCoverRules, pricedCovers } from "@/lib/additional-risk";
+import { priceAddOns } from "@/lib/addon-premium";
 import { loadCoverRestrictions } from "@/lib/cover-restrictions";
 
 type Input = Record<string, unknown>;
@@ -47,7 +48,8 @@ function validate(body: Input) {
   if (proposal.coverRequired.toUpperCase().includes("COMP") && proposal.sumInsured <= 0) errors.sumInsured = "Enter the sum insured for comprehensive cover.";
   if (proposal.premium <= 0) errors.premium = "Calculate and enter the basic premium.";
   if (proposal.invoiceAmount <= 0) errors.invoiceAmount = "Enter the invoice amount.";
-  if (proposal.pricePaid <= 0) errors.pricePaid = "Enter the price paid for the vehicle.";
+  // Price paid is optional; when given it must not be negative.
+  if (proposal.pricePaid < 0) errors.pricePaid = "The price paid cannot be negative.";
   // Optional covers of the Premium form (Rate<n> = number / 1 when selected, Amt<n> = amount).
   // Mandatory covers (Driver Only, Passenger Risk for public-use classes) are applied before saving.
   const rules = mandatoryCoverRules(proposal.vehicleClass, proposal.country);
@@ -94,6 +96,25 @@ export async function POST(request: NextRequest) {
     for (const [field, message] of coverErrors(coverValues, proposal.seating, restrictedRates, rules)) if (field.startsWith("cover")) errors[field] = message;
   } catch (error) {
     console.warn("Cover restrictions could not be checked", error);
+  }
+  // Add-on amounts are priced again from the tariff (usp_GetAdditionalPremium) rather than trusted from the browser.
+  const priced = pricedCovers(coverValues, rules);
+  if (priced.length && !Object.keys(errors).length) {
+    try {
+      const day = (value: Date | null) => (value ? value.toISOString().slice(0, 10) : "");
+      const quotes = await priceAddOns({
+        vehicleType: proposal.vehicleType, vehicleClass: proposal.vehicleClass, country: proposal.country, cover: proposal.coverRequired,
+        issueDate: day(proposal.issueDate), fromDate: day(proposal.fromDate), manufactureDate: clean(body.manufactureDate, 10), cc: proposal.cc, covers: priced,
+      });
+      for (const { rate } of priced) {
+        const quote = quotes[rate];
+        if (!quote?.success) errors[`cover${rate}`] = "An add-on cover has no tariff set up and cannot be added online. Untick it or contact Head Office.";
+        else proposal.covers[`Amt${rate}`] = quote.amount;
+      }
+    } catch (error) {
+      console.error("Add-on premium check failed", error);
+      errors.premium = "Add-on premiums could not be checked. Please try again.";
+    }
   }
   if (Object.keys(errors).length) return NextResponse.json({ error: "Complete the required new-business fields.", errors }, { status: 400 });
   const transaction = new sql.Transaction(await getDb());

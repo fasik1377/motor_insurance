@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PREMIUM_COVERS, additionalRiskCovered, applyCoverRules, coverColumns, coverErrors, mandatoryCoverRules, ratesFromColumns, type CoverRule } from "@/lib/additional-risk";
+import { PREMIUM_COVERS, additionalRiskCovered, applyCoverRules, coverColumns, coverErrors, mandatoryCoverRules, pricedCovers, ratesFromColumns, withPremiumTotals, type CoverRule } from "@/lib/additional-risk";
+
+// Tariff price of a selected add-on cover (usp_GetAdditionalPremium).
+type AddOnQuote = { amount: number; unitAmount: number; isFree: boolean; success: boolean; errorMsg: string };
 
 type PolicyCover = "" | "Comprehensive" | "Comprehensive AutoPlus" | "Third Party Fire & Theft" | "Third Party Only";
 
@@ -673,8 +676,10 @@ return (
             </div>
             <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white">{classificationDone} / 4 classification fields</span>
           </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="block">
+          <div className="mt-4 grid gap-3">
+            {/* The policy number is generated when the policy is saved; it is not shown to the customer here. */}
+            <input type="hidden" name="policyNo" value={policyNo} />
+            <label className="hidden">
               <span className="mb-1.5 block text-xs font-semibold text-violet-100">Policy No.</span>
               <input name="policyNo" value={policyNo} readOnly placeholder="Generated from the vehicle class and cover" className="h-10 w-full cursor-default rounded-lg border border-white/30 bg-white/10 px-3 font-mono text-sm text-white outline-none placeholder:text-violet-200" />
             </label>
@@ -996,7 +1001,7 @@ function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange,
   // tanker / trailer / tractor; seating or CC/kW - usp_GetMotorExcess needs at least one; a compulsory excess must be found).
   const missingVehicleFields = (values: Record<string, string>, cover: string) => {
     const filled = (name: string) => Boolean(String(values[name] ?? "").trim());
-    const missing = ["vehicleNo", "make", "model", "engineNo", "chassisNo", "manufactureDate", "sumInsured", "pricePaid"].filter((name) => !filled(name));
+    const missing = ["vehicleNo", "make", "model", "engineNo", "chassisNo", "manufactureDate", "sumInsured"].filter((name) => !filled(name));
     if (!filled("seating") && !filled("cc")) missing.push("seating/cc");
     if (/GOODS VEHICLE\(PRIVATE\)|GOODS VEHICLE\(PUBLIC\)/i.test(vehicleClass || "") && !(Number(values.gvw) > 0)) missing.push("gvw");
     if (/TANKER|TRAILER|TRACTOR/i.test(vehicleClass || "") && !(Number(values.trailerFeet) > 0)) missing.push("trailerFeet");
@@ -1157,7 +1162,7 @@ function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange,
             <select name="coverRequired" value={policyCover} onChange={(event) => { if (!coverLocked) { onPolicyCoverChange(event.target.value as PolicyCover); onStatusChange(missingVehicleFields(requiredValues, event.target.value).length); } }} className={fieldClass(coverLocked)} disabled={coverLocked}><option value="">Select cover</option>{coverOptions.map((cover) => <option key={cover.name} value={cover.name === "COMPREHENSIVE" ? "Comprehensive" : cover.name === "COMPREHENSIVE AUTOPLUS" ? "Comprehensive AutoPlus" : cover.name}>{cover.name === "COMPREHENSIVE" ? "Comprehensive" : cover.name === "COMPREHENSIVE AUTOPLUS" ? "Comprehensive AutoPlus" : cover.name}</option>)}</select>
           </label>
           {field("Sum Insured", "sumInsured", "input", undefined, true, false, Number(requiredValues.sumInsured) > 10000000 ? "Above 10M: HO review" : undefined)}
-          {field("Price Paid", "pricePaid", "input", undefined, true)}
+          {field("Price Paid", "pricePaid", "input", undefined, false, false, "Optional")}
           <div className="grid gap-3 sm:col-span-2 sm:grid-cols-4">
             {field("Compulsory Excess", "compulsoryExcess")}
             {field("Young Driver Excess", "youngDriverExcess")}
@@ -1698,7 +1703,7 @@ const formatExpiry = (value: string, previous: string) => {
   return digits.length >= 3 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits.length === 2 ? `${digits}/` : digits;
 };
 
-function PaymentForm({ payment, onChange, amount, policyNo, notice, onCancel, onContinue }: { payment: PaymentDetails; onChange: (payment: PaymentDetails) => void; amount: number; policyNo: string; notice: string; onCancel: () => void; onContinue: () => void }) {
+function PaymentForm({ payment, onChange, amount, notice, onCancel, onContinue }: { payment: PaymentDetails; onChange: (payment: PaymentDetails) => void; amount: number; notice: string; onCancel: () => void; onContinue: () => void }) {
   const set = (field: keyof PaymentDetails, value: string) => onChange({ ...payment, [field]: value });
   const brand = cardBrand(cardDigits(payment.cardNumber));
   const isCard = payment.method === "card";
@@ -1717,7 +1722,6 @@ function PaymentForm({ payment, onChange, amount, policyNo, notice, onCancel, on
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-violet-200">Demo payment</p>
               <h2 className="mt-1 text-lg font-bold">Complete payment</h2>
-              {policyNo ? <p className="mt-0.5 font-mono text-xs text-violet-100">Policy {policyNo}</p> : null}
             </div>
             <div className="text-right">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-violet-200">Amount due</p>
@@ -1782,7 +1786,7 @@ function PaymentForm({ payment, onChange, amount, policyNo, notice, onCancel, on
   );
 }
 
-function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldChange, restrictedRates = [], coverRules = {} }: { values: Record<string, string | boolean>; calculating?: boolean; onCalculate?: () => void; error?: string; cover?: string; onFieldChange?: (field: string, value: string | boolean) => void; restrictedRates?: number[]; coverRules?: Record<number, CoverRule> }) {
+function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldChange, restrictedRates = [], coverRules = {}, addonQuotes = {}, addonLoading = false }: { values: Record<string, string | boolean>; calculating?: boolean; onCalculate?: () => void; error?: string; cover?: string; onFieldChange?: (field: string, value: string | boolean) => void; restrictedRates?: number[]; coverRules?: Record<number, CoverRule>; addonQuotes?: Record<number, AddOnQuote>; addonLoading?: boolean }) {
   const inputClass = "h-8 w-full border border-violet-200 bg-white px-2 text-xs text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
   // Optional covers (MotorMaster Rate<n> / Amt<n>); see lib/additional-risk.ts.
   const seating = Number(values.seating) || 0;
@@ -1808,7 +1812,8 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
           // Mandatory covers (Driver Only, Passenger Risk for public-use classes) are ticked and locked.
           const rule = coverRules[row.rate];
           const restricted = restrictedRates.includes(row.rate) && !rule;
-          const rowErrors = [errors[`cover${row.rate}`], errors[`rate${row.rate}`], errors[`amt${row.rate}`]].filter(Boolean);
+          const quoteError = on && !coverRules[row.rate]?.amountLocked && addonQuotes[row.rate] && !addonQuotes[row.rate].success ? addonQuotes[row.rate].errorMsg : "";
+          const rowErrors = [errors[`cover${row.rate}`], errors[`rate${row.rate}`], quoteError].filter(Boolean);
           return (
             <div key={row.rate} className={`border-t border-violet-50 px-3 py-1.5 transition ${on ? "bg-violet-50/60" : "hover:bg-violet-50/40"}`}>
               <div className="grid grid-cols-[1fr_64px_96px] items-center gap-2">
@@ -1816,7 +1821,15 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
                 {row.count ? (
                   <input type="number" min={1} step={1} disabled={!on} value={on ? String(values[`rate${row.rate}`] ?? "") : ""} onChange={(e) => onFieldChange?.(`rate${row.rate}`, e.target.value.replace(/[^0-9]/g, ""))} placeholder={on ? row.count : ""} title={row.count} className={`${coverInput} text-center ${errors[`rate${row.rate}`] ? "border-rose-300" : "border-violet-100"}`} aria-label={`${row.label} - number of ${row.count.toLowerCase()}`} />
                 ) : <span className="text-center text-xs text-slate-300">{on ? "1" : ""}</span>}
-                <input type="number" min={0} step="0.01" disabled={!on || Boolean(rule?.amountLocked)} value={on && !rule?.amountLocked ? String(values[`amt${row.rate}`] ?? "") : ""} onChange={(e) => onFieldChange?.(`amt${row.rate}`, e.target.value)} placeholder={on ? "0.00" : ""} className={`${coverInput} text-right ${errors[`amt${row.rate}`] ? "border-rose-300" : "border-violet-100"}`} aria-label={`${row.label} amount`} />
+                {(() => {
+                  // Amount comes from the add-on tariff (usp_GetAdditionalPremium); it is not typed in.
+                  const quote = addonQuotes[row.rate];
+                  if (!on || rule?.amountLocked) return <span className="text-right text-xs text-slate-300">{on ? "Included" : ""}</span>;
+                  if (addonLoading && !quote) return <span className="animate-pulse text-right text-xs text-slate-400">Pricing…</span>;
+                  if (quote?.isFree) return <span className="justify-self-end rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-200">Free</span>;
+                  if (quote && !quote.success) return <span className="justify-self-end rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-700 ring-1 ring-rose-200">No tariff</span>;
+                  return <span className={`text-right font-mono text-xs tabular-nums ${addonLoading ? "text-slate-400" : "text-slate-800"}`} title={quote && PER_PERSON_RATES.has(row.rate) ? `${quote.unitAmount.toFixed(2)} per person` : undefined}>{(Number(values[`amt${row.rate}`]) || 0).toFixed(2)}</span>;
+                })()}
               </div>
               {rowErrors.map((message) => <p key={message} role="alert" className="mt-1 text-[11px] font-medium text-rose-600">{message}</p>)}
             </div>
@@ -1826,7 +1839,7 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
     );
   };
 
-  const numericFields = new Set(["premium", "basicRate", "basicAmt", "addCharge", "minPremium", "loadingPer", "tpPremium", "mgwRate", "excess", "youngExcess", "tpfExcess", "fixPremium", "documentCharge", "levy", "hitAndRun", "invoiceAmount"]);
+  const numericFields = new Set(["premium", "addOnPremium", "basicRate", "basicAmt", "addCharge", "minPremium", "loadingPer", "tpPremium", "mgwRate", "excess", "youngExcess", "tpfExcess", "fixPremium", "documentCharge", "levy", "hitAndRun", "invoiceAmount"]);
 
   const getValue = (name: string): string => {
     const val = values[name];
@@ -1896,7 +1909,7 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
         <div className="grid gap-4 lg:grid-cols-2">
           {/* Calculated premium breakdown */}
           <div className="space-y-4">
-            {valueGroup("Premium", [["Total Premium (Incl. Tow)", "premium"], ["Basic Rate", "basicRate"], ["Basic Amount", "basicAmt"], ["Additional Charge", "addCharge"], ["Min Premium", "minPremium"], ["Fix Premium", "fixPremium"]])}
+            {valueGroup("Premium", [["Total Premium (incl. add-ons)", "premium"], ["Basic Amount", "basicAmt"], ["Add-on Covers", "addOnPremium"], ["Basic Rate", "basicRate"], ["Additional Charge", "addCharge"], ["Min Premium", "minPremium"], ["Fix Premium", "fixPremium"]])}
             {valueGroup("Tariff details", [["Loading %", "loadingPer"], ["TP Premium", "tpPremium"], ["MGW Rate", "mgwRate"]])}
             {valueGroup("Excesses", [["Excess", "excess"], ["Young Driver Excess", "youngExcess"], ["TPF Excess", "tpfExcess"]])}
             {valueGroup("Charges", [["Doc. Charges", "documentCharge"], ["Levy Charge", "levy"], ["Hit & Run Charge", "hitAndRun"], ["Inv. Amount", "invoiceAmount"]])}
@@ -1904,7 +1917,7 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
 
           {/* Optional covers */}
           <div className="space-y-4">
-            {["Additional Cover", "Add Extra Perils", "Additional Cover (Extensions)"].map(optionTable)}
+            {["Additional Cover (Extensions)", "Add Extra Perils", "Additional Cover"].map(optionTable)}
             {/* usp_GetAdditionalRiskCovered: the text printed on the policy schedule */}
             <div className="overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
               <p className="border-b border-violet-100 bg-violet-50/60 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-[#35126d]">Additional Risk Covered</p>
@@ -1989,7 +2002,7 @@ function SaveNotice({ error, message, issues, onDismiss, onOpenSection }: { erro
   );
 }
 
-function AttachedDocumentForm({ policyNo, documents: pendingDocuments, onDocumentsChange, stored, uploadMessage }: { policyNo: string; documents: PendingDocument[]; onDocumentsChange: (documents: PendingDocument[]) => void; stored: StoredDocumentList | null; uploadMessage: { text: string; error: boolean } | null }) {
+function AttachedDocumentForm({ documents: pendingDocuments, onDocumentsChange, stored, uploadMessage }: { documents: PendingDocument[]; onDocumentsChange: (documents: PendingDocument[]) => void; stored: StoredDocumentList | null; uploadMessage: { text: string; error: boolean } | null }) {
   // docType is the "Document Type" used in the stored file name. Cards (licence, NID / passport,
   // horsepower) need a picture of the front and of the back; every file goes to the policy folder.
   const requiredDocuments = [
@@ -2050,7 +2063,6 @@ function AttachedDocumentForm({ policyNo, documents: pendingDocuments, onDocumen
           <p className="mt-0.5 text-xs text-slate-500">Upload a clear photo or scan of the front and the back of each card. PDF, JPG, PNG, DOC or DOCX, up to 5 MB each.</p>
         </div>
         <div className="flex items-center gap-2">
-          {policyNo ? <span className="rounded-full bg-white px-3 py-1 font-mono text-xs font-semibold text-[#35126d] ring-1 ring-violet-200">{policyNo}</span> : null}
           <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${allRequiredUploaded ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-white text-slate-600 ring-violet-200"}`}>{uploadedCount} of {requiredSlots.length} files</span>
         </div>
       </div>
@@ -2158,7 +2170,9 @@ function AttachedDocumentForm({ policyNo, documents: pendingDocuments, onDocumen
 }
 
 // Values written by a premium calculation; cleared when the inputs change so a stale premium is never shown or saved.
-const premiumOutputFields = ["premium", "basicRate", "basicAmt", "addCharge", "minPremium", "loadingPer", "tpPremium", "mgwRate", "excess", "youngExcess", "tpfExcess", "fixPremium", "isMinPremiumApplied", "isGoodsVehicle", "invoiceAmount", "documentCharge", "levy", "hitAndRun"];
+const PER_PERSON_RATES = new Set([1, 2, 3, 4, 5]);
+const draftText = (draft: Record<string, unknown>, field: string) => (draft[field] == null ? "" : String(draft[field]).trim());
+const premiumOutputFields = ["premium", "addOnPremium", "basicRate", "basicAmt", "addCharge", "minPremium", "loadingPer", "tpPremium", "mgwRate", "excess", "youngExcess", "tpfExcess", "fixPremium", "isMinPremiumApplied", "isGoodsVehicle", "invoiceAmount", "documentCharge", "levy", "hitAndRun"];
 
 // usp_GetPremiumRateMotor overrides CC itself for these classes (TRAILER 2001; MOTOR TRADE 2000 or 5000), so the entered CC is not used.
 const ccOverriddenByTariff = (vehicleClass: string) => ["TRAILER", "MOTOR TRADE"].includes(vehicleClass.trim().toUpperCase());
@@ -2196,10 +2210,49 @@ export default function BuyOnlinePage() {
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [payment, setPayment] = useState<PaymentDetails>({ method: "card", name: "", cardNumber: "", expiry: "", cvv: "", bank: "" });
   // Covers that cannot be selected for the vehicle class / country (usp_CurCoverinfo).
-  const [coverRestrictions, setCoverRestrictions] = useState<{ available: boolean; coverNames: string[]; restrictedRates: number[] }>({ available: false, coverNames: [], restrictedRates: [] });
+  // Restrictions are kept with the vehicle class they were loaded for, so a cleared or changed class never shows another class's restrictions.
+  const [loadedRestrictions, setCoverRestrictions] = useState<{ forClass: string; available: boolean; coverNames: string[]; restrictedRates: number[] }>({ forClass: "", available: false, coverNames: [], restrictedRates: [] });
   const restrictionClass = String(proposalDraft.vehicleClass || "");
   const restrictionCountry = String(proposalDraft.country || "Mauritius");
   const premiumCoverRules = useMemo(() => mandatoryCoverRules(restrictionClass, restrictionCountry), [restrictionClass, restrictionCountry]);
+  // Add-on covers are priced from the tariff whenever the selection or the vehicle changes.
+  const [addonQuotes, setAddonQuotes] = useState<Record<number, AddOnQuote>>({});
+  const [addonLoading, setAddonLoading] = useState(false);
+  const addonRequestKey = JSON.stringify({
+    covers: pricedCovers(applyCoverRules(proposalDraft, premiumCoverRules), premiumCoverRules),
+    vehicleType: draftText(proposalDraft, "vehicleType"), vehicleClass: restrictionClass, country: restrictionCountry,
+    cover: draftText(proposalDraft, "coverRequired"), issueDate: draftText(proposalDraft, "issueDate"), fromDate: draftText(proposalDraft, "fromDate"),
+    manufactureDate: draftText(proposalDraft, "manufactureDate"), cc: draftText(proposalDraft, "cc"),
+  });
+  useEffect(() => {
+    const request = JSON.parse(addonRequestKey) as { covers: { rate: number; count: number }[] };
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      if (!request.covers.length) {
+        setAddonQuotes({});
+        setProposalDraft((prev) => withPremiumTotals(prev, premiumCoverRules));
+        return;
+      }
+      setAddonLoading(true);
+      try {
+        const response = await fetch("/api/motor/addon-premium", { method: "POST", headers: { "Content-Type": "application/json" }, body: addonRequestKey });
+        const data = await response.json() as { results?: Record<number, AddOnQuote>; error?: string };
+        if (cancelled) return;
+        const results = data.results || {};
+        setAddonQuotes(results);
+        setProposalDraft((prev) => {
+          const next: Record<string, string | boolean> = { ...prev };
+          request.covers.forEach(({ rate }) => { next[`amt${rate}`] = results[rate]?.success ? String(results[rate].amount) : "0"; });
+          return withPremiumTotals(next, premiumCoverRules);
+        });
+      } catch {
+        if (!cancelled) setAddonQuotes({});
+      } finally {
+        if (!cancelled) setAddonLoading(false);
+      }
+    }, 400);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [addonRequestKey, premiumCoverRules]);
   useEffect(() => {
     if (!restrictionClass) return;
     let cancelled = false;
@@ -2208,7 +2261,7 @@ export default function BuyOnlinePage() {
       .then((data: { available?: boolean; coverNames?: string[]; restrictedRates?: number[] }) => {
         if (cancelled) return;
         const restrictedRates = data.restrictedRates || [];
-        setCoverRestrictions({ available: Boolean(data.available), coverNames: data.coverNames || [], restrictedRates });
+        setCoverRestrictions({ forClass: restrictionClass, available: Boolean(data.available), coverNames: data.coverNames || [], restrictedRates });
         // Unselect covers that are not available for the new vehicle class.
         if (restrictedRates.length) setProposalDraft((prev) => {
           if (!restrictedRates.some((rate) => prev[`cover${rate}`] === true || prev[`cover${rate}`] === "true")) return prev;
@@ -2217,9 +2270,10 @@ export default function BuyOnlinePage() {
           return next;
         });
       })
-      .catch(() => { if (!cancelled) setCoverRestrictions({ available: false, coverNames: [], restrictedRates: [] }); });
+      .catch(() => { if (!cancelled) setCoverRestrictions({ forClass: restrictionClass, available: false, coverNames: [], restrictedRates: [] }); });
     return () => { cancelled = true; };
   }, [restrictionClass, restrictionCountry]);
+  const coverRestrictions = loadedRestrictions.forClass === restrictionClass ? loadedRestrictions : { forClass: restrictionClass, available: false, coverNames: [], restrictedRates: [] as number[] };
   // Shows every Common Det. error once the user has tried to save the section.
   const [commonDetailsAttempted, setCommonDetailsAttempted] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState("");
@@ -2352,7 +2406,7 @@ export default function BuyOnlinePage() {
           hitAndRun: "0",
         };
         console.log("[Premium] Setting values:", updates);
-        setProposalDraft((prev) => ({ ...prev, ...updates }));
+        setProposalDraft((prev) => withPremiumTotals({ ...prev, ...updates }, premiumCoverRules));
         setPremiumCalculated(true);
       } else {
         console.error("[Premium] Calculation failed:", data.errorMsg);
@@ -2366,7 +2420,7 @@ export default function BuyOnlinePage() {
     } finally {
       setPremiumCalculating(false);
     }
-  }, [proposalDraft, policyCover, clearPremiumOutputs]);
+  }, [proposalDraft, policyCover, clearPremiumOutputs, premiumCoverRules]);
   useEffect(() => {
     const today = new Date();
     const isoDate = today.toISOString().slice(0, 10);
@@ -2573,7 +2627,7 @@ const detailsComplete = Boolean(registration.trim() && fullName.trim());
         if (data.errors && Object.keys(data.errors).length) { showSaveIssues(Object.entries(data.errors).map(([field, message]) => ({ field, message })), "the policy"); return false; }
         throw new Error(data.error || "Policy could not be saved.");
       }
-setSaveMessage(`${data.message} Policy: ${data.policyNo}`);
+setSaveMessage(data.message || "Policy saved successfully.");
       setPolicyNo(data.policyNo);
       return true;
     } catch (error) {
@@ -2622,14 +2676,20 @@ const saveCurrentSection = async () => {
       const filled = (name: string) => String(currentDraft[name] ?? "").trim() !== "";
       const vehicleClassName = String(currentDraft.vehicleClass || "").toUpperCase();
       if (!filled("manufactureDate")) missing.push(["manufactureDate", "Enter the year of manufacture and date of registration."]);
-      if (!(Number(currentDraft.pricePaid) > 0)) missing.push(["pricePaid", "Enter the price paid for the vehicle."]);
       if (!filled("seating") && !filled("cc")) missing.push(["seating", "Enter the seating capacity or the CC / kW."]);
       if (/GOODS VEHICLE\(PRIVATE\)|GOODS VEHICLE\(PUBLIC\)/.test(vehicleClassName) && !(Number(currentDraft.gvw) > 0)) missing.push(["gvw", "Enter the gross vehicle weight for goods vehicles."]);
       if (/TANKER|TRAILER|TRACTOR/.test(vehicleClassName) && !(Number(currentDraft.trailerFeet) > 0)) missing.push(["trailerFeet", "Enter the trailer feet for tanker / trailer / tractor."]);
       if (Number(currentDraft.sumInsured) > 10000000) missing.push(["sumInsured", "Sum insured above 10,000,000 must be referred to Head Office for review (HO REVIEW-10M)."]);
       else if (Number(currentDraft.sumInsured) > 0 && !filled("compulsoryExcess")) missing.push(["compulsoryExcess", "The compulsory excess could not be found for these details. See the message under Cover & excess."]);
     }
-    if (openSection === "Premium") missing.push(...coverErrors(applyCoverRules(currentDraft, premiumCoverRules), Number(currentDraft.seating) || 0, coverRestrictions.restrictedRates, premiumCoverRules));
+    if (openSection === "Premium") {
+      missing.push(...coverErrors(applyCoverRules(currentDraft, premiumCoverRules), Number(currentDraft.seating) || 0, coverRestrictions.restrictedRates, premiumCoverRules));
+      if (addonLoading) missing.push(["premium", "Add-on premiums are still being calculated. Please wait a moment and save again."]);
+      pricedCovers(applyCoverRules(currentDraft, premiumCoverRules), premiumCoverRules).forEach(({ rate }) => {
+        const quote = addonQuotes[rate];
+        if (quote && !quote.success) missing.push([`cover${rate}`, `${PREMIUM_COVERS.find((c) => c.rate === rate)?.label}: no tariff is set up, so it cannot be added online. Untick it or contact Head Office.`]);
+      });
+    }
     // Accessories: every accessory with an amount needs its make & model (letters, numbers and spaces).
     if (openSection === "Accessories") {
       const makeModels = Object.keys(currentDraft).filter((key) => /^accessoryAmount_d+$/.test(key) && Number(currentDraft[key]) > 0)
@@ -2715,7 +2775,7 @@ const saveCurrentSection = async () => {
                         {section.title === "KYC" ? <span className="self-start bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-100 sm:self-auto">{kycMissing.length ? `${kycMissing.length} mandatory field${kycMissing.length === 1 ? "" : "s"} pending` : "Complete"}</span> : section.title === "Policy Details" ? <span className={`self-start px-3 py-1.5 text-xs font-bold ring-1 sm:self-auto ${policyMissing ? "bg-red-50 text-red-700 ring-red-100" : "bg-emerald-50 text-emerald-700 ring-emerald-100"}`}>{policyMissing ? `${policyMissing} mandatory fields pending` : "Complete"}</span> : section.title === "Vechicle Details" ? <span className={`self-start px-3 py-1.5 text-xs font-bold ring-1 sm:self-auto ${vehicleMissing ? "bg-red-50 text-red-700 ring-red-100" : "bg-emerald-50 text-emerald-700 ring-emerald-100"}`}>{vehicleMissing ? `${vehicleMissing} mandatory fields pending` : "Complete"}</span> : section.pending ? <span className="self-start bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-100 sm:self-auto">{section.pending}</span> : <span className="self-start bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 sm:self-auto">Ready to complete</span>}
                       </div>
 <div className="overflow-x-auto p-3 sm:p-4">
-                        {section.title === "KYC" ? <ClientDetailsForm onKycStatus={setKycMissing} onClientSelected={(client) => setProposalDraft((current) => ({ ...current, clientCode: String(client.Code || ""), title: String(client.Title || ""), firstName: String(client.Name || ""), surname: String(client.Surname || ""), email: String(client.EMail || "") }))} onSaved={() => markSectionSaved("KYC")} onClientChange={setKycClient} /> : section.title === "Policy Details" ? <MotorProposalForm clientCode={String(proposalDraft.clientCode || "")} onStatusChange={setPolicyMissing} coverRequired={policyCover} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} /> : section.title === "Vechicle Details" ? <VehicleProposalForm policyCover={policyCover} onPolicyCoverChange={setPolicyCover} onStatusChange={setVehicleMissing} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} vehicleClass={proposalDraft.vehicleClass} vehicleType={proposalDraft.vehicleType} fuelType={proposalDraft.fuelType} issueDate={proposalDraft.issueDate} country={String(proposalDraft.country || "Mauritius")} /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm values={proposalDraft as Record<string, string | boolean>} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} showErrors={commonDetailsAttempted} /> : section.title === "Premium" ? <PremiumForm values={applyCoverRules(proposalDraft, premiumCoverRules) as Record<string, string | boolean>} calculating={premiumCalculating} onCalculate={calculatePremium} error={premiumError} cover={policyCover || String(proposalDraft.coverRequired || "")} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} restrictedRates={coverRestrictions.restrictedRates} coverRules={premiumCoverRules} /> : <AttachedDocumentForm policyNo={policyNo} documents={pendingDocuments} onDocumentsChange={setPendingDocuments} stored={storedDocuments} uploadMessage={documentUploadMessage} />}
+                        {section.title === "KYC" ? <ClientDetailsForm onKycStatus={setKycMissing} onClientSelected={(client) => setProposalDraft((current) => ({ ...current, clientCode: String(client.Code || ""), title: String(client.Title || ""), firstName: String(client.Name || ""), surname: String(client.Surname || ""), email: String(client.EMail || "") }))} onSaved={() => markSectionSaved("KYC")} onClientChange={setKycClient} /> : section.title === "Policy Details" ? <MotorProposalForm clientCode={String(proposalDraft.clientCode || "")} onStatusChange={setPolicyMissing} coverRequired={policyCover} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} /> : section.title === "Vechicle Details" ? <VehicleProposalForm policyCover={policyCover} onPolicyCoverChange={setPolicyCover} onStatusChange={setVehicleMissing} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} vehicleClass={proposalDraft.vehicleClass} vehicleType={proposalDraft.vehicleType} fuelType={proposalDraft.fuelType} issueDate={proposalDraft.issueDate} country={String(proposalDraft.country || "Mauritius")} /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm values={proposalDraft as Record<string, string | boolean>} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} showErrors={commonDetailsAttempted} /> : section.title === "Premium" ? <PremiumForm values={applyCoverRules(proposalDraft, premiumCoverRules) as Record<string, string | boolean>} calculating={premiumCalculating} onCalculate={calculatePremium} error={premiumError} cover={policyCover || String(proposalDraft.coverRequired || "")} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} restrictedRates={coverRestrictions.restrictedRates} coverRules={premiumCoverRules} addonQuotes={addonQuotes} addonLoading={addonLoading} /> : <AttachedDocumentForm documents={pendingDocuments} onDocumentsChange={setPendingDocuments} stored={storedDocuments} uploadMessage={documentUploadMessage} />}
                         {section.title !== "KYC" && openSection === section.title && saveMessage ? <div className="mt-4"><SaveNotice error={saveError} message={saveMessage} issues={saveIssues} onDismiss={clearSaveNotice} onOpenSection={setOpenSection} /></div> : null}
                         {section.title !== "KYC" ? <div className="mt-4 flex justify-end border-t border-violet-100 pt-4"><button type="button" disabled={saving} onClick={() => void saveCurrentSection()} className="bg-[#35126d] px-6 py-3 text-sm font-bold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-400">{saving ? "Saving..." : section.title === "Attached Document" ? "Save policy and continue" : "Save and continue"}</button></div> : null}
                       </div>
@@ -2763,7 +2823,7 @@ const saveCurrentSection = async () => {
                 <div className="self-start overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-sm">
                   <p className="border-b border-violet-100 bg-violet-50/60 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[#35126d]">Order summary</p>
                   <dl className="space-y-2 px-4 py-3 text-sm">
-                    {[["Policy No", policyNo || "Not saved yet"], ["Vehicle", draftValue("vehicleNo") || "-"], ["Cover", policyCover || draftValue("coverRequired") || "-"]].map(([label, value]) => (
+                    {[["Vehicle", draftValue("vehicleNo") || "-"], ["Cover", policyCover || draftValue("coverRequired") || "-"]].map(([label, value]) => (
                       <div key={label} className="flex justify-between gap-3"><dt className="text-slate-500">{label}</dt><dd className="truncate text-right font-medium text-slate-800">{value}</dd></div>
                     ))}
                     <div className="my-2 h-px bg-slate-100" />
@@ -2878,7 +2938,7 @@ const saveCurrentSection = async () => {
           </div>
         </div>
       ) : null}
-      {paymentOpen ? <PaymentForm payment={payment} onChange={setPayment} amount={payableAmount} policyNo={policyNo} notice={paymentError ? paymentMessage : ""} onCancel={() => { setPaymentOpen(false); setPaymentMessage(""); setPaymentError(false); }} onContinue={() => void showEmailPreview()} /> : null}
+      {paymentOpen ? <PaymentForm payment={payment} onChange={setPayment} amount={payableAmount} notice={paymentError ? paymentMessage : ""} onCancel={() => { setPaymentOpen(false); setPaymentMessage(""); setPaymentError(false); }} onContinue={() => void showEmailPreview()} /> : null}
     </main>
   );
 }

@@ -17,7 +17,8 @@ export async function GET(request: Request) {
     
     const country = params.country || "MAURITIUS";
     const issueDate = params.issueDate || new Date().toISOString().slice(0, 10);
-    const isComprehensive = params.coverRequired === "Comprehensive" || params.coverRequired === "Comprehensive AutoPlus";
+    // Comprehensive and Comprehensive AutoPlus (any letter case); third party covers use the TP premium.
+    const isComprehensive = /^COMPREHENSIVE/i.test((params.coverRequired || "").trim());
     const blnCompCover = isComprehensive ? 1 : 0;
     const vehicleStatus = params.vehicleStatus || "NEW";
     const vehicleClass = params.vehicleClass || "";

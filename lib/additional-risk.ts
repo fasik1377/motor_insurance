@@ -14,8 +14,9 @@ export const PREMIUM_COVERS: PremiumCover[] = [
   { rate: 7, label: "Driver Only", group: "Additional Cover" },
   { rate: 8, label: "Loss of Use", group: "Additional Cover", count: "Days" },
   { rate: 9, label: "Towing", group: "Additional Cover" },
-  { rate: 10, label: "Strike, Riot and Civil Commotion", group: "Add Extra Perils" },
-  { rate: 12, label: "Cyclone", group: "Add Extra Perils" },
+  { rate: 10, label: "Cyclone", group: "Add Extra Perils" },
+  { rate: 11, label: "Earthquake", group: "Add Extra Perils" },
+  { rate: 12, label: "Strike, Riot and Civil Commotion", group: "Add Extra Perils" },
   { rate: 22, label: "Windscreen Extension", group: "Additional Cover (Extensions)" },
   { rate: 23, label: "Waiver of Excess", group: "Additional Cover (Extensions)" },
   { rate: 24, label: "Loss of Car Keys", group: "Additional Cover (Extensions)" },
@@ -117,8 +118,9 @@ export function additionalRiskCovered({ rates, vehicleClass = "", cover = "", st
   if (rate(6) > 0) items.push("Auto Plus");
   if (rate(7) > 0) items.push("Personal Accident Cover for Driver/Rider");
   if (rate(8) > 0) items.push(`${whole(rate(8))} Days Loss of Use Per Policy Period`);
-  if (rate(10) > 0) items.push("SRCC");
-  if (rate(12) > 0) items.push("Storm,Tempest,Cyclone,Flood and Inundation Extension");
+  // Rate numbering follows the cover list (Rate10 = Cyclone, Rate12 = Strike and Riot).
+  if (rate(10) > 0) items.push("Storm,Tempest,Cyclone,Flood and Inundation Extension");
+  if (rate(12) > 0) items.push("SRCC");
   if (rate(22) > 0) items.push("Windscreen Cover - Rs.25,000");
   if (rate(23) > 0) items.push("Waiver of Excess - 2 Claims");
   if (rate(24) > 0) items.push("Loss of Car Keys - Rs 10,000");
@@ -147,8 +149,9 @@ const RESTRICTED_COVER_NAMES: [RegExp, number][] = [
   [/^DRIVER( ONLY)?$/, 7],
   [/^LOSS OF USE$/, 8],
   [/^TOWING$/, 9],
-  [/^STRIKE,\s*RIOT AND CIVIL COMMO/, 10],
-  [/^CYCLONE$/, 12],
+  [/^CYCLONE$/, 10],
+  [/^EARTHQUAKE$/, 11],
+  [/^STRIKE,\s*RIOT AND CIVIL COMMO/, 12],
 ];
 
 // Rate numbers of the Premium form covers that a usp_CurCoverinfo cover name restricts.
@@ -160,4 +163,34 @@ export function restrictedRatesFromNames(names: string[]): number[] {
     if (match) rates.add(match[1]);
   }
   return [...rates].sort((a, b) => a - b);
+}
+
+// @AddOnCoverName sent to usp_GetAdditionalPremium for each cover (the rate number is its Rate<n> column).
+export const ADDON_TARIFF_NAMES: Record<number, string> = {
+  1: "Passenger Risk", 2: "Personal Accident", 3: "PA Conductor", 4: "PA Employee", 5: "PA Family",
+  6: "Auto Plus", 7: "Driver Only", 8: "Loss of Use", 9: "Towing", 10: "Cyclone", 11: "Earthquake", 12: "Strike and Riot",
+  22: "Windscreen", 23: "Waiver of Excess", 24: "Loss of Keys", 25: "Airfreight", 26: "Personal Belongings",
+  27: "Rodents", 28: "Misfuelling", 29: "Enhanced PA", 30: "Funeral Expenses",
+};
+// Covers priced per person (amount x number); Loss of Use is priced by its number of days (tariff Rate match).
+export const PER_PERSON_COVERS = new Set([1, 2, 3, 4, 5]);
+
+// Selected covers that need a tariff price (Driver Only has no amount, as in the VB form).
+export function pricedCovers(values: Record<string, unknown>, rules: Record<number, CoverRule> = {}) {
+  return PREMIUM_COVERS.filter((cover) => isSelected(values[`cover${cover.rate}`]) && !rules[cover.rate]?.amountLocked)
+    .map((cover) => ({ rate: cover.rate, count: cover.count ? Math.trunc(toNumber(values[`rate${cover.rate}`])) || 0 : 1 }));
+}
+
+// Basic premium (usp_GetPremiumRateMotor) + add-on covers = total premium; + document charge = invoice amount.
+export function withPremiumTotals<T extends Record<string, unknown>>(values: T, rules: Record<number, CoverRule> = {}): T {
+  const basic = toNumber(values.basicAmt);
+  if (!Number.isFinite(basic) || basic <= 0) return values;
+  const addOn = pricedCovers(values, rules).reduce((sum, cover) => {
+    const amount = toNumber(values[`amt${cover.rate}`]);
+    return sum + (Number.isFinite(amount) ? amount : 0);
+  }, 0);
+  const documentCharge = toNumber(values.documentCharge);
+  const premium = Math.round((basic + addOn) * 100) / 100;
+  const invoice = Math.round((premium + (Number.isFinite(documentCharge) ? documentCharge : 0)) * 100) / 100;
+  return { ...values, addOnPremium: String(Math.round(addOn * 100) / 100), premium: String(premium), invoiceAmount: String(invoice) };
 }
