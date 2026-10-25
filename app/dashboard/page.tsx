@@ -128,9 +128,9 @@ export default function DashboardPage() {
                       <span className="absolute left-4 top-4 z-10 bg-emerald-500 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">Protected</span>
                       <div className="absolute inset-x-6 bottom-6 h-24 rounded-full bg-violet-100/80 blur-3xl" />
                       <img
-                        src="/images/car_white.jpg"
-                        alt="Blue car"
-                        className="relative mx-auto h-48 w-full max-w-full object-cover sm:h-56 lg:h-48 xl:h-44"
+                        src="/images/car.jpg"
+                        alt="Insured car"
+                        className="relative mx-auto aspect-video h-auto w-full max-w-full object-cover object-center"
                       />
                     </div>
 

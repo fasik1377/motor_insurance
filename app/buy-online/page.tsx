@@ -747,11 +747,11 @@ return (
           {values.lien === "true" ? <>
             <label className="block">
               {fieldLabel("Lien Type", true)}
-              <select name="lienType" required value={values.lienType} onChange={(e) => setRequired("lienType", e.target.value)} className={fieldClass()}><option value="No Lien">No Lien</option><option value="in favour of">in favour of</option><option value="on lease to">on lease to</option><option value="on account of">on account of</option><option value="on finance lease to">on finance lease to</option><option value="on lease (Financial)">on lease (Financial)</option><option value="on lease (Finance Lease) to">on lease (Finance Lease) to</option><option value="on financial lease to">on financial lease to</option><option value="on Operating lease to">on Operating lease to</option><option value="on lease (Financial) to">on lease (Financial) to</option></select>
+              <select name="lienType" required value={values.lienType} onChange={(e) => setRequired("lienType", e.target.value)} className={fieldClass()}><option value="">Select lien type</option><option value="No Lien">No Lien</option><option value="in favour of">in favour of</option><option value="on lease to">on lease to</option><option value="on account of">on account of</option><option value="on finance lease to">on finance lease to</option><option value="on lease (Financial)">on lease (Financial)</option><option value="on lease (Finance Lease) to">on lease (Finance Lease) to</option><option value="on financial lease to">on financial lease to</option><option value="on Operating lease to">on Operating lease to</option><option value="on lease (Financial) to">on lease (Financial) to</option></select>
             </label>
             <label className="block">
               {fieldLabel("Lienholder", true)}
-              {values.lienType !== "No Lien" ? <select name="lienholder" required value={values.lienholder} onChange={(e) => setRequired("lienholder", e.target.value)} className={fieldClass()}><option value="">Select bank</option>{banks.map((bank) => <option key={bank.Code} value={bank.Name}>{bank.Name}</option>)}</select> : <input name="lienholder" value={values.lienholder} onChange={(e) => setRequired("lienholder", e.target.value)} placeholder="Lienholder" className={fieldClass()} />}
+              {values.lienType !== "No Lien" ? <select name="lienholder" required value={values.lienholder} onChange={(e) => setRequired("lienholder", e.target.value)} className={fieldClass()}><option value="">Select bank</option>{banks.map((bank) => <option key={bank.Code} value={bank.Name}>{bank.Name}</option>)}</select> : <input name="lienholder" required value={values.lienholder} onChange={(e) => setRequired("lienholder", e.target.value)} placeholder="Lienholder" className={fieldClass()} />}
             </label>
           </> : null}
         </>)}
@@ -998,11 +998,10 @@ function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange,
   };
 
   // Mandatory fields still missing for THIS vehicle (GVW only for goods vehicles, Trailer Ft. only for
-  // tanker / trailer / tractor; seating or CC/kW - usp_GetMotorExcess needs at least one; a compulsory excess must be found).
+  // tanker / trailer / tractor; colour, seating and CC/kW are all required; a compulsory excess must be found).
   const missingVehicleFields = (values: Record<string, string>, cover: string) => {
     const filled = (name: string) => Boolean(String(values[name] ?? "").trim());
-    const missing = ["vehicleNo", "make", "model", "engineNo", "chassisNo", "manufactureDate", "sumInsured"].filter((name) => !filled(name));
-    if (!filled("seating") && !filled("cc")) missing.push("seating/cc");
+    const missing = ["vehicleNo", "colour", "make", "model", "engineNo", "chassisNo", "manufactureDate", "seating", "cc", "sumInsured"].filter((name) => !filled(name));
     if (/GOODS VEHICLE\(PRIVATE\)|GOODS VEHICLE\(PUBLIC\)/i.test(vehicleClass || "") && !(Number(values.gvw) > 0)) missing.push("gvw");
     if (/TANKER|TRAILER|TRACTOR/i.test(vehicleClass || "") && !(Number(values.trailerFeet) > 0)) missing.push("trailerFeet");
     if (filled("sumInsured") && !filled("compulsoryExcess")) missing.push("compulsoryExcess");
@@ -1136,7 +1135,7 @@ function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange,
 
         {section("Vehicle identification", "Registration, make, model and identification numbers", "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", <>
           {field("Reg No", "vehicleNo", "input", undefined, true)}
-          {field("Colour", "colour")}
+          {field("Colour", "colour", "input", undefined, true)}
           {field("Make", "make", "select", makes, true, false, !vehicleClass ? "Select the vehicle class first" : undefined)}
           {field("Model", "model", "select", models, true, false, !requiredValues.make ? "Select the make first" : undefined)}
           {field("Eng No", "engineNo", "input", undefined, true)}
@@ -1145,14 +1144,13 @@ function VehicleProposalForm({ policyCover, onPolicyCoverChange, onStatusChange,
 
         {section("Specifications", "Used to find the tariff, excess and premium", "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z", <>
           {manufactureDateField}
-          {field("Seating", "seating", "input", undefined, !requiredValues.cc, false, "Max 2 digits")}
+          {field("Seating", "seating", "input", undefined, true, false, "Max 2 digits")}
           <label className="block">
-            {fieldLabel("CC / kW", !requiredValues.seating, `Max ${maxCc.toLocaleString()}`)}
+            {fieldLabel("CC / kW", true, `Max ${maxCc.toLocaleString()}`)}
             <input name="cc" inputMode="decimal" value={requiredValues.cc || ""} onChange={(event) => { let v = event.target.value.replace(/[^0-9.]/g, ""); if (parseFloat(v) > maxCc) v = String(maxCc); updateRequired("cc", v); }} className={fieldClass()} />
           </label>
           {isTankerTrailerTractor ? field("Trailer Ft.", "trailerFeet", "input", undefined, true, false, "Tanker / trailer / tractor") : null}
           {isGoodsVehicle ? field("Gross Vehicle Weight", "gvw", "input", undefined, true, false, "Goods vehicles (MGW)") : null}
-          <p className="text-xs text-slate-500 sm:col-span-2">Enter the seating capacity or the CC / kW (at least one is needed to find the excess).</p>
         </>)}
 
         {section("Cover & excess", "Excesses are calculated automatically from the tariff", "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z", <>
@@ -1907,16 +1905,16 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
         {error ? <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">{error}</p> : null}
 
         <div className="grid gap-4 lg:grid-cols-2">
-          {/* Calculated premium breakdown */}
-          <div className="space-y-4">
+          {/* Calculated premium breakdown (right column on large screens) */}
+          <div className="space-y-4 lg:order-2">
             {valueGroup("Premium", [["Total Premium (incl. add-ons)", "premium"], ["Basic Amount", "basicAmt"], ["Add-on Covers", "addOnPremium"], ["Basic Rate", "basicRate"], ["Additional Charge", "addCharge"], ["Min Premium", "minPremium"], ["Fix Premium", "fixPremium"]])}
             {valueGroup("Tariff details", [["Loading %", "loadingPer"], ["TP Premium", "tpPremium"], ["MGW Rate", "mgwRate"]])}
             {valueGroup("Excesses", [["Excess", "excess"], ["Young Driver Excess", "youngExcess"], ["TPF Excess", "tpfExcess"]])}
             {valueGroup("Charges", [["Doc. Charges", "documentCharge"], ["Levy Charge", "levy"], ["Hit & Run Charge", "hitAndRun"], ["Inv. Amount", "invoiceAmount"]])}
           </div>
 
-          {/* Optional covers */}
-          <div className="space-y-4">
+          {/* Optional covers (left column on large screens) */}
+          <div className="space-y-4 lg:order-1">
             {["Additional Cover (Extensions)", "Add Extra Perils", "Additional Cover"].map(optionTable)}
             {/* usp_GetAdditionalRiskCovered: the text printed on the policy schedule */}
             <div className="overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
@@ -2668,6 +2666,11 @@ const saveCurrentSection = async () => {
       const value = currentDraft[name];
       return value === undefined || value === "" || value === false;
     });
+    // A ticked Lien makes the lien type and the lienholder mandatory.
+    if (openSection === "Policy Details" && currentDraft.lien === true) {
+      if (!String(currentDraft.lienType ?? "").trim()) missing.push(["lienType", "Select the lien type."]);
+      if (!String(currentDraft.lienholder ?? "").trim()) missing.push(["lienholder", "Select or enter the lienholder."]);
+    }
     if (openSection === "Vechicle Details" && String(currentDraft.coverRequired || "").toUpperCase().includes("COMP") && Number(currentDraft.sumInsured || 0) <= 0) {
       missing.push(["sumInsured", "Enter the sum insured for comprehensive cover."]);
     }
@@ -2676,7 +2679,9 @@ const saveCurrentSection = async () => {
       const filled = (name: string) => String(currentDraft[name] ?? "").trim() !== "";
       const vehicleClassName = String(currentDraft.vehicleClass || "").toUpperCase();
       if (!filled("manufactureDate")) missing.push(["manufactureDate", "Enter the year of manufacture and date of registration."]);
-      if (!filled("seating") && !filled("cc")) missing.push(["seating", "Enter the seating capacity or the CC / kW."]);
+      if (!filled("colour")) missing.push(["colour", "Enter the vehicle colour."]);
+      if (!filled("seating")) missing.push(["seating", "Enter the seating capacity."]);
+      if (!filled("cc")) missing.push(["cc", "Enter the CC / kW."]);
       if (/GOODS VEHICLE\(PRIVATE\)|GOODS VEHICLE\(PUBLIC\)/.test(vehicleClassName) && !(Number(currentDraft.gvw) > 0)) missing.push(["gvw", "Enter the gross vehicle weight for goods vehicles."]);
       if (/TANKER|TRAILER|TRACTOR/.test(vehicleClassName) && !(Number(currentDraft.trailerFeet) > 0)) missing.push(["trailerFeet", "Enter the trailer feet for tanker / trailer / tractor."]);
       if (Number(currentDraft.sumInsured) > 10000000) missing.push(["sumInsured", "Sum insured above 10,000,000 must be referred to Head Office for review (HO REVIEW-10M)."]);
