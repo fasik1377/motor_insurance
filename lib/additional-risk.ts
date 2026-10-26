@@ -28,6 +28,15 @@ export const PREMIUM_COVERS: PremiumCover[] = [
   { rate: 30, label: "Funeral Expenses", group: "Additional Cover (Extensions)" },
 ];
 
+// Covers kept for the Rate<n> columns but not offered on the Premium form.
+export const HIDDEN_COVER_RATES = new Set([11]); // Earthquake
+
+// Loss of Use days allowed (legacy CheckValLOU, without 20): private cars 10 or 15, other classes 10.
+const PRIVATE_CAR_CLASSES = new Set(["PRIVATE CAR", "PRIVATE CAR (GOVT)", "PRIVATE CAR ELECTRICAL", "PRIVATE CAR (GOVT) ELECTRICAL"]);
+export function lossOfUseDays(vehicleClass: string): number[] {
+  return PRIVATE_CAR_CLASSES.has(String(vehicleClass ?? "").trim().toUpperCase()) ? [10, 15] : [10];
+}
+
 // Form fields: cover<n> (selected), rate<n> (number for the count covers), amt<n> (amount).
 export const coverFieldNames = PREMIUM_COVERS.flatMap((c) => [`cover${c.rate}`, `rate${c.rate}`, `amt${c.rate}`]);
 
@@ -38,13 +47,19 @@ const isSelected = (value: unknown) => value === true || String(value).toLowerCa
 //  - Driver Only is always included (No = 1, no amount);
 //  - Passenger Risk is mandatory for Goods Vehicle (Public), Contract Car, Taxi Car, Taxi Bus and ContractBus/Van.
 export type CoverRule = { required: true; amountLocked?: boolean };
-export function mandatoryCoverRules(vehicleClass: string, country: string): Record<number, CoverRule> {
+//  - Auto Plus is ticked and locked for Comprehensive AutoPlus cover only (see autoPlusRestriction).
+export function mandatoryCoverRules(vehicleClass: string, country: string, cover = ""): Record<number, CoverRule> {
   const vehicle = String(vehicleClass ?? "").trim().toUpperCase();
-  if (!vehicle || String(country ?? "").trim().toUpperCase() !== "MAURITIUS" || vehicle === "TRAILER") return {};
-  const rules: Record<number, CoverRule> = { 7: { required: true, amountLocked: true } };
+  const rules: Record<number, CoverRule> = isAutoPlusCover(cover) ? { 6: { required: true } } : {};
+  if (!vehicle || String(country ?? "").trim().toUpperCase() !== "MAURITIUS" || vehicle === "TRAILER") return rules;
+  rules[7] = { required: true, amountLocked: true };
   if (/GOODS VEHICLE\(PUBLIC\)|CONTRACT CAR|TAXI CAR|TAXI BUS|CONTRACTBUS\/VAN/.test(vehicle)) rules[1] = { required: true };
   return rules;
 }
+
+export const isAutoPlusCover = (cover: string) => String(cover ?? "").replace(/\s+/g, "").toUpperCase() === "COMPREHENSIVEAUTOPLUS";
+// Auto Plus (rate 6) cannot be selected unless the cover required is Comprehensive AutoPlus.
+export const autoPlusRestriction = (cover: string): number[] => isAutoPlusCover(cover) ? [] : [6];
 
 // The form values with the mandatory covers applied (ticked, count defaulting to 1, locked amount cleared).
 export function applyCoverRules<T extends Record<string, unknown>>(values: T, rules: Record<number, CoverRule>): T {
@@ -88,7 +103,10 @@ export function coverErrors(values: Record<string, unknown>, seating: number, re
     if (rawAmount && (!Number.isFinite(amount) || amount < 0)) errors.push([`amt${cover.rate}`, `${cover.label}: the amount must be 0 or more.`]);
     if (!cover.count) continue;
     const count = toNumber(values[`rate${cover.rate}`]);
-    if (!Number.isInteger(count) || count < 1) {
+    if (cover.rate === 8) {
+      const days = lossOfUseDays(String(values.vehicleClass ?? ""));
+      if (!days.includes(count)) errors.push([`rate${cover.rate}`, `${cover.label}: LOU should be ${days.join("/")} days for this vehicle class.`]);
+    } else if (!Number.isInteger(count) || count < 1) {
       errors.push([`rate${cover.rate}`, `${cover.label}: enter the number of ${cover.count.toLowerCase()} (a whole number of 1 or more).`]);
     } else if ((cover.rate === 1 || cover.rate === 2) && passengerSeats && count > passengerSeats) {
       errors.push([`rate${cover.rate}`, `${cover.label}: at most ${passengerSeats} passengers can be covered (seating capacity ${seating} less the driver).`]);

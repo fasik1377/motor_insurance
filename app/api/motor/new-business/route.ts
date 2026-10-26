@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getCurrentUserId, isSameOriginRequest } from "@/lib/auth";
 import { getDb, sql } from "@/lib/db";
-import { applyCoverRules, coverColumns, coverErrors, mandatoryCoverRules, pricedCovers } from "@/lib/additional-risk";
+import { applyCoverRules, autoPlusRestriction, coverColumns, coverErrors, mandatoryCoverRules, pricedCovers } from "@/lib/additional-risk";
 import { priceAddOns } from "@/lib/addon-premium";
 import { loadCoverRestrictions } from "@/lib/cover-restrictions";
 
@@ -52,9 +52,9 @@ function validate(body: Input) {
   if (proposal.pricePaid < 0) errors.pricePaid = "The price paid cannot be negative.";
   // Optional covers of the Premium form (Rate<n> = number / 1 when selected, Amt<n> = amount).
   // Mandatory covers (Driver Only, Passenger Risk for public-use classes) are applied before saving.
-  const rules = mandatoryCoverRules(proposal.vehicleClass, proposal.country);
+  const rules = mandatoryCoverRules(proposal.vehicleClass, proposal.country, proposal.coverRequired);
   const coverValues = applyCoverRules(body, rules);
-  for (const [field, message] of coverErrors(coverValues, proposal.seating, [], rules)) errors[field] = message;
+  for (const [field, message] of coverErrors(coverValues, proposal.seating, autoPlusRestriction(proposal.coverRequired), rules)) errors[field] = message;
   return { proposal: { ...proposal, covers: coverColumns(coverValues) }, errors, coverValues, rules };
 }
 
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
   // Covers not available for the vehicle class (usp_CurCoverinfo) cannot be saved.
   try {
     const { restrictedRates } = await loadCoverRestrictions(proposal.vehicleClass, proposal.country);
-    for (const [field, message] of coverErrors(coverValues, proposal.seating, restrictedRates, rules)) if (field.startsWith("cover")) errors[field] = message;
+    for (const [field, message] of coverErrors(coverValues, proposal.seating, [...restrictedRates, ...autoPlusRestriction(proposal.coverRequired)], rules)) if (field.startsWith("cover")) errors[field] = message;
   } catch (error) {
     console.warn("Cover restrictions could not be checked", error);
   }

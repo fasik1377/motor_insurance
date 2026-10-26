@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PREMIUM_COVERS, additionalRiskCovered, applyCoverRules, coverColumns, coverErrors, mandatoryCoverRules, pricedCovers, ratesFromColumns, withPremiumTotals, type CoverRule } from "@/lib/additional-risk";
+import { HIDDEN_COVER_RATES, PREMIUM_COVERS, additionalRiskCovered, applyCoverRules, coverColumns, coverErrors, mandatoryCoverRules, pricedCovers, ratesFromColumns, withPremiumTotals, lossOfUseDays, autoPlusRestriction, type CoverRule } from "@/lib/additional-risk";
 
 // Tariff price of a selected add-on cover (usp_GetAdditionalPremium).
 type AddOnQuote = { amount: number; unitAmount: number; isFree: boolean; success: boolean; errorMsg: string };
@@ -1791,16 +1791,24 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
   const errors = Object.fromEntries(coverErrors(values, seating, restrictedRates, coverRules));
   const selected = (rate: number) => values[`cover${rate}`] === true || values[`cover${rate}`] === "true";
   const additionalRisk = additionalRiskCovered({ rates: ratesFromColumns(coverColumns(values)), vehicleClass: String(values.vehicleClass || ""), cover: String(cover || values.coverRequired || ""), seating });
+  // Loss of Use (rate 8) is picked from the days allowed for the vehicle class.
+  const louDays = lossOfUseDays(String(values.vehicleClass || ""));
+  const louValue = String(values.rate8 ?? "");
   const toggleCover = (rate: number, count: boolean, checked: boolean) => {
     onFieldChange?.(`cover${rate}`, checked);
-    // A count cover starts at 1 person / day; clearing a cover clears its number and amount.
-    if (count) onFieldChange?.(`rate${rate}`, checked ? String(values[`rate${rate}`] || "1") : "");
+    // A count cover starts at 1 person (Loss of Use at 10 days); clearing a cover clears its number and amount.
+    if (count) onFieldChange?.(`rate${rate}`, checked ? String(values[`rate${rate}`] || (rate === 8 ? louDays[0] : "1")) : "");
     if (!checked) onFieldChange?.(`amt${rate}`, "");
   };
+  // Like CheckValLOU: a selected Loss of Use outside the allowed days is reset to 10.
+  useEffect(() => {
+    if (selected(8) && !louDays.includes(Number(louValue))) onFieldChange?.("rate8", String(louDays[0]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [values.cover8, louValue, louDays.length]);
   const coverInput = "h-7 w-full rounded-md border bg-white px-1.5 text-xs outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:border-transparent disabled:bg-slate-50 disabled:text-slate-300";
 
   const optionTable = (title: string) => {
-    const rows = PREMIUM_COVERS.filter((c) => c.group === title);
+    const rows = PREMIUM_COVERS.filter((c) => c.group === title && !HIDDEN_COVER_RATES.has(c.rate));
     return (
       <div key={title} className="overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
         <div className="grid grid-cols-[1fr_64px_96px] gap-2 bg-[#35126d] px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-white"><span>{title}</span><span className="text-center">No</span><span className="text-right">Amount</span></div>
@@ -1816,7 +1824,11 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
             <div key={row.rate} className={`border-t border-violet-50 px-3 py-1.5 transition ${on ? "bg-violet-50/60" : "hover:bg-violet-50/40"}`}>
               <div className="grid grid-cols-[1fr_64px_96px] items-center gap-2">
                 <label title={restricted ? "Not available for this vehicle class" : undefined} className={`flex items-center gap-2 text-xs ${restricted ? "cursor-not-allowed text-slate-400" : "cursor-pointer text-slate-700"}`}><input type="checkbox" checked={on} disabled={Boolean(rule) || (restricted && !on)} onChange={(e) => toggleCover(row.rate, Boolean(row.count), e.target.checked)} className="h-4 w-4 accent-[#35126d] disabled:opacity-40" /><span className={on ? "font-semibold text-[#35126d]" : restricted ? "line-through decoration-slate-300" : ""}>{row.label}</span>{restricted ? <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-500 no-underline">N/A</span> : null}{rule ? <span title="Mandatory for this vehicle class" className="rounded-full bg-[#35126d] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">Required</span> : null}</label>
-                {row.count ? (
+                {row.rate === 8 ? (
+                  <select disabled={!on} value={on ? louValue : ""} onChange={(e) => onFieldChange?.("rate8", e.target.value)} title="Days" className={`${coverInput} text-center ${errors.rate8 ? "border-rose-300" : "border-violet-100"}`} aria-label="Loss of Use - number of days">
+                    {on ? louDays.map((d) => <option key={d} value={String(d)}>{d}</option>) : <option value="" />}
+                  </select>
+                ) : row.count ? (
                   <input type="number" min={1} step={1} disabled={!on} value={on ? String(values[`rate${row.rate}`] ?? "") : ""} onChange={(e) => onFieldChange?.(`rate${row.rate}`, e.target.value.replace(/[^0-9]/g, ""))} placeholder={on ? row.count : ""} title={row.count} className={`${coverInput} text-center ${errors[`rate${row.rate}`] ? "border-rose-300" : "border-violet-100"}`} aria-label={`${row.label} - number of ${row.count.toLowerCase()}`} />
                 ) : <span className="text-center text-xs text-slate-300">{on ? "1" : ""}</span>}
                 {(() => {
@@ -1915,7 +1927,7 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
 
           {/* Optional covers (left column on large screens) */}
           <div className="space-y-4 lg:order-1">
-            {["Additional Cover (Extensions)", "Add Extra Perils", "Additional Cover"].map(optionTable)}
+            {["Additional Cover", "Additional Cover (Extensions)", "Add Extra Perils"].map(optionTable)}
             {/* usp_GetAdditionalRiskCovered: the text printed on the policy schedule */}
             <div className="overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
               <p className="border-b border-violet-100 bg-violet-50/60 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-[#35126d]">Additional Risk Covered</p>
@@ -2212,7 +2224,14 @@ export default function BuyOnlinePage() {
   const [loadedRestrictions, setCoverRestrictions] = useState<{ forClass: string; available: boolean; coverNames: string[]; restrictedRates: number[] }>({ forClass: "", available: false, coverNames: [], restrictedRates: [] });
   const restrictionClass = String(proposalDraft.vehicleClass || "");
   const restrictionCountry = String(proposalDraft.country || "Mauritius");
-  const premiumCoverRules = useMemo(() => mandatoryCoverRules(restrictionClass, restrictionCountry), [restrictionClass, restrictionCountry]);
+  // Cover Required (Vehicle Details) decides Auto Plus: ticked for Comprehensive AutoPlus, otherwise unavailable.
+  const premiumCover = policyCover || String(proposalDraft.coverRequired || "");
+  const premiumCoverRules = useMemo(() => mandatoryCoverRules(restrictionClass, restrictionCountry, premiumCover), [restrictionClass, restrictionCountry, premiumCover]);
+  useEffect(() => {
+    if (autoPlusRestriction(premiumCover).length && (proposalDraft.cover6 === true || proposalDraft.cover6 === "true")) {
+      setProposalDraft((prev) => ({ ...prev, cover6: false, amt6: "" }));
+    }
+  }, [premiumCover, proposalDraft.cover6]);
   // Add-on covers are priced from the tariff whenever the selection or the vehicle changes.
   const [addonQuotes, setAddonQuotes] = useState<Record<number, AddOnQuote>>({});
   const [addonLoading, setAddonLoading] = useState(false);
@@ -2272,6 +2291,7 @@ export default function BuyOnlinePage() {
     return () => { cancelled = true; };
   }, [restrictionClass, restrictionCountry]);
   const coverRestrictions = loadedRestrictions.forClass === restrictionClass ? loadedRestrictions : { forClass: restrictionClass, available: false, coverNames: [], restrictedRates: [] as number[] };
+  const premiumRestrictedRates = [...coverRestrictions.restrictedRates, ...autoPlusRestriction(premiumCover)];
   // Shows every Common Det. error once the user has tried to save the section.
   const [commonDetailsAttempted, setCommonDetailsAttempted] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState("");
@@ -2688,7 +2708,7 @@ const saveCurrentSection = async () => {
       else if (Number(currentDraft.sumInsured) > 0 && !filled("compulsoryExcess")) missing.push(["compulsoryExcess", "The compulsory excess could not be found for these details. See the message under Cover & excess."]);
     }
     if (openSection === "Premium") {
-      missing.push(...coverErrors(applyCoverRules(currentDraft, premiumCoverRules), Number(currentDraft.seating) || 0, coverRestrictions.restrictedRates, premiumCoverRules));
+      missing.push(...coverErrors(applyCoverRules(currentDraft, premiumCoverRules), Number(currentDraft.seating) || 0, premiumRestrictedRates, premiumCoverRules));
       if (addonLoading) missing.push(["premium", "Add-on premiums are still being calculated. Please wait a moment and save again."]);
       pricedCovers(applyCoverRules(currentDraft, premiumCoverRules), premiumCoverRules).forEach(({ rate }) => {
         const quote = addonQuotes[rate];
@@ -2780,7 +2800,7 @@ const saveCurrentSection = async () => {
                         {section.title === "KYC" ? <span className="self-start bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-100 sm:self-auto">{kycMissing.length ? `${kycMissing.length} mandatory field${kycMissing.length === 1 ? "" : "s"} pending` : "Complete"}</span> : section.title === "Policy Details" ? <span className={`self-start px-3 py-1.5 text-xs font-bold ring-1 sm:self-auto ${policyMissing ? "bg-red-50 text-red-700 ring-red-100" : "bg-emerald-50 text-emerald-700 ring-emerald-100"}`}>{policyMissing ? `${policyMissing} mandatory fields pending` : "Complete"}</span> : section.title === "Vechicle Details" ? <span className={`self-start px-3 py-1.5 text-xs font-bold ring-1 sm:self-auto ${vehicleMissing ? "bg-red-50 text-red-700 ring-red-100" : "bg-emerald-50 text-emerald-700 ring-emerald-100"}`}>{vehicleMissing ? `${vehicleMissing} mandatory fields pending` : "Complete"}</span> : section.pending ? <span className="self-start bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-100 sm:self-auto">{section.pending}</span> : <span className="self-start bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 sm:self-auto">Ready to complete</span>}
                       </div>
 <div className="overflow-x-auto p-3 sm:p-4">
-                        {section.title === "KYC" ? <ClientDetailsForm onKycStatus={setKycMissing} onClientSelected={(client) => setProposalDraft((current) => ({ ...current, clientCode: String(client.Code || ""), title: String(client.Title || ""), firstName: String(client.Name || ""), surname: String(client.Surname || ""), email: String(client.EMail || "") }))} onSaved={() => markSectionSaved("KYC")} onClientChange={setKycClient} /> : section.title === "Policy Details" ? <MotorProposalForm clientCode={String(proposalDraft.clientCode || "")} onStatusChange={setPolicyMissing} coverRequired={policyCover} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} /> : section.title === "Vechicle Details" ? <VehicleProposalForm policyCover={policyCover} onPolicyCoverChange={setPolicyCover} onStatusChange={setVehicleMissing} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} vehicleClass={proposalDraft.vehicleClass} vehicleType={proposalDraft.vehicleType} fuelType={proposalDraft.fuelType} issueDate={proposalDraft.issueDate} country={String(proposalDraft.country || "Mauritius")} /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm values={proposalDraft as Record<string, string | boolean>} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} showErrors={commonDetailsAttempted} /> : section.title === "Premium" ? <PremiumForm values={applyCoverRules(proposalDraft, premiumCoverRules) as Record<string, string | boolean>} calculating={premiumCalculating} onCalculate={calculatePremium} error={premiumError} cover={policyCover || String(proposalDraft.coverRequired || "")} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} restrictedRates={coverRestrictions.restrictedRates} coverRules={premiumCoverRules} addonQuotes={addonQuotes} addonLoading={addonLoading} /> : <AttachedDocumentForm documents={pendingDocuments} onDocumentsChange={setPendingDocuments} stored={storedDocuments} uploadMessage={documentUploadMessage} />}
+                        {section.title === "KYC" ? <ClientDetailsForm onKycStatus={setKycMissing} onClientSelected={(client) => setProposalDraft((current) => ({ ...current, clientCode: String(client.Code || ""), title: String(client.Title || ""), firstName: String(client.Name || ""), surname: String(client.Surname || ""), email: String(client.EMail || "") }))} onSaved={() => markSectionSaved("KYC")} onClientChange={setKycClient} /> : section.title === "Policy Details" ? <MotorProposalForm clientCode={String(proposalDraft.clientCode || "")} onStatusChange={setPolicyMissing} coverRequired={policyCover} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} /> : section.title === "Vechicle Details" ? <VehicleProposalForm policyCover={policyCover} onPolicyCoverChange={setPolicyCover} onStatusChange={setVehicleMissing} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} vehicleClass={proposalDraft.vehicleClass} vehicleType={proposalDraft.vehicleType} fuelType={proposalDraft.fuelType} issueDate={proposalDraft.issueDate} country={String(proposalDraft.country || "Mauritius")} /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm values={proposalDraft as Record<string, string | boolean>} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} showErrors={commonDetailsAttempted} /> : section.title === "Premium" ? <PremiumForm values={applyCoverRules(proposalDraft, premiumCoverRules) as Record<string, string | boolean>} calculating={premiumCalculating} onCalculate={calculatePremium} error={premiumError} cover={policyCover || String(proposalDraft.coverRequired || "")} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} restrictedRates={premiumRestrictedRates} coverRules={premiumCoverRules} addonQuotes={addonQuotes} addonLoading={addonLoading} /> : <AttachedDocumentForm documents={pendingDocuments} onDocumentsChange={setPendingDocuments} stored={storedDocuments} uploadMessage={documentUploadMessage} />}
                         {section.title !== "KYC" && openSection === section.title && saveMessage ? <div className="mt-4"><SaveNotice error={saveError} message={saveMessage} issues={saveIssues} onDismiss={clearSaveNotice} onOpenSection={setOpenSection} /></div> : null}
                         {section.title !== "KYC" ? <div className="mt-4 flex justify-end border-t border-violet-100 pt-4"><button type="button" disabled={saving} onClick={() => void saveCurrentSection()} className="bg-[#35126d] px-6 py-3 text-sm font-bold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-400">{saving ? "Saving..." : section.title === "Attached Document" ? "Save policy and continue" : "Save and continue"}</button></div> : null}
                       </div>
