@@ -96,6 +96,8 @@ export function coverErrors(values: Record<string, unknown>, seating: number, re
       if (rules[cover.rate]) errors.push([`cover${cover.rate}`, `${cover.label} is mandatory for this vehicle class.`]);
       continue;
     }
+    // Personal Accident and Enhanced Personal Accidental cannot be combined: only Personal Accident applies.
+    if (cover.rate === 29 && isSelected(values.cover2)) { errors.push(["cover29", "Enhanced Personal Accidental cannot be taken with Personal Accident; only Personal Accident applies."]); continue; }
     // A mandatory cover is never treated as restricted.
     if (restrictedRates.includes(cover.rate) && !rules[cover.rate]) { errors.push([`cover${cover.rate}`, `${cover.label} is not available for this vehicle class.`]); continue; }
     const rawAmount = String(values[`amt${cover.rate}`] ?? "").trim();

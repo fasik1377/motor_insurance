@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { HIDDEN_COVER_RATES, PREMIUM_COVERS, additionalRiskCovered, applyCoverRules, coverColumns, coverErrors, mandatoryCoverRules, pricedCovers, ratesFromColumns, withPremiumTotals, lossOfUseDays, autoPlusRestriction, type CoverRule } from "@/lib/additional-risk";
+import { ADDON_TARIFF_NAMES, HIDDEN_COVER_RATES, PREMIUM_COVERS, additionalRiskCovered, applyCoverRules, coverColumns, coverErrors, mandatoryCoverRules, pricedCovers, ratesFromColumns, withPremiumTotals, lossOfUseDays, autoPlusRestriction, type CoverRule } from "@/lib/additional-risk";
 
 // Tariff price of a selected add-on cover (usp_GetAdditionalPremium).
 type AddOnQuote = { amount: number; unitAmount: number; isFree: boolean; success: boolean; errorMsg: string };
@@ -1784,7 +1784,7 @@ function PaymentForm({ payment, onChange, amount, notice, onCancel, onContinue }
   );
 }
 
-function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldChange, restrictedRates = [], coverRules = {}, addonQuotes = {}, addonLoading = false }: { values: Record<string, string | boolean>; calculating?: boolean; onCalculate?: () => void; error?: string; cover?: string; onFieldChange?: (field: string, value: string | boolean) => void; restrictedRates?: number[]; coverRules?: Record<number, CoverRule>; addonQuotes?: Record<number, AddOnQuote>; addonLoading?: boolean }) {
+function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldChange, restrictedRates = [], coverRules = {}, addonQuotes = {}, addonLoading = false, noTariffRates = [] }: { values: Record<string, string | boolean>; calculating?: boolean; onCalculate?: () => void; error?: string; cover?: string; onFieldChange?: (field: string, value: string | boolean) => void; restrictedRates?: number[]; coverRules?: Record<number, CoverRule>; addonQuotes?: Record<number, AddOnQuote>; addonLoading?: boolean; noTariffRates?: number[] }) {
   const inputClass = "h-8 w-full border border-violet-200 bg-white px-2 text-xs text-slate-800 outline-none focus:border-[#35126d] focus:ring-2 focus:ring-violet-100";
   // Optional covers (MotorMaster Rate<n> / Amt<n>); see lib/additional-risk.ts.
   const seating = Number(values.seating) || 0;
@@ -1799,6 +1799,8 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
     // A count cover starts at 1 person (Loss of Use at 10 days); clearing a cover clears its number and amount.
     if (count) onFieldChange?.(`rate${rate}`, checked ? String(values[`rate${rate}`] || (rate === 8 ? louDays[0] : "1")) : "");
     if (!checked) onFieldChange?.(`amt${rate}`, "");
+    // Personal Accident replaces Enhanced Personal Accidental (only Personal Accident applies).
+    if (rate === 2 && checked && selected(29)) { onFieldChange?.("cover29", false); onFieldChange?.("amt29", ""); }
   };
   // Like CheckValLOU: a selected Loss of Use outside the allowed days is reset to 10.
   useEffect(() => {
@@ -1808,7 +1810,9 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
   const coverInput = "h-7 w-full rounded-md border bg-white px-1.5 text-xs outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:border-transparent disabled:bg-slate-50 disabled:text-slate-300";
 
   const optionTable = (title: string) => {
-    const rows = PREMIUM_COVERS.filter((c) => c.group === title && !HIDDEN_COVER_RATES.has(c.rate));
+    // Covers with no tariff for this vehicle are not offered (mandatory covers stay so their error shows).
+    const rows = PREMIUM_COVERS.filter((c) => c.group === title && !HIDDEN_COVER_RATES.has(c.rate) && !(noTariffRates.includes(c.rate) && !coverRules[c.rate]));
+    if (!rows.length) return null;
     return (
       <div key={title} className="overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
         <div className="grid grid-cols-[1fr_64px_96px] gap-2 bg-[#35126d] px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-white"><span>{title}</span><span className="text-center">No</span><span className="text-right">Amount</span></div>
@@ -1818,12 +1822,13 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
           // Mandatory covers (Driver Only, Passenger Risk for public-use classes) are ticked and locked.
           const rule = coverRules[row.rate];
           const restricted = restrictedRates.includes(row.rate) && !rule;
+          const blockedByPa = row.rate === 29 && selected(2);
           const quoteError = on && !coverRules[row.rate]?.amountLocked && addonQuotes[row.rate] && !addonQuotes[row.rate].success ? addonQuotes[row.rate].errorMsg : "";
           const rowErrors = [errors[`cover${row.rate}`], errors[`rate${row.rate}`], quoteError].filter(Boolean);
           return (
             <div key={row.rate} className={`border-t border-violet-50 px-3 py-1.5 transition ${on ? "bg-violet-50/60" : "hover:bg-violet-50/40"}`}>
               <div className="grid grid-cols-[1fr_64px_96px] items-center gap-2">
-                <label title={restricted ? "Not available for this vehicle class" : undefined} className={`flex items-center gap-2 text-xs ${restricted ? "cursor-not-allowed text-slate-400" : "cursor-pointer text-slate-700"}`}><input type="checkbox" checked={on} disabled={Boolean(rule) || (restricted && !on)} onChange={(e) => toggleCover(row.rate, Boolean(row.count), e.target.checked)} className="h-4 w-4 accent-[#35126d] disabled:opacity-40" /><span className={on ? "font-semibold text-[#35126d]" : restricted ? "line-through decoration-slate-300" : ""}>{row.label}</span>{restricted ? <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-500 no-underline">N/A</span> : null}{rule ? <span title="Mandatory for this vehicle class" className="rounded-full bg-[#35126d] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">Required</span> : null}</label>
+                <label title={restricted ? "Not available for this vehicle class" : blockedByPa ? "Only Personal Accident applies when it is selected" : undefined} className={`flex items-center gap-2 text-xs ${restricted || blockedByPa ? "cursor-not-allowed text-slate-400" : "cursor-pointer text-slate-700"}`}><input type="checkbox" checked={on} disabled={Boolean(rule) || (restricted && !on) || (blockedByPa && !on)} onChange={(e) => toggleCover(row.rate, Boolean(row.count), e.target.checked)} className="h-4 w-4 accent-[#35126d] disabled:opacity-40" /><span className={on ? "font-semibold text-[#35126d]" : restricted ? "line-through decoration-slate-300" : ""}>{row.label}</span>{restricted ? <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-500 no-underline">N/A</span> : null}{blockedByPa ? <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-500">PA selected</span> : null}{rule ? <span title="Mandatory for this vehicle class" className="rounded-full bg-[#35126d] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">Required</span> : null}</label>
                 {row.rate === 8 ? (
                   <select disabled={!on} value={on ? louValue : ""} onChange={(e) => onFieldChange?.("rate8", e.target.value)} title="Days" className={`${coverInput} text-center ${errors.rate8 ? "border-rose-300" : "border-violet-100"}`} aria-label="Loss of Use - number of days">
                     {on ? louDays.map((d) => <option key={d} value={String(d)}>{d}</option>) : <option value="" />}
@@ -1849,7 +1854,7 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
     );
   };
 
-  const numericFields = new Set(["premium", "addOnPremium", "basicRate", "basicAmt", "addCharge", "minPremium", "loadingPer", "tpPremium", "mgwRate", "excess", "youngExcess", "tpfExcess", "fixPremium", "documentCharge", "levy", "hitAndRun", "invoiceAmount"]);
+  const numericFields = new Set(["premium", "addOnPremium", "basicRate", "basicAmt", "addCharge", "minPremium", "loadingPer", "tpPremium", "mgwRate", "excess", "youngExcess", "tpfExcess", "fixPremium", "documentCharge", "levy", "hitAndRun", "invoiceAmount", "compulsoryExcess", "totalLossExcess", "youngDriverExcess", "additionalExcess"]);
 
   const getValue = (name: string): string => {
     const val = values[name];
@@ -1864,10 +1869,11 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
   };
 
   // Calculated values (read-only inputs keep their names so they are saved with the policy).
-  const valueRow = ([label, name]: string[]) => (
+  // Display-only rows (the excesses from Vehicle Details) have no name, so saving this section never overwrites them.
+  const valueRow = ([label, name, displayOnly]: string[]) => (
     <label key={name} className="flex items-center justify-between gap-3 border-t border-violet-50 px-3 py-2 first:border-t-0">
       <span className="text-xs font-medium text-slate-600">{label}</span>
-      <input name={name} type={calculating ? "text" : "number"} step="0.01" value={getValue(name) as string} onChange={() => {}} readOnly className={`h-8 w-28 rounded-md border border-transparent bg-slate-50 px-2 text-right font-mono text-sm text-slate-800 outline-none ${calculating ? "animate-pulse text-slate-400" : ""}`} />
+      <input name={displayOnly ? undefined : name} type={calculating ? "text" : "number"} step="0.01" value={getValue(name) as string} onChange={() => {}} readOnly className={`h-8 w-28 rounded-md border border-transparent bg-slate-50 px-2 text-right font-mono text-sm text-slate-800 outline-none ${calculating ? "animate-pulse text-slate-400" : ""}`} />
     </label>
   );
   const valueGroup = (title: string, rows: string[][]) => (
@@ -1919,10 +1925,12 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
         <div className="grid gap-4 lg:grid-cols-2">
           {/* Calculated premium breakdown (right column on large screens) */}
           <div className="space-y-4 lg:order-2">
-            {valueGroup("Premium", [["Total Premium (incl. add-ons)", "premium"], ["Basic Amount", "basicAmt"], ["Add-on Covers", "addOnPremium"], ["Basic Rate", "basicRate"], ["Additional Charge", "addCharge"], ["Min Premium", "minPremium"], ["Fix Premium", "fixPremium"]])}
-            {valueGroup("Tariff details", [["Loading %", "loadingPer"], ["TP Premium", "tpPremium"], ["MGW Rate", "mgwRate"]])}
-            {valueGroup("Excesses", [["Excess", "excess"], ["Young Driver Excess", "youngExcess"], ["TPF Excess", "tpfExcess"]])}
-            {valueGroup("Charges", [["Doc. Charges", "documentCharge"], ["Levy Charge", "levy"], ["Hit & Run Charge", "hitAndRun"], ["Inv. Amount", "invoiceAmount"]])}
+            {valueGroup("Premium", [
+              ["Compulsory Excess", "compulsoryExcess", "display"], ["Total Loss Excess", "totalLossExcess", "display"],
+              ["Young Driver Excess", "youngDriverExcess", "display"], ["Additional Excess", "additionalExcess", "display"],
+              ["Total Premium (Incl. Tow)", "premium"], ["Doc. Charges", "documentCharge"], ["Levy Charge", "levy"],
+              ["Hit & Run", "hitAndRun"], ["Inv. Amount", "invoiceAmount"],
+            ])}
           </div>
 
           {/* Optional covers (left column on large screens) */}
@@ -2270,6 +2278,42 @@ export default function BuyOnlinePage() {
     }, 400);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [addonRequestKey, premiumCoverRules]);
+  // Tariff availability of every add-on cover for this vehicle, so covers with no tariff are not offered.
+  // Driver Only has no amount and is never looked up; Loss of Use is checked at its first allowed number of days.
+  const [noTariff, setNoTariff] = useState<{ key: string; rates: number[] }>({ key: "", rates: [] });
+  const tariffCheckKey = JSON.stringify({
+    covers: PREMIUM_COVERS.filter((c) => ADDON_TARIFF_NAMES[c.rate] && !HIDDEN_COVER_RATES.has(c.rate) && !premiumCoverRules[c.rate]?.amountLocked)
+      .map((c) => ({ rate: c.rate, count: c.rate === 8 ? lossOfUseDays(restrictionClass)[0] : 1 })),
+    vehicleType: draftText(proposalDraft, "vehicleType"), vehicleClass: restrictionClass, country: restrictionCountry,
+    cover: draftText(proposalDraft, "coverRequired"), issueDate: draftText(proposalDraft, "issueDate"), fromDate: draftText(proposalDraft, "fromDate"),
+    manufactureDate: draftText(proposalDraft, "manufactureDate"), cc: draftText(proposalDraft, "cc"),
+  });
+  const noTariffRates = noTariff.key === tariffCheckKey ? noTariff.rates : [];
+  useEffect(() => {
+    const request = JSON.parse(tariffCheckKey) as { vehicleType: string; vehicleClass: string };
+    if (!request.vehicleType || !request.vehicleClass) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch("/api/motor/addon-premium", { method: "POST", headers: { "Content-Type": "application/json" }, body: tariffCheckKey });
+        const data = await response.json() as { results?: Record<number, AddOnQuote> };
+        if (cancelled || !response.ok) return;
+        const rates = Object.entries(data.results || {}).filter(([, quote]) => !quote.success).map(([rate]) => Number(rate));
+        setNoTariff({ key: tariffCheckKey, rates });
+        // Untick a selected cover that turns out to have no tariff (mandatory covers are kept).
+        setProposalDraft((prev) => {
+          const drop = rates.filter((rate) => !premiumCoverRules[rate] && (prev[`cover${rate}`] === true || prev[`cover${rate}`] === "true"));
+          if (!drop.length) return prev;
+          const next = { ...prev };
+          drop.forEach((rate) => { next[`cover${rate}`] = false; next[`rate${rate}`] = ""; next[`amt${rate}`] = ""; });
+          return next;
+        });
+      } catch {
+        // Keep every cover visible when the check fails; the selected covers are still priced individually.
+      }
+    }, 400);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [tariffCheckKey, premiumCoverRules]);
   useEffect(() => {
     if (!restrictionClass) return;
     let cancelled = false;
@@ -2800,7 +2844,7 @@ const saveCurrentSection = async () => {
                         {section.title === "KYC" ? <span className="self-start bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-100 sm:self-auto">{kycMissing.length ? `${kycMissing.length} mandatory field${kycMissing.length === 1 ? "" : "s"} pending` : "Complete"}</span> : section.title === "Policy Details" ? <span className={`self-start px-3 py-1.5 text-xs font-bold ring-1 sm:self-auto ${policyMissing ? "bg-red-50 text-red-700 ring-red-100" : "bg-emerald-50 text-emerald-700 ring-emerald-100"}`}>{policyMissing ? `${policyMissing} mandatory fields pending` : "Complete"}</span> : section.title === "Vechicle Details" ? <span className={`self-start px-3 py-1.5 text-xs font-bold ring-1 sm:self-auto ${vehicleMissing ? "bg-red-50 text-red-700 ring-red-100" : "bg-emerald-50 text-emerald-700 ring-emerald-100"}`}>{vehicleMissing ? `${vehicleMissing} mandatory fields pending` : "Complete"}</span> : section.pending ? <span className="self-start bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-red-100 sm:self-auto">{section.pending}</span> : <span className="self-start bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 sm:self-auto">Ready to complete</span>}
                       </div>
 <div className="overflow-x-auto p-3 sm:p-4">
-                        {section.title === "KYC" ? <ClientDetailsForm onKycStatus={setKycMissing} onClientSelected={(client) => setProposalDraft((current) => ({ ...current, clientCode: String(client.Code || ""), title: String(client.Title || ""), firstName: String(client.Name || ""), surname: String(client.Surname || ""), email: String(client.EMail || "") }))} onSaved={() => markSectionSaved("KYC")} onClientChange={setKycClient} /> : section.title === "Policy Details" ? <MotorProposalForm clientCode={String(proposalDraft.clientCode || "")} onStatusChange={setPolicyMissing} coverRequired={policyCover} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} /> : section.title === "Vechicle Details" ? <VehicleProposalForm policyCover={policyCover} onPolicyCoverChange={setPolicyCover} onStatusChange={setVehicleMissing} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} vehicleClass={proposalDraft.vehicleClass} vehicleType={proposalDraft.vehicleType} fuelType={proposalDraft.fuelType} issueDate={proposalDraft.issueDate} country={String(proposalDraft.country || "Mauritius")} /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm values={proposalDraft as Record<string, string | boolean>} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} showErrors={commonDetailsAttempted} /> : section.title === "Premium" ? <PremiumForm values={applyCoverRules(proposalDraft, premiumCoverRules) as Record<string, string | boolean>} calculating={premiumCalculating} onCalculate={calculatePremium} error={premiumError} cover={policyCover || String(proposalDraft.coverRequired || "")} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} restrictedRates={premiumRestrictedRates} coverRules={premiumCoverRules} addonQuotes={addonQuotes} addonLoading={addonLoading} /> : <AttachedDocumentForm documents={pendingDocuments} onDocumentsChange={setPendingDocuments} stored={storedDocuments} uploadMessage={documentUploadMessage} />}
+                        {section.title === "KYC" ? <ClientDetailsForm onKycStatus={setKycMissing} onClientSelected={(client) => setProposalDraft((current) => ({ ...current, clientCode: String(client.Code || ""), title: String(client.Title || ""), firstName: String(client.Name || ""), surname: String(client.Surname || ""), email: String(client.EMail || "") }))} onSaved={() => markSectionSaved("KYC")} onClientChange={setKycClient} /> : section.title === "Policy Details" ? <MotorProposalForm clientCode={String(proposalDraft.clientCode || "")} onStatusChange={setPolicyMissing} coverRequired={policyCover} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} /> : section.title === "Vechicle Details" ? <VehicleProposalForm policyCover={policyCover} onPolicyCoverChange={setPolicyCover} onStatusChange={setVehicleMissing} onValuesChange={(vals) => setProposalDraft((prev) => ({ ...prev, ...vals }))} vehicleClass={proposalDraft.vehicleClass} vehicleType={proposalDraft.vehicleType} fuelType={proposalDraft.fuelType} issueDate={proposalDraft.issueDate} country={String(proposalDraft.country || "Mauritius")} /> : section.title === "Accessories" ? <AccessoriesForm /> : section.title === "General Information" ? <GeneralInformationForm /> : section.title === "Common Det." ? <CommonDetailsForm values={proposalDraft as Record<string, string | boolean>} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} showErrors={commonDetailsAttempted} /> : section.title === "Premium" ? <PremiumForm values={applyCoverRules(proposalDraft, premiumCoverRules) as Record<string, string | boolean>} calculating={premiumCalculating} onCalculate={calculatePremium} error={premiumError} cover={policyCover || String(proposalDraft.coverRequired || "")} onFieldChange={(field, value) => setProposalDraft((prev) => ({ ...prev, [field]: value }))} restrictedRates={premiumRestrictedRates} coverRules={premiumCoverRules} addonQuotes={addonQuotes} addonLoading={addonLoading} noTariffRates={noTariffRates} /> : <AttachedDocumentForm documents={pendingDocuments} onDocumentsChange={setPendingDocuments} stored={storedDocuments} uploadMessage={documentUploadMessage} />}
                         {section.title !== "KYC" && openSection === section.title && saveMessage ? <div className="mt-4"><SaveNotice error={saveError} message={saveMessage} issues={saveIssues} onDismiss={clearSaveNotice} onOpenSection={setOpenSection} /></div> : null}
                         {section.title !== "KYC" ? <div className="mt-4 flex justify-end border-t border-violet-100 pt-4"><button type="button" disabled={saving} onClick={() => void saveCurrentSection()} className="bg-[#35126d] px-6 py-3 text-sm font-bold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-400">{saving ? "Saving..." : section.title === "Attached Document" ? "Save policy and continue" : "Save and continue"}</button></div> : null}
                       </div>
