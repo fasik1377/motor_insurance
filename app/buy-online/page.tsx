@@ -1810,9 +1810,7 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
   const coverInput = "h-7 w-full rounded-md border bg-white px-1.5 text-xs outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:border-transparent disabled:bg-slate-50 disabled:text-slate-300";
 
   const optionTable = (title: string) => {
-    // Covers with no tariff for this vehicle are not offered (mandatory covers stay so their error shows).
-    const rows = PREMIUM_COVERS.filter((c) => c.group === title && !HIDDEN_COVER_RATES.has(c.rate) && !(noTariffRates.includes(c.rate) && !coverRules[c.rate]));
-    if (!rows.length) return null;
+    const rows = PREMIUM_COVERS.filter((c) => c.group === title && !HIDDEN_COVER_RATES.has(c.rate));
     return (
       <div key={title} className="overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
         <div className="grid grid-cols-[1fr_64px_96px] gap-2 bg-[#35126d] px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-white"><span>{title}</span><span className="text-center">No</span><span className="text-right">Amount</span></div>
@@ -1823,12 +1821,14 @@ function PremiumForm({ values, calculating, onCalculate, error, cover, onFieldCh
           const rule = coverRules[row.rate];
           const restricted = restrictedRates.includes(row.rate) && !rule;
           const blockedByPa = row.rate === 29 && selected(2);
+          // No tariff for this vehicle: shown but cannot be selected (mandatory covers stay so their error shows).
+          const noTariff = noTariffRates.includes(row.rate) && !rule && !restricted;
           const quoteError = on && !coverRules[row.rate]?.amountLocked && addonQuotes[row.rate] && !addonQuotes[row.rate].success ? addonQuotes[row.rate].errorMsg : "";
           const rowErrors = [errors[`cover${row.rate}`], errors[`rate${row.rate}`], quoteError].filter(Boolean);
           return (
             <div key={row.rate} className={`border-t border-violet-50 px-3 py-1.5 transition ${on ? "bg-violet-50/60" : "hover:bg-violet-50/40"}`}>
               <div className="grid grid-cols-[1fr_64px_96px] items-center gap-2">
-                <label title={restricted ? "Not available for this vehicle class" : blockedByPa ? "Only Personal Accident applies when it is selected" : undefined} className={`flex items-center gap-2 text-xs ${restricted || blockedByPa ? "cursor-not-allowed text-slate-400" : "cursor-pointer text-slate-700"}`}><input type="checkbox" checked={on} disabled={Boolean(rule) || (restricted && !on) || (blockedByPa && !on)} onChange={(e) => toggleCover(row.rate, Boolean(row.count), e.target.checked)} className="h-4 w-4 accent-[#35126d] disabled:opacity-40" /><span className={on ? "font-semibold text-[#35126d]" : restricted ? "line-through decoration-slate-300" : ""}>{row.label}</span>{restricted ? <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-500 no-underline">N/A</span> : null}{blockedByPa ? <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-500">PA selected</span> : null}{rule ? <span title="Mandatory for this vehicle class" className="rounded-full bg-[#35126d] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">Required</span> : null}</label>
+                <label title={restricted ? "Not available for this vehicle class" : noTariff ? "No tariff is set up for this cover and vehicle" : blockedByPa ? "Only Personal Accident applies when it is selected" : undefined} className={`flex items-center gap-2 text-xs ${restricted || noTariff || blockedByPa ? "cursor-not-allowed text-slate-400" : "cursor-pointer text-slate-700"}`}><input type="checkbox" checked={on} disabled={Boolean(rule) || (restricted && !on) || (noTariff && !on) || (blockedByPa && !on)} onChange={(e) => toggleCover(row.rate, Boolean(row.count), e.target.checked)} className="h-4 w-4 accent-[#35126d] disabled:opacity-40" /><span className={on ? "font-semibold text-[#35126d]" : restricted ? "line-through decoration-slate-300" : ""}>{row.label}</span>{restricted ? <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-500 no-underline">N/A</span> : null}{noTariff ? <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-500">No tariff</span> : null}{blockedByPa ? <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-500">PA selected</span> : null}{rule ? <span title="Mandatory for this vehicle class" className="rounded-full bg-[#35126d] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">Required</span> : null}</label>
                 {row.rate === 8 ? (
                   <select disabled={!on} value={on ? louValue : ""} onChange={(e) => onFieldChange?.("rate8", e.target.value)} title="Days" className={`${coverInput} text-center ${errors.rate8 ? "border-rose-300" : "border-violet-100"}`} aria-label="Loss of Use - number of days">
                     {on ? louDays.map((d) => <option key={d} value={String(d)}>{d}</option>) : <option value="" />}
